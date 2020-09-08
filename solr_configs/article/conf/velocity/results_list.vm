@@ -1,0 +1,16 @@
+#set($queryOpts = $params.get("queryOpts"))
+#if($queryOpts == "clustering")
+    #parse("hit_cluster.vm")
+#else
+  #set($headlines = [])
+  #set($dates = [])
+  #foreach($doc in $response.results)
+    #set($headline = $esc.html($doc.getFirstValue('headline')))
+    #set($thedate = $esc.html($date.format('full_date', $doc.getFirstValue('thedate'))))
+    #if(!$headlines.contains($headline) || !$dates.contains($thedate))
+      #set($temp = $headlines.add($headline))
+      #set($temp = $dates.add($thedate))
+      #parse("hit.vm")
+    #end
+  #end
+#end

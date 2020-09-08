@@ -1,0 +1,35 @@
+**/.vscode/
+*/__pycache__/
+**.idea/
+**.jp2
+**.tiff
+**.jpg
+**.xml
+**.json
+*.txt
+!solr_configs/**
+
+# Flask files
+venv/
+
+*.pyc
+__pycache__/
+
+instance/
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+dist/
+build/
+*.egg-info/
+
+# solr
+solr_configs/article/data/
+
+\.idea/
+
+solr_configs/article/data/index/
+
+solr_configs/article/data/tlog/

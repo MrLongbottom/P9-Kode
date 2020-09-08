@@ -1,0 +1,66 @@
+
+
+#macro(url_for_facet_range_filter $field $value)
+    #url_for_home#lens&fq=$esc.url($field):$esc.url($value)
+#end
+
+
+#macro(display_facet_range $field, $display, $fieldName, $start, $end, $gap, $before, $after)
+    #set($queryOpts = $params.get("queryOpts"))
+    #if( $display == "thedate" )
+        <span class="facet-field">Årstal</span>    
+    #else
+        <span class="facet-field">$display</span>
+    #end
+    <ul>
+        #foreach ($facet in $field)
+            #set($rangeEnd = "#range_get_to_value($facet.key, $gap)")
+            #set($value = "[" + $facet.key + " TO " + $rangeEnd + "}")
+            #set($facetURL = "#url_for_facet_range_filter($fieldName, $value)")
+            #if($queryOpts == 'clustering')
+                #set($facetURL = $facetURL + "&queryOpts=clustering")
+            #end
+            #if ($facetURL != '')
+                <li><a href="$facetURL">#format_value($facet.key)</a> ($facet.value)</li>
+            #end
+        #end
+    </ul>
+#end
+
+#macro(format_value $val)
+    $val.split("-").get(0)
+#end
+
+#macro(range_get_to_value $inval, $gapval)
+    #if(${gapval.class.name} == "java.lang.String")
+        #if($gapval.startsWith("+"))
+            $inval$gapval## Typically date gaps start with +
+        #else
+            $inval+$gapval## If the gap does not start with a "+", we add it, such as for currency value
+        #end
+    #elseif(${gapval.class.name} == "java.lang.Float" || ${inval.class.name} == "java.lang.Float")
+        $math.toDouble($math.add($inval,$gapval))##
+    #else
+        $math.add($inval,$gapval)##
+    #end
+#end
+
+#macro(field $f)
+    #if($response.response.highlighting.get($docId).get($f).get(0))
+        #set($pad = "")
+        #foreach($v in $response.response.highlighting.get($docId).get($f))
+            $pad$v##
+            #set($pad = " ... ")
+        #end
+    #else
+        #foreach($v in $doc.getFieldValues($f))
+            $v##
+        #end
+    #end
+#end  
+
+#macro(format_mlt $t)
+    #foreach($s in $t)
+        $s
+    #end 
+#end

@@ -1,0 +1,45 @@
+## Link for MLT / More Like This / Find Similar
+<span class="mlt">
+    #if($params.getBool('mlt', false) == false)
+        <a href="#lensNoQ&q=id:%22$docId%22&mlt=true">
+        More Like This</a>
+    #end
+</span>
+
+## Display Similar Documents / MLT = More Like This
+<div class="mlt" style="border-left:1px solid black; height: 350px; overflow: auto">
+  #set($mlt = $mltResults.get($docId))
+  #set($mltOn = $params.getBool('mlt'))
+  #if($mltOn == true)
+    <div class="field-name" style="font-size:20px">
+      Lignende artikler
+    </div>
+  #end
+  ## If has MLT enabled An Entries to show
+  #if ($mltOn && $mlt && $mlt.size() > 0)
+    #foreach($mltHit in $mlt)
+      #set($mltId = $mltHit.getFieldValue('id'))
+      <li>
+        <div>
+          <span class="field-name">
+            Overskrift:
+          </span>
+          <a href="#url_for_home?q=id:$mltId">
+              #format_mlt($mltHit.getFieldValue('headline'))
+          </a>
+        </div>
+        #if( $mltHit.getFieldValue('subheadline').get(0) != "" )
+          <div>
+            <span class="field-name">
+              Under-Overskrift:
+            </span>
+            #format_mlt($mltHit.getFieldValue('subheadline'))
+          </div>
+        #end
+      </li>
+    #end    ## end for each mltHit in $mlt
+  ## Else MLT Enabled but no mlt results for this query
+  #elseif($mltOn && $mlt.size() == 0)
+    <div>Ingen lignende artikler fundet</div>
+  #end
+</div>  ## div class=mlt

@@ -1,0 +1,185 @@
+#set($clusters = $responce.clusters)
+#set($processed = "")
+#set($alldocs = "")
+
+## clusters into the correct format
+#foreach($cluster in $clusters)
+  #set($label = $cluster.get('labels').get(0))
+  #set($score = $cluster.get('score'))
+  #set($docs = $cluster.get('docs'))
+
+
+  #if( $processed == "" )
+  #set($processed = $label + ':-:' + $score)
+  #else
+    #set($processed = $processed + ';-;' + $label + ':-:' + $score)
+  #end
+  #foreach($doc in $docs)
+    #if($alldocs == "")
+      #set($alldocs = $doc)
+    #else
+      #set($alldocs = $alldocs + ',' + $doc)
+    #end
+    #set($processed = $processed + ':-:' + $doc)
+  #end
+#end
+#set($headlines = [])
+#set($dates = [])
+#set($duplicateID = [])
+#foreach($doc in $response.results)
+  #set($docId = $doc.getFirstValue($request.schema.uniqueKeyField.name))
+  #set($headline = $esc.html($doc.getFirstValue('headline')))
+  #set($thedate = $esc.html($date.format('full_date', $doc.getFirstValue('thedate'))))
+  #if($alldocs == "")
+    #set($alldocs = $docId)
+  #else
+    #set($alldocs = $alldocs + ',' + $docId)
+  #end
+
+  #if($headlines.contains($headline) && $dates.contains($thedate))
+    #set($tmp = $duplicateID.add($docId))
+  #else
+    #set($temp = $headlines.add($headline))
+    #set($temp = $dates.add($thedate))
+  #end
+  
+#end
+ 
+
+<div>
+  <table>
+    <tr>
+      <td>
+          <div id="visualization" style="width:600; height: 700px;"></div>
+      </td>
+      <td>
+        <div id="resultsContainer" style="max-height: 700px; overflow: auto">
+          #set($headlines = [])
+          #set($dates = [])
+          #foreach($doc in $response.results)
+            #set($docId = $doc.getFirstValue($request.schema.uniqueKeyField.name))
+            #set($headline = $esc.html($doc.getFirstValue('headline')))
+            #set($subheadline = $esc.html($doc.getFirstValue('subheadline')))
+            #set($body = $esc.html($doc.getFirstValue('body')))
+            #set($thepath = $esc.html($doc.getFirstValue('pic_path')))
+            #set($full = "http://localhost:5000/getimage/" + $thepath)
+            #set($thedate = $esc.html($date.format('full_date', $doc.getFirstValue('thedate'))))
+
+            #if(!$headlines.contains($headline) || !$dates.contains($thedate))
+              <div id="$docId" class="result-document" style="margin-left:0">
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+                <table overflow="hidden">
+                  <tr>
+                    <td rowspan="2" style="padding:0 20px 0 0">
+                      #parse("modal.vm")
+                    </td>
+                    <td valign="top" style="width: 768px; padding: 0 10px 0 0">
+                      <h2>#field('headline')</h2>
+
+                      #if( $subheadline != "" )
+                        <h3>#field('subheadline')</h3>
+                      #end
+                      #field('body')
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td valign="bottom">
+                      <a href="$full">
+                        <button class="btn" href="$full">
+                          <i class="fa fa-download"></i> Download artikel
+                        </button>
+                      </a>
+                    </td>
+                  </tr>  
+                </table>
+              </div>
+            #end
+          #end
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<script type="text/javascript" scr='http://localhost:8983/solr/article/admin/file?wt=json&_=1543309248317&file=velocity%2Fcarrotsearch.foamtree.js'></script>
+<script type="text/javascript"> 
+  var alldocs = "${alldocs}".split(",")
+  var duplicates = "${duplicateID}"
+  var foamtree = new CarrotSearchFoamTree({
+    id: "visualization",
+    dataObject: {
+      groups: [ { label: "loading..." }, { label: "Please wait" } ]
+    }
+  });
+      
+  clusters = "${processed}".split(";-;");
+  gs = [];
+
+  display_all()
+
+  for(var cluster in clusters){
+    var tmp = clusters[cluster].split(":-:");
+    var docs = [];
+
+    for(var i in tmp){
+      if(i == 0){
+        l = tmp[0]
+
+        if(l == "Other Topics"){
+          l = "Andre Emner"
+        }
+      } else if (i == 1)
+      s = tmp[1];
+      else{
+        docs.push(tmp[i])
+      }
+    }
+
+    gs.push({
+      label : l,
+      weight : s,
+      docs : docs
+    });
+  }
+
+  foamtree.set({
+    dataObject: { groups: gs }
+  });
+
+  foamtree.set({
+    onGroupSelectionChanged: function(info) {
+      if(info['groups'].length == 0){
+        display_all();
+      } else {
+        docs = info['groups'][0]['docs']
+        var container = document.getElementById("resultsContainer")
+
+        for(var i in alldocs){
+          var element = document.getElementById(alldocs[i])
+          
+          if(docs.includes(alldocs[i]) && duplicates.indexOf(alldocs[i]) == -1){
+            element.style.display = "block";
+          } else {
+            element.style.display = "none";
+          }
+        }  
+
+        container.scrollTop = 0;
+      }
+    }
+  });
+
+  function display_all() {
+    var headlines = []
+    var dates = []
+    for(var i in alldocs){
+      var element = document.getElementById(alldocs[i])
+      if (duplicates.indexOf(alldocs[i]) == -1){
+        element.style.display = "block";
+      } else {
+        element.style.display = "none";
+      }
+    }  
+  };   
+</script>

@@ -1,0 +1,50 @@
+#*
+  - Make search box bigger
+  - Add in pivot and other facets?
+  - Work on template default selection logic
+*#
+#set($mltResults = $response.response.get("moreLikeThis"))
+#set($params = $request.params)
+#set($clusters = $response.response.clusters)
+
+## Show Error Message, if any
+<div class="error">
+  #parse("error.vm")
+</div>
+
+#parse("query.vm")
+
+
+<div class="facets">
+  #parse("facets.vm")
+</div>
+
+<div class="pagination">
+  #set($queryOpts = $params.get("queryOpts"))
+  <span>
+    <span class="results-found">$page.results_found</span>
+    resulter fundet på
+    ${response.responseHeader.QTime}ms
+  </span>
+  #if( $queryOpts != "clustering")
+    , Side $page.current_page_number af $page.page_count
+  #end
+</div>
+
+## Render Results, actual matching docs
+<div class="results">
+  #parse("results_list.vm")
+</div>
+
+<div class="pagination">
+  #link_to_previous_page
+
+  <span class="results-found">$page.results_found</span>
+  resultater fundet.
+
+  #if( $queryOpts != "clustering")
+    Side $page.current_page_number af $page.page_count
+  #end
+
+  #link_to_next_page
+</div>

@@ -1,0 +1,19 @@
+<html>
+<head>
+  #parse("head.vm")
+  <script type="text/javascript" src='http://localhost:8983/solr/article/admin/file?wt=json&_=1543309248317&file=velocity%2Fcarrotsearch.foamtree.js'></script>
+
+</head>
+  <body>
+    ##<div id="admin"><a href="#url_root/#/#core_name">Articles</a></div>
+    
+
+    <div id="content">
+      $content
+    </div>
+
+    <div id="footer">
+      #parse("footer.vm")
+    </div>
+  </body>
+</html>

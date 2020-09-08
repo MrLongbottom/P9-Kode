@@ -1,0 +1,52 @@
+#set($docId = $doc.getFirstValue($request.schema.uniqueKeyField.name))
+
+#set($headline = $esc.html($doc.getFirstValue('headline')))
+#set($subheadline = $esc.html($doc.getFirstValue('subheadline')))
+#set($body = $esc.html($doc.getFirstValue('body')))
+
+#set($thedate = $esc.html($date.format('dd/MM yyyy', $doc.getFirstValue('thedate'))))
+#set($thepath = $esc.html($doc.getFirstValue('pic_path')))
+#set($full = "http://localhost:5000/getimage/" + $thepath)
+
+
+<div class="result-document">
+
+  <table style="height: 200px" overflow="hidden">
+    <tr>
+      <td rowspan="2" style="padding:0 20px 0 0">
+        #parse("modal.vm")
+      </td>
+      <td align="justify" valign="top" style="width: 768px; padding: 0 10px 0 0">
+        <h2 style="margin-bottom:0px;color:#069">Nordjyske Stiftstidende - $thedate:</h2>
+        <h2 style="margin-top:0px;">#field('headline')</h2>
+
+        #if( $subheadline != "" )
+            <h3>#field('subheadline')</h3>
+        #end
+
+        #field('body')
+      </td>
+      <td valign="top" rowspan="2">
+      #parse("more_like_this.vm")
+      </td>
+    </tr>
+
+    <tr>
+      <td valign="bottom">
+        <a href="$full">
+          <button class="btn" href="$full">
+            <i class="fa fa-download"></i> Download artikel
+          </button>
+        </a>
+      </td>
+    </tr>  
+  </table>
+
+  #if($debug)
+    <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle explain</a>
+
+    <pre style="display:none">
+      $response.getExplainMap().get($docId)
+    </pre>
+  #end
+</div>

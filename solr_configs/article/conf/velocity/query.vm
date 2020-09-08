@@ -1,0 +1,62 @@
+<div class="query-box">
+    #set($queryOpts = $params.get("queryOpts"))
+
+    <form id="query-form" action="#{url_for_home}" method="GET">
+        <table style="width: 100%">
+            <tr>
+                <td valign="bottom" style="width:550px">
+                    <div class="inputs" style="position:relative; display:table-cell">
+                        <span #annTitle("Add the query using the &q= parameter")>
+                            Find:
+                            <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/>
+                            <input type="submit" id="querySubmit" value="Søg">
+                        </span>
+                    </div>
+                </td>
+                <td valign="bottom">
+                    <div style="position:relative; display:table-cell">
+                        #if($queryOpts == 'clustering')
+                            <a href="#url_for_home?#debug">
+                                <input type="checkbox" name="clusteringBox" value="cluster" checked="true"/></a>
+                        #else
+                            <a href="#url_for_home?&queryOpts=clustering#debug">
+                                <input type="checkbox" name="clusteringBox" value="cluster"/></a> 
+                        #end
+                        Vis klyngedannelse
+                    </div>
+                </td>
+                <td align="right" >
+                    <img src="https://image.ibb.co/goyFLA/AAU-LOGO-RGB-UK.png" alt="AAU-LOGO-RGB-UK" >
+                </td>
+            </tr>
+        </table> 
+        #if($debug) ## TODO: this would automatically happen when arbitrary parameters are kept on URLs
+            <input type="hidden" name="debug" value="true"/>
+        #end
+        #foreach($fq in $request.params.getParams('fq'))
+            <input type="hidden" name="fq" id="allFQs" value="$esc.html($fq)"/>
+        #end
+
+        <div class="constraints">
+        #foreach($fq in $request.params.getParams('fq'))
+            #set($previous_fq_count=$velocityCount - 1)
+            #if($fq != '')
+            &gt;
+            <a href="#url_for_filters($request.params.getParams('fq').subList(0,$previous_fq_count))">$fq</a>
+            #end
+        #end
+        </div>
+
+        <div class="parsed_query_header">
+        #if($debug)
+            <a href="#" onclick='jQuery(this).siblings("div").toggle(); return false;'>toggle parsed query</a>
+            <div class="parsed_query" style="display:none">$response.response.debug.parsedquery</div>
+        #end
+        #set($queryOpts = $request.params.get("queryOpts"))
+        #if($queryOpts && $queryOpts != "")
+            <input type="hidden" name="queryOpts" value="$queryOpts"/>
+        #end
+        </div>
+
+    </form>
+</div>
