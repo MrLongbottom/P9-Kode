@@ -1,23 +1,56 @@
 import re
 import json
 
+from multiprocessing import Pool
 from tqdm import tqdm
-
-print('Beginning Word2Vec Procedure.')
-
-# name of file to load words from
-documents = []
-
-filename = "documents.json"
-with open(filename, "r", encoding="utf-8") as json_file:
-    for json_obj in json_file:
-        data = json.loads(json_obj)
-        documents.append(data)
 
 # ID, word, count
 word2vec = [[], [], []]
 id_counter = 0
-for doc in tqdm(documents):
+documents = []
+# name of file to load words from
+load_filename = "documents.json"
+# name of file to save down
+save_filename = "word2vec.txt"
+pool_size = 4
+
+
+def main():
+    print('Beginning Word2Vec Procedure.')
+    print('Beginning to load documents from "' + load_filename + '".')
+    load_file(load_filename)
+    print('Finished Loaded Word2Vec from "' + load_filename + '".')
+
+    with Pool(4) as p:
+        p.map(word2vec_doc_load, documents)
+    #for doc in tqdm(documents):
+    #    word2vec_doc_load(doc)
+
+    print('Found ' + str(len(word2vec[0])) + " unique words.")
+
+    print('Beginning to save Word2Vec in "' + save_filename + '".')
+    save_file(save_filename)
+    print('Finished Saved Word2Vec in "' + save_filename + '".')
+
+    print('Finished Word2Vec Procedure.')
+
+
+def load_file(filename):
+    with open(filename, "r", encoding="utf-8") as json_file:
+        for json_obj in json_file:
+            data = json.loads(json_obj)
+            documents.append(data)
+
+
+def save_file(filename):
+    with open(filename, "w") as file:
+        for i in range(0, len(word2vec[0])):
+            file.write(str(word2vec[0][i]) + ", " + word2vec[1][i] + '\n')
+
+
+def word2vec_doc_load(doc):
+    global id_counter
+    global word2vec
     string = doc['headline'] + " " + doc['body']
     string.lower()
     # basic word regex filter
@@ -31,14 +64,8 @@ for doc in tqdm(documents):
             id_counter += 1
         else:
             word2vec[2][word2vec[1].index(word)] += 1
+    return
 
-print('Found ' + str(len(word2vec[0])) + " unique words.")
 
-# name of file to save down
-filename = "word2vec.txt"
-with open(filename, "w") as file:
-    for i in range(0, len(word2vec[0])):
-        file.write(str(word2vec[0][i]) + ", " + word2vec[1][i] + '\n')
-print('Saved Word2Vec in "' + filename + '".')
-
-print('Finished Word2Vec Procedure.')
+if __name__ == "__main__":
+    main()
