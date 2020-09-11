@@ -20,9 +20,11 @@ def main():
     print('Finished Loaded Word2Vec from "' + load_filename + '".')
 
     word2vec = {}
-    for doc in tqdm(documents):
-        wordcounts = word2vec_doc_load(doc)
-        for wc in wordcounts:
+    word_counts = []
+    with Pool(pool_size) as p:
+        word_counts = p.map(word2vec_doc_load, documents)
+    for wcs in tqdm(word_counts):
+        for wc in wcs:
             word2vec[wc[0]] = word2vec.get(wc[0], 0) + wc[1]
     print('Found ' + str(len(word2vec)) + " unique words.")
 
@@ -31,6 +33,7 @@ def main():
     print('Finished Saved Word2Vec in "' + save_filename + '".')
 
     print('Finished Word2Vec Procedure.')
+    return
 
 
 def load_file(filename):
