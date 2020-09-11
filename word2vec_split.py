@@ -21,8 +21,20 @@ def main():
     load_file(load_filename)
     print('Finished Loaded Word2Vec from "' + load_filename + '".')
 
+    wordcounts = [[], []]
     for doc in tqdm(documents):
-        word2vec_doc_load(doc)
+        test2, test3 = word2vec_doc_load(doc)
+        wordcounts[0] += (test2)
+        wordcounts[1] += (test3)
+
+    id_counter = 0
+    for i in tqdm(range(0, len(wordcounts[0]))):
+        if wordcounts[0][i] not in word2vec[1]:
+            word2vec[0].append(id_counter)
+            word2vec[1].append(wordcounts[0][i])
+            word2vec[2].append(wordcounts[1][i])
+        else:
+            word2vec[2][word2vec[1].index(wordcounts[0][i])] += wordcounts[1][i]
 
     print('Found ' + str(len(word2vec[0])) + " unique words.")
 
@@ -47,21 +59,19 @@ def save_file(filename):
 
 
 def word2vec_doc_load(doc):
-    global id_counter
     string = doc['headline'] + " " + doc['body']
     string.lower()
     # basic word regex filter
     words = re.findall(r"[a-zæøå]+", string)
-
-    # collect id's, unique words, and word counts
+    unique_words = []
+    count = []
     for word in words:
-        if word not in word2vec[1]:
-            word2vec[0].append(id_counter)
-            word2vec[1].append(word)
-            word2vec[2].append(1)
-            id_counter += 1
+        if word not in unique_words:
+            unique_words.append(word)
+            count.append(1)
         else:
-            word2vec[2][word2vec[1].index(word)] += 1
+            count[unique_words.index(word)] += 1
+    return unique_words, count
 
 
 if __name__ == "__main__":
