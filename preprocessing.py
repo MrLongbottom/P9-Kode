@@ -13,7 +13,8 @@ corpus = []
 # name of file to load words from
 load_filename = "documents.json"
 # name of file to save down
-save_filename = "word2vec.txt"
+word_save_filename = "word2vec.txt"
+doc_save_filename = "doc2vec.txt"
 pool_size = 4
 word_minimum_count = 20
 word_maximum_doc_percent = 0.25
@@ -24,38 +25,43 @@ def main(save):
     print('Beginning Word2Vec Procedure.')
 
     # load documents file
-    print('Beginning to load documents from "' + load_filename + '".')
     load_file(load_filename)
-    print('Loaded ' + str(len(documents)) + ' documents.')
 
-    # transform documents into a dict containing unique word counts
+    # transform documents into a matrix containing counts for each word in each document
+    # also cut off words that are used too often or too little (max/min document frequency)
     cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count)
-    tf = TfidfTransformer()
     X = cv.fit_transform(corpus)
+    # calculate term frequency - inverse document frequency
+    # (might not be needed)
+    tf = TfidfTransformer()
     X2 = tf.fit_transform(X)
     words = cv.get_feature_names()
     print('Found ' + str(len(words)) + " unique words.")
 
     if save:
-        save_file(save_filename, words)
-        save_file('doc2vec.txt', documents)
+        print('Saving word and document lookup files.')
+        save_file(word_save_filename, words)
+        save_file(doc_save_filename, documents.values())
     return X
 
 
 def load_file(filename):
+    print('Beginning to load documents from "' + load_filename + '".')
     with open(filename, "r", encoding="utf-8") as json_file:
         index = 0
         for json_obj in json_file:
             data = json.loads(json_obj)
-            index += 1
             text = data['headline'] + " " + data['body']
             text = text.lower()
             text = re.findall(r"[a-zæøå]+", text)
+            # Remove documents containing too few words.
             if len(text) < doc_minimum_length:
                 continue
             text = ' '.join(text)
             corpus.append(text)
             documents[index] = data['id']
+            index += 1
+    print('Loaded ' + str(len(documents)) + 'valid documents.')
 
 
 def save_file(filename, words):
