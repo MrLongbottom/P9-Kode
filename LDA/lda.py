@@ -5,15 +5,16 @@ import math
 from boto.cloudfront.object import Object
 from nltk.corpus import stopwords
 # nltk.download('stopwords')
+import numpy as np
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
 
 
-def load_file(filename):
+def get_file_generator(filename):
     with open(filename, "r", encoding="utf-8") as json_file:
         for json_obj in json_file:
-            yield json.loads(json_obj)
+            yield json.loads(json_obj)['body']
 
 
 def get_length_of_file(filename):
@@ -21,25 +22,18 @@ def get_length_of_file(filename):
         return sum(1 for line in json_file)
 
 
-def train_lda_model(lda: LDA, data):
-    return lda.partial_fit(data)
-
-
-def itertive_model_train(n_slices: int, k_topics: int, data):
+def itertive_model_train(num_samples: int, k_topics: int, data):
     lda = LDA(n_components=k_topics, n_jobs=-1)
-    data_slices = itertools.islice(data, n_slices)
-    for slice in tqdm(data_slices):
-        lda = train_lda_model(lda, slice)
+    for sample in tqdm(range(num_samples)):
+        slice = next(data).toarray()
+        lda.partial_fit(slice)
     return lda
 
 
 def count_vectorizer(data):
     cnt_vectorizer = CountVectorizer(stop_words=stopwords.words('danish'))
-    count_data = []
-    data_slices = itertools.islice(data, 1000)
-    for slice in tqdm(data_slices):
-        count_data = cnt_vectorizer.fit_transform(data)
-    return cnt_vectorizer, count_data
+    count_data = cnt_vectorizer.fit_transform(data)
+    return cnt_vectorizer, iter(count_data)
 
 
 def print_topics(model, cnt_vectorizer, n_top_words):
@@ -51,18 +45,20 @@ def print_topics(model, cnt_vectorizer, n_top_words):
 
 
 if __name__ == '__main__':
+
+    file_name = "../documents.json"
     # Load data
-    data = load_file("../2018_data.json")
+    data = get_file_generator(file_name)
 
     # num of topics
-    num_of_topics = math.floor(math.sqrt(get_length_of_file("../2018_data.json")))
-    print(num_of_topics)
+    num_of_topics = math.floor(math.sqrt(get_length_of_file(file_name)))
+    print(f"number of topics: {num_of_topics}")
     # vectorize data
-    vectorizer, data = count_vectorizer([x['body'] for x in data])
-
+    vectorizer, count_data = count_vectorizer(data)
+    print("Vectorizer finished")
     # train model
     # model = lda_model(num_of_topics, data.toarray())
-    model = itertive_model_train(100, num_of_topics, data.toarray())
+    model = itertive_model_train(get_length_of_file(file_name), num_of_topics, count_data)
 
     # print topics
     print_topics(model, vectorizer, 10)
