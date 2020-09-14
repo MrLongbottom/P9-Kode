@@ -1,18 +1,23 @@
 import re
 import json
+import numpy as np
 
 from multiprocessing import Pool
 from tqdm import tqdm
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.pipeline import Pipeline
 
 # formatted as: ID, header, body
-documents = []
+documents = {}
+corpus = []
 # name of file to load words from
 load_filename = "documents.json"
 # name of file to save down
 save_filename = "word2vec.txt"
 pool_size = 4
 word_minimum_count = 20
-word_maximum_percent = 25
+word_maximum_doc_percent = 0.20
+doc_minimum_length = 20
 
 
 def main():
@@ -21,16 +26,21 @@ def main():
     # load documents file
     print('Beginning to load documents from "' + load_filename + '".')
     load_file(load_filename)
-    print('Finished Loaded Word2Vec from "' + load_filename + '".')
+    print('Finished loading ' + str(len(documents)) + ' documents from "' + load_filename + '".')
 
     # transform documents into a dict containing unique word counts
-    word_count_dict = word_to_vec()
-    print('Found ' + str(len(word_count_dict)) + " unique words.")
+    cv = CountVectorizer()
+    X = cv.fit_transform(corpus)
+    print(X.shape)
+    words = cv.get_feature_names()
+    print('Found ' + str(len(words)) + " unique words.")
 
-    # preprocess to remove unhelpful words
-    word_count_dict = {key: word_count_dict[key] for key in word_count_dict if word_count_dict[key] < 20}
-    print('Found ' + str(len(word_count_dict)) + " unique words.")
+    tf = np.sum(X, axis=0)
+    for i in range(0, len(tf)):
+        if tf[0][i] < word_minimum_count:
+            np.delete(X, i, axis=0)
 
+    """
     # save word2vec file
     print('Beginning to save Word2Vec in "' + save_filename + '".')
     save_file(save_filename, word_count_dict)
@@ -38,23 +48,53 @@ def main():
 
     print('Finished Word2Vec Procedure.')
     return
+    """
+
+def preprocess_words(word_count_dict, document_word_dict, word_doc_count_dict):
+    # Full TF-IDF
+
+    #Old versions
+    word_count_dict = {key: word_count_dict[key] for key in word_count_dict if
+                       word_count_dict[key] > 20}
+    docs_num = len(document_word_dict)
+    word_count_dict = {key: word_count_dict[key] for key in word_count_dict if
+                       word_doc_count_dict[key] / docs_num < word_maximum_doc_percent}
+    return word_count_dict
 
 
 def word_to_vec():
     word_count_dict = {}
+    document_word_dict = {}
+    word_doc_count_dict = {}
     with Pool(pool_size) as p:
         word_counts = p.map(word2vec_doc_load, documents)
         for wcs in tqdm(word_counts):
-            for wc in wcs:
+            if wcs is None:
+                continue
+            words = []
+            for wc in wcs[0]:
+                words.append(wc[0])
                 word_count_dict[wc[0]] = word_count_dict.get(wc[0], 0) + wc[1]
-    return word_count_dict
+                word_doc_count_dict[wc[0]] = word_doc_count_dict.get(wc[0], 0) + 1
+            document_word_dict[wcs[1]] = words
+
+    return word_count_dict, document_word_dict, word_doc_count_dict
 
 
 def load_file(filename):
     with open(filename, "r", encoding="utf-8") as json_file:
+        index = 0
         for json_obj in json_file:
             data = json.loads(json_obj)
-            documents.append(data)
+            index += 1
+            text = data['headline'] + " " + data['body']
+            text = text.lower()
+            text = re.findall(r"[a-zæøå]+", text)
+            if len(text) < doc_minimum_length:
+                continue
+            text = ' '.join(text)
+            corpus.append(text)
+            documents[index] = data['id']
 
 
 def save_file(filename, dict):
@@ -66,10 +106,14 @@ def save_file(filename, dict):
 
 
 def word2vec_doc_load(doc):
-    string = doc['headline'] + " " + doc['body']
-    string.lower()
+    # combine headline and body into test
+    text = doc['headline'] + " " + doc['body']
+    text = text.lower()
     # basic word regex filter
-    words = re.findall(r"[a-zæøå]+", string)
+    words = re.findall(r"[a-zæøå]+", text)
+    # removing documents that contain too few words
+    if len(words) < doc_minimum_length:
+        return None
     unique_words = []
     count = []
     for word in words:
@@ -78,8 +122,7 @@ def word2vec_doc_load(doc):
             count.append(1)
         else:
             count[unique_words.index(word)] += 1
-    return [x for x in zip(unique_words, count)]
-
+    return [x for x in zip(unique_words, count)], doc['id']
 
 if __name__ == "__main__":
     main()
