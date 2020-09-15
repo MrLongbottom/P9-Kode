@@ -1,12 +1,15 @@
+import itertools
 import json
 import math
 import pickle
 
 # nltk.download('stopwords')
+from concurrent.futures.process import ProcessPoolExecutor
+
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 from tqdm import tqdm
 
-from preprocessing import main
+from preprocessing import preprocess
 
 
 def get_file_generator(filename):
@@ -21,39 +24,25 @@ def get_length_of_file(filename):
 
 
 def train_model(slice):
+    print("started training model")
     lda.partial_fit(slice.toarray())
 
 
 def itertive_model_train(num_workers: int, num_samples: int, data):
     if num_workers == 1:
         for sample in tqdm(range(num_samples)):
-            slice = next(data).toarray()
+            slice = next(itertools.islice(data, 10)).toarray()
             lda.partial_fit(slice)
     else:
-        from multiprocessing import Pool
-        with Pool(num_workers) as p:
-            p.starmap(train_model, data)
-
-
-# def count_vectorizer(data):
-#     cnt_vectorizer = CountVectorizer(stop_words=stopwords.words('danish'))
-#     count_data = cnt_vectorizer.fit_transform(data)
-#     return cnt_vectorizer, iter(count_data)
-#
-#
-# def print_topics(model, cnt_vectorizer, n_top_words):
-#     words = cnt_vectorizer.get_feature_names()
-#     for topic_idx, topic in enumerate(model.components_):
-#         print("\nTopic #%d:" % topic_idx)
-#         print(" ".join([words[i]
-#                         for i in topic.argsort()[:-n_top_words - 1:-1]]))
+        with ProcessPoolExecutor(max_workers=num_workers) as executer:
+            executer.map(train_model, itertools.islice(data, 2))
 
 
 if __name__ == '__main__':
     # Load data
     file_name = "../documents.json"
     length_of_file = get_length_of_file(file_name)
-    data = main(file_name)
+    data = preprocess(file_name)
 
     num_of_topics = math.floor(math.sqrt(data.shape[1]))
     print(f"number of topics: {num_of_topics}")
@@ -62,7 +51,7 @@ if __name__ == '__main__':
 
     # Model training
     lda = LDA(n_components=num_of_topics, n_jobs=-1)
-    itertive_model_train(8, get_length_of_file(file_name), data)
+    itertive_model_train(1, get_length_of_file(file_name), data)
     print("finished")
     with open(f"model", 'wb') as file:
         pickle.dump(lda, file)
