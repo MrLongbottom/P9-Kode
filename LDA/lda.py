@@ -1,14 +1,10 @@
 import json
 import math
-import numpy as np
+import pickle
 
-from nltk.corpus import stopwords
 # nltk.download('stopwords')
 from sklearn.decomposition import LatentDirichletAllocation as LDA
-from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
-import warnings
-warnings.filterwarnings("ignore")
 
 from preprocessing import main
 
@@ -33,37 +29,40 @@ def itertive_model_train(num_workers: int, num_samples: int, data):
         for sample in tqdm(range(num_samples)):
             slice = next(data).toarray()
             lda.partial_fit(slice)
-        return lda
     else:
         from multiprocessing import Pool
         with Pool(num_workers) as p:
             p.starmap(train_model, data)
 
 
-def count_vectorizer(data):
-    cnt_vectorizer = CountVectorizer(stop_words=stopwords.words('danish'))
-    count_data = cnt_vectorizer.fit_transform(data)
-    return cnt_vectorizer, iter(count_data)
-
-
-def print_topics(model, cnt_vectorizer, n_top_words):
-    words = cnt_vectorizer.get_feature_names()
-    for topic_idx, topic in enumerate(model.components_):
-        print("\nTopic #%d:" % topic_idx)
-        print(" ".join([words[i]
-                        for i in topic.argsort()[:-n_top_words - 1:-1]]))
+# def count_vectorizer(data):
+#     cnt_vectorizer = CountVectorizer(stop_words=stopwords.words('danish'))
+#     count_data = cnt_vectorizer.fit_transform(data)
+#     return cnt_vectorizer, iter(count_data)
+#
+#
+# def print_topics(model, cnt_vectorizer, n_top_words):
+#     words = cnt_vectorizer.get_feature_names()
+#     for topic_idx, topic in enumerate(model.components_):
+#         print("\nTopic #%d:" % topic_idx)
+#         print(" ".join([words[i]
+#                         for i in topic.argsort()[:-n_top_words - 1:-1]]))
 
 
 if __name__ == '__main__':
     # Load data
     file_name = "../documents.json"
     length_of_file = get_length_of_file(file_name)
-    data = iter(main(file_name))
-    # num of topics
-    num_of_topics = math.floor(math.sqrt(get_length_of_file(file_name)))
+    data = main(file_name)
+
+    num_of_topics = math.floor(math.sqrt(data.shape[1]))
     print(f"number of topics: {num_of_topics}")
+
+    data = iter(data)
 
     # Model training
     lda = LDA(n_components=num_of_topics, n_jobs=-1)
-    model = itertive_model_train(4, get_length_of_file(file_name), data)
+    itertive_model_train(8, get_length_of_file(file_name), data)
     print("finished")
+    with open(f"model", 'wb') as file:
+        pickle.dump(lda, file)
