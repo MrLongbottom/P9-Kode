@@ -7,6 +7,20 @@ from tqdm import tqdm
 
 def preprocess(load_filename="documents.json", word_save_filename="word2vec.txt", doc_save_filename="doc2vec.txt",
                word_minimum_count=20, word_maximum_doc_percent=0.25, doc_minimum_length=20, save=True):
+    """
+    preprocesses a json file into a doc_word count matrix, removing unhelpful words and documents
+    :param load_filename: path of .json file to load (default: "documents.json")
+    :param word_save_filename: path of .txt file to save words in vector format. Only relevant if save=True
+    (default: "word2vec.txt")
+    :param doc_save_filename: path of .txt file to save documents in vector format. Only relevant if save=True
+    (default: "doc2vec.txt")
+    :param word_minimum_count: minimum amount of words for a document to be viable (default: 20).
+    :param word_maximum_doc_percent: maximum percentage of documents that may contain a word for it to be considered
+    viable (default: 0.25)
+    :param doc_minimum_length: minimum amount a word must be used in the documents to be considered viable.
+    :param save: boolean indicating whether to save words and document files.
+    :return: csr-matrix (sparse matrix) containing word frequencies for each document.
+    """
     print('Beginning Word2Vec Procedure.')
 
     # load documents file
@@ -27,8 +41,8 @@ def preprocess(load_filename="documents.json", word_save_filename="word2vec.txt"
 
     if save:
         print('Saving word and document lookup files.')
-        save_file(word_save_filename, words)
-        save_file(doc_save_filename, documents.keys())
+        save_vector_file(word_save_filename, words)
+        save_vector_file(doc_save_filename, documents.keys())
     return X
 
 
@@ -64,7 +78,13 @@ def filter_documents(documents, doc_minimum_length):
     return documents, corpus
 
 
-def save_file(filename, content):
+def save_vector_file(filename, content):
+    """
+    Saves content of list as a vector in a file, similar to a Word2Vec document.
+    :param filename: path of file to save.
+    :param content: list of content to save.
+    :return: None
+    """
     print('Saving file "' + filename + '".')
     with open(filename, "w") as file:
         id_counter = 0
