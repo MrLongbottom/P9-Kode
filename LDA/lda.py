@@ -1,14 +1,16 @@
-import itertools
 import json
 import math
+import numpy as np
 
-from boto.cloudfront.object import Object
 from nltk.corpus import stopwords
 # nltk.download('stopwords')
-import numpy as np
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
+
+from preprocessing import main
 
 
 def get_file_generator(filename):
@@ -22,12 +24,20 @@ def get_length_of_file(filename):
         return sum(1 for line in json_file)
 
 
-def itertive_model_train(num_samples: int, k_topics: int, data):
-    lda = LDA(n_components=k_topics, n_jobs=-1)
-    for sample in tqdm(range(num_samples)):
-        slice = next(data).toarray()
-        lda.partial_fit(slice)
-    return lda
+def train_model(slice):
+    lda.partial_fit(slice.toarray())
+
+
+def itertive_model_train(num_workers: int, num_samples: int, data):
+    if num_workers == 1:
+        for sample in tqdm(range(num_samples)):
+            slice = next(data).toarray()
+            lda.partial_fit(slice)
+        return lda
+    else:
+        from multiprocessing import Pool
+        with Pool(num_workers) as p:
+            p.starmap(train_model, data)
 
 
 def count_vectorizer(data):
@@ -45,20 +55,15 @@ def print_topics(model, cnt_vectorizer, n_top_words):
 
 
 if __name__ == '__main__':
-
-    file_name = "../documents.json"
     # Load data
-    data = get_file_generator(file_name)
-
+    file_name = "../documents.json"
+    length_of_file = get_length_of_file(file_name)
+    data = iter(main(file_name))
     # num of topics
     num_of_topics = math.floor(math.sqrt(get_length_of_file(file_name)))
     print(f"number of topics: {num_of_topics}")
-    # vectorize data
-    vectorizer, count_data = count_vectorizer(data)
-    print("Vectorizer finished")
-    # train model
-    # model = lda_model(num_of_topics, data.toarray())
-    model = itertive_model_train(get_length_of_file(file_name), num_of_topics, count_data)
 
-    # print topics
-    print_topics(model, vectorizer, 10)
+    # Model training
+    lda = LDA(n_components=num_of_topics, n_jobs=-1)
+    model = itertive_model_train(4, get_length_of_file(file_name), data)
+    print("finished")
