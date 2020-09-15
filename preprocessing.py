@@ -20,13 +20,13 @@ def word_checker(words):
 
     passes = 0
     passed_words = []
-    for word in tqdm(words):
+    for word in tqdm(words[4000:5000]):
         passed = 0
         data = wik_parser.fetch(word)
         if len(data) != 0:
             passed_words.append(word)
     save_vector_file("NLP/wik_words.csv", passed_words)
-    print(str(passes) + "/" + str(len(words)) + " passed.")
+    print(str(len(passed_words)) + "/" + str(len(words)) + " passed.")
 
 
 def preprocess(load_filename="documents.json", word_save_filename="word2vec.csv", doc_save_filename="doc2vec.csv",
@@ -115,8 +115,8 @@ def save_vector_file(filename, content):
     :return: None
     """
     print('Saving file "' + filename + '".')
-    with open(filename, "w") as file:
-        id_counter = 0
+    with open(filename, "a") as file:
+        id_counter = 3225
         for c in content:
             file.write(str(id_counter) + ", " + str(c) + '\n')
             id_counter += 1
