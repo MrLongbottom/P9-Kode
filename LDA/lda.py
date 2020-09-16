@@ -1,57 +1,46 @@
-import itertools
-import json
 import math
-import pickle
+from typing import Dict
 
-# nltk.download('stopwords')
-from concurrent.futures.process import ProcessPoolExecutor
-
-from sklearn.decomposition import LatentDirichletAllocation as LDA
-from tqdm import tqdm
+from gensim import matutils
+from gensim.models import LdaModel, LdaMulticore
+from gensim.test.utils import datapath
+from scipy.sparse import csr_matrix
 
 from preprocessing import preprocess
 
 
-def get_file_generator(filename):
-    with open(filename, "r", encoding="utf-8") as json_file:
-        for json_obj in json_file:
-            yield json.loads(json_obj)['body']
+def fit_lda(data: csr_matrix, vocab: Dict):
+    """
+    Fit LDA from a scipy CSR matrix (data).
+    :param data: a csr_matrix representing the vectorized words
+    :param vocab: a dictionary over the words
+    :return: a lda model trained on the data and vocab
+    """
+    print('fitting lda...')
+    return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
+                        id2word=vocab,
+                        num_topics=math.floor(math.sqrt(data.shape[1])))
 
 
-def get_length_of_file(filename):
-    with open(filename, "r", encoding="utf-8") as json_file:
-        return sum(1 for line in json_file)
+def save_lda(lda: LdaModel, path: str):
+    # Save model to disk.
+    temp_file = datapath(path)
+    lda.save(temp_file)
 
 
-def train_model(slice):
-    print("started training model")
-    lda.partial_fit(slice.toarray())
-
-
-def itertive_model_train(num_workers: int, num_samples: int, data):
-    if num_workers == 1:
-        for sample in tqdm(range(num_samples)):
-            slice = next(itertools.islice(data, 10)).toarray()
-            lda.partial_fit(slice)
-    else:
-        with ProcessPoolExecutor(max_workers=num_workers) as executer:
-            executer.map(train_model, itertools.islice(data, 2))
+def load_lda(path: str):
+    return LdaModel.load(path)
 
 
 if __name__ == '__main__':
-    # Load data
-    file_name = "../documents.json"
-    length_of_file = get_length_of_file(file_name)
-    data = preprocess(file_name)
+    # Loading data and preprocessing
+    model_path = '/home/simba/Documents/P9/P9-Kode/LDA/model/docu_model'
+    data, cv = preprocess('../documents.json')
+    vocab = dict([(i, s) for i, s in enumerate(cv.get_feature_names())])
 
-    num_of_topics = math.floor(math.sqrt(data.shape[1]))
-    print(f"number of topics: {num_of_topics}")
+    # Fitting the model and saving it
+    lda_model = fit_lda(data, vocab)
+    save_lda(lda_model, model_path)
 
-    data = iter(data)
-
-    # Model training
-    lda = LDA(n_components=num_of_topics, n_jobs=-1)
-    itertive_model_train(1, get_length_of_file(file_name), data)
-    print("finished")
-    with open(f"model", 'wb') as file:
-        pickle.dump(lda, file)
+    # Loading the model
+    lda = load_lda(model_path)
