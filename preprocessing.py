@@ -43,7 +43,7 @@ def preprocess(load_filename="documents.json", word_save_filename="word2vec.txt"
         print('Saving word and document lookup files.')
         save_vector_file(word_save_filename, words)
         save_vector_file(doc_save_filename, documents.keys())
-    return X
+    return X, cv
 
 
 def load_file(filename):
