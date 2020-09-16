@@ -1,11 +1,11 @@
 import json
 import re
 import nltk
+import csv
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
 from nltk.corpus import stopwords
-#from dasem.dannet import Dannet
 from wiktionaryparser import WiktionaryParser
 
 nltk.download('stopwords')
@@ -17,15 +17,18 @@ def word_checker(words):
     wik_parser.set_default_language('danish')
     wik_parser.RELATIONS = []
     wik_parser.PARTS_OF_SPEECH = ["noun", "verb", "adjective", "adverb", "proper noun"]
-
-    passes = 0
+    wik_words = []
+    with open('NLP/wik_words.csv', 'r') as wik:
+        csv_reader = csv.reader(wik)
+        for row in csv_reader:
+            wik_words.append(row[1][1:])
     passed_words = []
-    for word in tqdm(words[4000:5000]):
-        passed = 0
+    remain_words = [v for v in words if v not in wik_words]
+    for word in tqdm(remain_words):
         data = wik_parser.fetch(word)
-        if len(data) != 0:
+        if len(data) == 0:
             passed_words.append(word)
-    save_vector_file("NLP/wik_words.csv", passed_words)
+    save_vector_file("NLP/wik_nonwords.csv", passed_words)
     print(str(len(passed_words)) + "/" + str(len(words)) + " passed.")
 
 
@@ -46,8 +49,6 @@ def preprocess(load_filename="documents.json", word_save_filename="word2vec.csv"
     :return: csr-matrix (sparse matrix) containing word frequencies for each document.
     """
     print('Beginning Word2Vec Procedure.')
-
-
 
     # load documents file
     documents = load_file(load_filename)
@@ -115,8 +116,8 @@ def save_vector_file(filename, content):
     :return: None
     """
     print('Saving file "' + filename + '".')
-    with open(filename, "a") as file:
-        id_counter = 3225
+    with open(filename, "w") as file:
+        id_counter = 0
         for c in content:
             file.write(str(id_counter) + ", " + str(c) + '\n')
             id_counter += 1
