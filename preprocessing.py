@@ -28,7 +28,7 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     :param save: boolean indicating whether to save words and document files.
     :return: csr-matrix (sparse matrix) containing word frequencies for each document.
     """
-    print('Beginning Word2Vec Procedure.')
+    print('Beginning Preprocessing Procedure.')
 
     # load documents file
     print('Step 1: loading documents.')
@@ -37,18 +37,22 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     documents, corpus = filter_documents(documents, doc_minimum_length)
 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
-    print('Step 2: stop words and word frequency')
+    print('Step 2: stop words and word frequency.')
     stop_words = stopwords.words('danish')
     cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
     cv.fit(corpus)
 
     # cut off words that are not used in danish word databases or are wrong word type
-    print("Step 3: word databases and POS-tagging")
+    print("Step 3: word databases and POS-tagging.")
     words = cv.get_feature_names()
     words = word_checker(words)
 
+    # filter documents to remove docs that now contain too few words (after all the word filtering)
+    print("Step 4: refilter documents.")
+    corpus = refilter_docs(words, corpus, doc_minimum_length)
+
     # transform documents into a matrix containing counts for each word in each document
-    print("Step 4: doc-word matrix construction")
+    print("Step 5: doc-word matrix construction")
     cv2 = CountVectorizer(vocabulary=words)
     X = cv2.fit_transform(corpus)
     print("Matrix is: " + str(X.shape))
@@ -59,10 +63,29 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     X2 = tf.fit_transform(X)
 
     if save:
-        print('Saving word and document lookup files.')
+        print('Step 6: saving word and document lookup files.')
         save_vector_file(word_save_filename, words)
         save_vector_file(doc_save_filename, documents.keys())
+    print('Finished Preprocessing Procedure.')
     return X, words
+
+
+def refilter_docs(words, corpus, doc_minimum_length):
+    words_dict = {}
+    for word in tqdm(words):
+        words_dict[word] = 0
+    empty_docs = []
+    for doc in tqdm(corpus):
+        count = 0
+        for word in doc.split(' '):
+            if word in words_dict:
+                count += 1
+                if count >= doc_minimum_length:
+                    break
+        if count < doc_minimum_length:
+            empty_docs.append(doc)
+    print("removed " + str(len(empty_docs)) + " docs, " + str(len(corpus) -len(empty_docs)) + " remaining.")
+    return [x for x in corpus if x not in empty_docs]
 
 
 def load_document_file(filename):
