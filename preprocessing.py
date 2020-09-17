@@ -1,7 +1,7 @@
 import json
 import re
 import nltk
-import csv
+import pandas as pd
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
@@ -48,7 +48,7 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     words = word_checker(words)
 
     # filter documents to remove docs that now contain too few words (after all the word filtering)
-    print("Step 4: refilter documents.")
+    print("Step 4: re-filter documents.")
     corpus = refilter_docs(words, corpus, doc_minimum_length)
 
     # transform documents into a matrix containing counts for each word in each document
@@ -176,12 +176,8 @@ def new_word_db_fetch(words, wik_word_index=0, wik_nonword_index=0):
 def load_word_files(filenames):
     files = []
     for filename in filenames:
-        with open(filename, 'r') as file:
-            csv_reader = csv.reader(file)
-            content = []
-            for row in csv_reader:
-                content.append(row[1][1:])
-            files.append(content)
+        csv_df = pd.read_csv(filename, header=None, encoding='unicode_escape')
+        files.append(list(csv_df[1]))
     return files
 
 
