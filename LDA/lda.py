@@ -32,10 +32,23 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
+def word_cloud(corpus):
+    # Import the wordcloud library
+    from wordcloud import WordCloud
+    # Join the different processed titles together.
+    long_string = ','.join(corpus)
+    # Create a WordCloud object
+    wordcloud = WordCloud(background_color="white", max_words=5000, contour_width=3, contour_color='steelblue')
+    # Generate a word cloud
+    wordcloud.generate(long_string)
+    # Visualize the word cloud
+    wordcloud.to_image().show()
+
+
 if __name__ == '__main__':
     # Loading data and preprocessing
-    model_path = '/home/simba/Documents/P9/P9-Kode/LDA/model/docu_model'
-    data, cv = preprocess('../documents.json')
+    model_path = '/home/simba/Documents/P9/P9-Kode/LDA/model/model_18'
+    data, cv = preprocess('2018_data.json')
     vocab = dict([(i, s) for i, s in enumerate(cv.get_feature_names())])
 
     # Fitting the model and saving it
