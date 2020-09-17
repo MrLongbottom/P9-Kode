@@ -54,20 +54,22 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     # transform documents into a matrix containing counts for each word in each document
     print("Step 5: doc-word matrix construction")
     cv2 = CountVectorizer(vocabulary=words)
-    X = cv2.fit_transform(corpus)
-    print("Matrix is: " + str(X.shape))
+    cv_matrix = cv2.fit_transform(corpus)
+    print("Matrix is: " + str(cv_matrix.shape))
 
+    """
     # calculate term frequency - inverse document frequency
     # (might not be needed)
     tf = TfidfTransformer()
-    X2 = tf.fit_transform(X)
+    tfidf_matrix = tf.fit_transform(cv_matrix)
+    """
 
     if save:
         print('Step 6: saving word and document lookup files.')
         save_vector_file(word_save_filename, words)
         save_vector_file(doc_save_filename, documents.keys())
     print('Finished Preprocessing Procedure.')
-    return X, words
+    return cv_matrix, words, corpus
 
 
 def refilter_docs(words, corpus, doc_minimum_length):
