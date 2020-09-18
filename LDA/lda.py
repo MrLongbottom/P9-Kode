@@ -2,6 +2,7 @@ import math
 from typing import Dict
 
 from gensim import matutils
+from gensim.corpora import Dictionary
 from gensim.models import LdaModel, LdaMulticore
 from gensim.test.utils import datapath
 from scipy.sparse import csr_matrix
@@ -43,6 +44,17 @@ def word_cloud(corpus):
     wordcloud.generate(long_string)
     # Visualize the word cloud
     wordcloud.to_image().show()
+
+
+def get_document_topics_from_model(lda: LdaModel, text: str):
+    tokenized_text = [text.split(' ')]
+
+    dictionary = Dictionary(tokenized_text)
+    corpus = [dictionary.doc2bow(t) for t in tokenized_text]
+
+    query = lda.get_document_topics(corpus)
+
+    return dict([x for x in query][0])
 
 
 if __name__ == '__main__':
