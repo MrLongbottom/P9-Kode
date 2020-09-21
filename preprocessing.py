@@ -64,12 +64,32 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     tfidf_matrix = tf.fit_transform(cv_matrix)
     """
 
+    words = cv2.get_feature_names()
+    mini_corpus = cv2.inverse_transform(cv_matrix)
+    #mini_corpus = cut_corpus(corpus, words)
+
     if save:
         print('Step 6: saving word and document lookup files.')
         save_vector_file(word_save_filename, words)
         save_vector_file(doc_save_filename, documents.keys())
     print('Finished Preprocessing Procedure.')
-    return cv_matrix, words, corpus
+    return cv_matrix, words, corpus, mini_corpus
+
+
+# TODO make faster. (how fast? sonic fast!)
+def cut_corpus(corpus, words):
+    cut = []
+    words_dict = {}
+    for word in tqdm(words):
+        words_dict[word] = 0
+    for doc in tqdm(corpus):
+        sen = []
+        for word in doc.split(" "):
+            if word in words_dict:
+                sen.append(word)
+        if len(sen) != 0:
+            cut.append(sen)
+    return cut
 
 
 def refilter_docs(words, corpus, doc_minimum_length):
@@ -86,7 +106,7 @@ def refilter_docs(words, corpus, doc_minimum_length):
                     break
         if count < doc_minimum_length:
             empty_docs.append(doc)
-    print("removed " + str(len(empty_docs)) + " docs, " + str(len(corpus) -len(empty_docs)) + " remaining.")
+    print("removed " + str(len(empty_docs)) + " docs, " + str(len(corpus) - len(empty_docs)) + " remaining.")
     return [x for x in corpus if x not in empty_docs]
 
 
@@ -177,7 +197,7 @@ def load_word_files(filenames):
     files = []
     for filename in filenames:
         csv_df = pd.read_csv(filename, header=None, encoding='unicode_escape')
-        files.append(list(csv_df[1]))
+        files.append([x[1:] for x in list(csv_df[1])])
     return files
 
 
@@ -192,7 +212,7 @@ def word_checker(words):
     if len(wik_remain_words) != 0:
         print("New words encountered, fetching data.")
         new_words, new_nonwords = new_word_db_fetch(wik_remain_words,
-                                                    wik_word_index=len(wik_words), wik_nonword_index= len(wik_nonwords))
+                                                    wik_word_index=len(wik_words), wik_nonword_index=len(wik_nonwords))
         wik_words.extend(new_words)
 
     # Test how many databases contain the given words
