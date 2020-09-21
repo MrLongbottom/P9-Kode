@@ -13,7 +13,7 @@ nltk.download('stopwords')
 
 def preprocess(load_filename="documents.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", word_minimum_count=20, word_maximum_doc_percent=0.25,
-               doc_minimum_length=20, save=True):
+               doc_minimum_length=20, save=True, word_check=True):
     """
     preprocesses a json file into a doc_word count matrix, removing unhelpful words and documents
     :param load_filename: path of .json file to load (default: "documents.json")
@@ -26,6 +26,8 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     viable (default: 0.25)
     :param doc_minimum_length: minimum amount a word must be used in the documents to be considered viable.
     :param save: boolean indicating whether to save words and document files.
+    :param word_check: boolean indicating whether to check words against word databases.
+    Can be very slow when using new dataset, but is saved locally afterwards.
     :return: csr-matrix (sparse matrix) containing word frequencies for each document.
     """
     print('Beginning Preprocessing Procedure.')
@@ -42,10 +44,11 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
     cv.fit(corpus)
 
-    # cut off words that are not used in danish word databases or are wrong word type
-    print("Step 3: word databases and POS-tagging.")
-    words = cv.get_feature_names()
-    words = word_checker(words)
+    words = key_dictionizer(cv.get_feature_names())
+    if word_check:
+        # cut off words that are not used in danish word databases or are wrong word type
+        print("Step 3: word databases and POS-tagging.")
+        words = word_checker(words)
 
     # filter documents to remove docs that now contain too few words (after all the word filtering)
     print("Step 4: re-filter documents.")
@@ -64,16 +67,34 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     tfidf_matrix = tf.fit_transform(cv_matrix)
     """
 
-    words = cv2.get_feature_names()
+    words = key_dictionizer(cv2.get_feature_names())
     mini_corpus = cv2.inverse_transform(cv_matrix)
-    #mini_corpus = cut_corpus(corpus, words)
+    mini_corpus = find_indexes(words, mini_corpus)
 
     if save:
         print('Step 6: saving word and document lookup files.')
-        save_vector_file(word_save_filename, words)
+        save_vector_file(word_save_filename, words.keys())
         save_vector_file(doc_save_filename, documents.keys())
+        save_vector_file("Generated Files/doc2word.csv", mini_corpus)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus, mini_corpus
+
+
+def find_indexes (dict, values):
+    for i in tqdm(range(0, len(values))):
+        list = []
+        for j in values[i]:
+            list.append(dict[j])
+        values[i] = list
+    return values
+
+def key_dictionizer(keys):
+    dict = {}
+    count = 0
+    for key in keys:
+        dict[key] = count
+        count += 1
+    return dict
 
 
 # TODO make faster. (how fast? sonic fast!)
@@ -153,7 +174,7 @@ def save_vector_file(filename, content):
     with open(filename, "w") as file:
         id_counter = 0
         for c in content:
-            file.write(str(id_counter) + ", " + str(c) + '\n')
+            file.write(str(id_counter) + "," + str(c) + '\n')
             id_counter += 1
     print('"' + filename + '" has been saved.')
 
@@ -169,7 +190,7 @@ def csv_append(filename, content, index=0):
     with open(filename, "a") as file:
         id_counter = index
         for c in content:
-            file.write(str(id_counter) + ", " + str(c) + '\n')
+            file.write(str(id_counter) + "," + str(c) + '\n')
             id_counter += 1
     print('"' + filename + '" has been saved.')
 
@@ -197,7 +218,7 @@ def load_word_files(filenames):
     files = []
     for filename in filenames:
         csv_df = pd.read_csv(filename, header=None, encoding='unicode_escape')
-        files.append([x[1:] for x in list(csv_df[1])])
+        files.append(list(csv_df[1]))
     return files
 
 
