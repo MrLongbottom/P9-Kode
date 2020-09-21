@@ -2,6 +2,7 @@ import json
 import re
 import nltk
 import pandas as pd
+import scipy.sparse as sparse
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
@@ -12,15 +13,20 @@ nltk.download('stopwords')
 
 
 def preprocess(load_filename="documents.json", word_save_filename="Generated Files/word2vec.csv",
-               doc_save_filename="Generated Files/doc2vec.csv", word_minimum_count=20, word_maximum_doc_percent=0.25,
+               doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
+               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
                doc_minimum_length=20, save=True, word_check=True):
     """
-    preprocesses a json file into a doc_word count matrix, removing unhelpful words and documents
-    :param load_filename: path of .json file to load (default: "documents.json")
-    :param word_save_filename: path of .txt file to save words in vector format. Only relevant if save=True
+    preprocesses a json file into a docword count vectorization matrix, removing unhelpful words and documents.
+    :param load_filename: path of .json file to load. (default: "documents.json")
+    :param word_save_filename: path of .csv file to save words in vector format. Only relevant if save=True.
     (default: "Generated Files/word2vec.csv")
-    :param doc_save_filename: path of .txt file to save documents in vector format. Only relevant if save=True
+    :param doc_save_filename: path of .csv file to save documents in vector format. Only relevant if save=True.
     (default: "Generated Files/doc2vec.csv")
+    :param doc_word_save_filename: path of .csv file to map documents and contained words using ids.
+    (default: "Generated Files/doc2word.csv")
+    :param doc_word_matrix_save_filename: path of the .npz file which contains the Count Vectorization matrix.
+    (default: "Generated Files/count_vec_matrix.npz")
     :param word_minimum_count: minimum amount a word must be used in the document set to be considered viable
     (default: 20).
     :param word_maximum_doc_percent: maximum percentage of documents that may contain a word for it to be considered
@@ -73,15 +79,16 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     mini_corpus = find_indexes(words, mini_corpus)
 
     if save:
-        print('Step 6: saving word and document lookup files.')
+        print('Step 6: saving files.')
         save_vector_file(word_save_filename, words.keys())
         save_vector_file(doc_save_filename, documents.keys())
-        save_vector_file("Generated Files/doc2word.csv", mini_corpus)
+        save_vector_file(doc_word_save_filename, mini_corpus)
+        sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus, mini_corpus
 
 
-def find_indexes (dict, values):
+def find_indexes(dict, values):
     for i in tqdm(range(0, len(values))):
         list = []
         for j in values[i]:
