@@ -21,10 +21,11 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     (default: "Generated Files/word2vec.csv")
     :param doc_save_filename: path of .txt file to save documents in vector format. Only relevant if save=True
     (default: "Generated Files/doc2vec.csv")
-    :param word_minimum_count: minimum amount of words for a document to be viable (default: 20).
+    :param word_minimum_count: minimum amount a word must be used in the document set to be considered viable
+    (default: 20).
     :param word_maximum_doc_percent: maximum percentage of documents that may contain a word for it to be considered
     viable (default: 0.25)
-    :param doc_minimum_length: minimum amount a word must be used in the documents to be considered viable.
+    :param doc_minimum_length: minimum amount of words for a document to be viable (default: 20).
     :param save: boolean indicating whether to save words and document files.
     :param word_check: boolean indicating whether to check words against word databases.
     Can be very slow when using new dataset, but is saved locally afterwards.
