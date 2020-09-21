@@ -5,7 +5,7 @@ import networkx as net
 from gensim.models import LdaModel
 
 from LDA.lda import get_document_topics_from_model
-from preprocessing import load_document_file
+from preprocessing import load_document_file, preprocess
 
 
 def similarity_between_documents(d1: Dict[int, float], d2: Dict[int, float], num_of_topics: int):
@@ -29,7 +29,7 @@ def construct_transistion_probability_matrix(graph: net.Graph) -> np.ndarray:
 
 
 def document_graph(path_to_file: str) -> net.graph:
-    documents = list(load_document_file(path_to_file).values())[:100]
+    documents = preprocess(path_to_file)
     lda_model = LdaModel.load("LDA/model/docu_model")
 
     documents_topics = [get_document_topics_from_model(lda_model, x) for x in documents]
