@@ -88,10 +88,8 @@ def save_vector_file(filename, content):
     """
     print('Saving file "' + filename + '".')
     with open(filename, "w") as file:
-        id_counter = 0
-        for c in content:
-            file.write(str(id_counter) + ", " + str(c) + '\n')
-            id_counter += 1
+        for i, c in content:
+            file.write(str(i) + ", " + str(c) + '\n')
     print('"' + filename + '" has been saved.')
 
 
