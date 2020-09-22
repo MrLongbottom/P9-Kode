@@ -1,21 +1,14 @@
-import math
+import ast
+import json
 from multiprocessing import Pool
 from typing import Dict, List
 
-import h5py as h5py
-import numpy as np
 import networkx as net
-import sklearn
+import numpy as np
+import scipy.sparse as sp
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
 from tqdm import tqdm
-import itertools
-import json
-import scipy.sparse as sp
-import ast
-
-from database import HDF5Store
-from preprocessing import load_document_file, preprocess
 
 
 def similarity_between_documents(d1: Dict[int, float], d2: Dict[int, float]):
