@@ -60,34 +60,41 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]]):
     return sp.save_npz("Generated Files/topic_doc_matrix", sp.csc_matrix(matrix))
 
 
-def document_graph(document_topics=None) -> net.graph:
+def document_graph(document_topics=None):
     if document_topics is None:
         document_topics = load_document_topics("document_topics.json")
 
-    doc_sim_matrix = sp.dok_matrix((len(document_topics), len(document_topics)))
-    for index, document in tqdm(enumerate(document_topics)):
+    for index in tqdm(range(len(document_topics))):
+        doc_sim_vector = np.zeros(len(document_topics))
         for second_index in range(index):
             sim = similarity_between_documents(document_topics[index], document_topics[second_index])
-            doc_sim_matrix[index, second_index] = sim
-    sp.save_npz("Generated Files/doc_sim_matrix", doc_sim_matrix)
-    return doc_sim_matrix
+            doc_sim_vector[second_index] = sim
+        results['data'][index] = doc_sim_vector
 
 
-def parallel(index, document):
+def parallel(index):
+    doc_sim_vector = np.zeros(len(document_topics))
     for second_index in range(index):
         sim = similarity_between_documents(document_topics[index], document_topics[second_index])
-        doc_sim_matrix[index, second_index] = sim
+        doc_sim_vector[second_index] = sim
+    results['data'][index] = doc_sim_vector
 
 
 def parallel_doc_sim_matrix(document_topics):
     with Pool(8) as p:
-        p.starmap(parallel, [x for x in enumerate(document_topics)])
+        p.map(parallel, range(len(document_topics)))
 
 
 if __name__ == '__main__':
     # Loading stuff
     document_topics = load_document_topics("document_topics.json")
     lda_model = LdaModel.load("LDA/model/docu_model")
-    doc_sim_matrix = sp.dok_matrix((len(document_topics), len(document_topics)))
 
-    parallel_doc_sim_matrix(document_topics)
+    import h5py
+
+    hdf5_store = h5py.File("./doc_sim_matrix.hdf5", "a")
+    res = hdf5_store.create_dataset("data", (len(document_topics), len(document_topics)), compression="gzip")
+
+    results = h5py.File('doc_sim_matrix.hdf5', 'a')
+
+    document_graph(document_topics)
