@@ -9,8 +9,6 @@ from tqdm import tqdm
 from nltk.corpus import stopwords
 from wiktionaryparser import WiktionaryParser
 
-nltk.download('stopwords')
-
 
 def preprocess(load_filename="documents.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
@@ -47,6 +45,7 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
     print('Step 2: stop words and word frequency.')
+    nltk.download('stopwords')
     stop_words = stopwords.words('danish')
     cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
     cv.fit(corpus)
