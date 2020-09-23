@@ -3,21 +3,18 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
-import scipy.sparse as sp
-from scipy.stats import entropy
 import numpy as np
+import pandas as pd
+import scipy.sparse as sp
+import seaborn as sb
 from gensim import matutils
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel, LdaMulticore
 from gensim.test.utils import datapath
-from scipy.sparse import csr_matrix
-from sklearn.feature_extraction.text import CountVectorizer
-from tqdm import tqdm
-import seaborn as sb
 from matplotlib import pyplot as plt
-import pandas as pd
-
-from preprocessing import load_word_files
+from scipy.sparse import csr_matrix
+from scipy.stats import entropy
+from tqdm import tqdm
 
 
 def fit_lda(data: csr_matrix, vocab: Dict):
@@ -30,33 +27,33 @@ def fit_lda(data: csr_matrix, vocab: Dict):
     print('fitting lda...')
     return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
                         id2word=vocab,
-                        num_topics=math.floor(math.sqrt(data.shape[1])/2))
+                        num_topics=math.floor(math.sqrt(data.shape[1]) / 2))
 
 
 def save_lda(lda: LdaModel, path: str):
     # Save model to disk.
-    temp_file = datapath(path)
-    lda.save(temp_file)
+    lda.save(path)
 
 
 def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(lda: LdaModel, corpus: List[str]) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
     :return: a topic_document matrix
     """
     document_topics = []
+    par = partial(get_document_topics_from_model, lda=lda)
     with Pool(8) as p:
-        document_topics.append(p.map(partial(get_document_topics_from_model, lda=lda), corpus))
-    matrix = save_topic_doc_matrix(document_topics[0])
+        document_topics.append(p.map(par, corpus))
+    matrix = save_topic_doc_matrix(document_topics[0], lda)
     return matrix
 
 
-def get_document_topics_from_model(lda: LdaModel, text: str) -> Dict[int, float]:
+def get_document_topics_from_model(text: str, lda: LdaModel) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
@@ -70,13 +67,13 @@ def get_document_topics_from_model(lda: LdaModel, text: str) -> Dict[int, float]
     return dict([x for x in query][0])
 
 
-def save_topic_doc_matrix(document_topics: List[Dict[int, float]]) -> sp.dok_matrix:
+def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel) -> sp.dok_matrix:
     """
     Saves the document topics (list of dicts) in a matrix
     :param document_topics: list of dicts
     :return: a matrix (scipy)
     """
-    matrix = sp.dok_matrix((len(document_topics), lda_model.num_topics))
+    matrix = sp.dok_matrix((len(document_topics), lda.num_topics))
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
@@ -138,7 +135,7 @@ def run_lda(path: str, cv_matrix, words, corpus):
 
     # saving document topics to file
     print("creating document topics file")
-    create_document_topics(lda,corpus)
+    create_document_topics(corpus, lda)
 
     return lda
 

@@ -7,7 +7,8 @@ if __name__ == '__main__':
     cv_matrix, words, corpus, mini_corpus = preprocess("documents.json")
 
     # Run LDA
-    run_lda(path="./model_test",
+
+    run_lda(path="LDA/model/test_model",
             cv_matrix=cv_matrix,
             words=words,
             corpus=corpus)
