@@ -1,11 +1,14 @@
 from multiprocessing import Pool
 from typing import Dict, List
-
+from preprocessing import preprocess
+import matplotlib.pyplot as plt
+import seaborn as sb
 import networkx as net
 import scipy.sparse as sp
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
 from tqdm import tqdm
+from scipy.stats import entropy
 
 from preprocessing import preprocess
 
@@ -83,6 +86,24 @@ def document_similarity_matrix(matrix) -> net.graph:
 # def parallel_doc_sim_matrix(document_topics):
 #     with Pool(8) as p:
 #         p.starmap(parallel, [x for x in enumerate(document_topics)])
+
+
+def evaluate_topics(dtm):
+    lens = []
+    zeros = 0
+    for i in tqdm(range(0, dtm.shape[1])):
+        topic = dtm.getcol(i).nonzero()[0]
+        lens.append(len(topic))
+        if len(topic) == 0:
+            zeros += 1
+    print("Minimum: " + str(min(lens)))
+    print("Maximum: " + str(max(lens)))
+    print("Average: " + str(np.mean(lens)))
+    print("Entropy: " + str(entropy(lens, base=len(lens))))
+    print("Zeros: " + str(zeros))
+    sb.set_theme(style="whitegrid")
+    ax = sb.boxplot(x=lens)
+    plt.show()
 
 
 if __name__ == '__main__':
