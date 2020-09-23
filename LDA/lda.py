@@ -14,6 +14,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
 import seaborn as sb
 from matplotlib import pyplot as plt
+import pandas as pd
 
 from preprocessing import load_word_files
 
@@ -140,19 +141,17 @@ def run_lda(path: str, cv_matrix, words, mini_corpus):
     return lda
 
 
+def load_dict_file(path, seperator=','):
+    csv_reader = pd.read_csv(path, header=None, encoding='unicode_escape', sep=seperator)
+    test = dict(csv_reader.values.tolist())
+    return test
+
+
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'model_test'
     cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
-    words, mini_corpus = load_word_files(["../Generated Files/word2vec.csv", "../Generated Files/doc2word.csv"])
-
-    # Fitting the model and saving it
-    lda_model = fit_lda(cv, words)
-    save_lda(lda_model, model_path)
-
-    # Loading the model
-    # lda = load_lda(model_path)
-
-    # Saving Docs
-    doc_topic_matrix = create_document_topics(mini_corpus)
-    print("test")
+    words = load_dict_file("../Generated Files/word2vec.csv")
+    mini_corpus = load_dict_file("../Generated Files/doc2word.csv", seperator='-')
+    mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
+    run_lda('/model/', cv, words, mini_corpus)
