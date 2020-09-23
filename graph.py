@@ -19,7 +19,9 @@ def similarity_between_documents(d1: int, d2: int):
     :param d2: document 2
     :return: a similarity value between 0 and 1
     """
-    return sum([min(topic_doc_matrix.getrow(d1).toarray()[0][number], topic_doc_matrix.getrow(d2).toarray()[0][number]) for number in set(topic_doc_matrix.getrow(0).nonzero()[1]) & set(topic_doc_matrix.getrow(1).nonzero()[1])])
+    return sum(
+        [min(topic_doc_matrix.getrow(d1).toarray()[0][number], topic_doc_matrix.getrow(d2).toarray()[0][number]) for
+         number in set(topic_doc_matrix.getrow(0).nonzero()[1]) & set(topic_doc_matrix.getrow(1).nonzero()[1])])
 
 
 def create_document_topics(corpus: List[str]) -> sp.dok_matrix:
