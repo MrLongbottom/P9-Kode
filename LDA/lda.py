@@ -1,10 +1,14 @@
 import math
-from typing import Dict
+from multiprocessing import Pool
+from typing import Dict, List
 
+import scipy.sparse as sp
 from gensim import matutils
+from gensim.corpora import Dictionary
 from gensim.models import LdaModel, LdaMulticore
 from gensim.test.utils import datapath
 from scipy.sparse import csr_matrix
+from tqdm import tqdm
 
 from preprocessing import preprocess
 
@@ -30,6 +34,46 @@ def save_lda(lda: LdaModel, path: str):
 
 def load_lda(path: str):
     return LdaModel.load(path)
+
+
+def create_document_topics(corpus: List[str]) -> sp.dok_matrix:
+    """
+    Creates a topic_doc_matrix which describes the amount of topics in each document
+    :param corpus: list of document strings
+    :return: a topic_document matrix
+    """
+    document_topics = []
+    with Pool(8) as p:
+        document_topics.append(p.map(get_document_topics_from_model, corpus))
+    matrix = save_topic_doc_matrix(document_topics[0])
+    return matrix
+
+
+def get_document_topics_from_model(text: str) -> Dict[int, float]:
+    """
+    A method used concurrently in create_document_topics
+    :param text: a document string
+    :return: a dict with the topics in the given document based on the lda model
+    """
+    tokenized_text = [text.split(' ')]
+    dictionary = Dictionary(tokenized_text)
+    corpus = [dictionary.doc2bow(t) for t in tokenized_text]
+    query = lda.get_document_topics(corpus, minimum_probability=0.025)
+    return dict([x for x in query][0])
+
+
+def save_topic_doc_matrix(document_topics: List[Dict[int, float]]) -> sp.dok_matrix:
+    """
+    Saves the document topics (list of dicts) in a matrix
+    :param document_topics: list of dicts
+    :return: a matrix (scipy)
+    """
+    matrix = sp.dok_matrix((len(document_topics), lda_model.num_topics))
+    for index, dictionary in tqdm(enumerate(document_topics)):
+        for dict_key, dict_value in dictionary.items():
+            matrix[index, dict_key] = dict_value
+    sp.save_npz("Generated Files/topic_doc_matrix", sp.csc_matrix(matrix))
+    return matrix
 
 
 def word_cloud(corpus):
