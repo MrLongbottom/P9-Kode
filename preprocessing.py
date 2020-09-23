@@ -79,9 +79,9 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
 
     if save:
         print('Step 6: saving files.')
-        save_vector_file(word_save_filename, words.keys())
+        save_vector_file(word_save_filename, words.values())
         save_vector_file(doc_save_filename, documents.keys())
-        save_vector_file(doc_word_save_filename, mini_corpus)
+        save_vector_file(doc_word_save_filename, mini_corpus, seperator='-')
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus, mini_corpus
@@ -170,7 +170,7 @@ def filter_documents(documents, doc_minimum_length):
     return documents, corpus
 
 
-def save_vector_file(filename, content):
+def save_vector_file(filename, content, seperator=','):
     """
     Saves content of list as a vector in a file, similar to a Word2Vec document.
     :param filename: path of file to save.
@@ -180,7 +180,7 @@ def save_vector_file(filename, content):
     print('Saving file "' + filename + '".')
     with open(filename, "w") as file:
         for i, c in enumerate(content):
-            file.write(str(i) + ", " + str(c) + '\n')
+            file.write(str(i) + seperator + str(c) + '\n')
     print('"' + filename + '" has been saved.')
 
 
