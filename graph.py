@@ -45,24 +45,6 @@ def document_similarity_matrix(matrix) -> net.graph:
 #         p.starmap(parallel, [x for x in enumerate(document_topics)])
 
 
-def evaluate_topics(dtm):
-    lens = []
-    zeros = 0
-    for i in tqdm(range(0, dtm.shape[1])):
-        topic = dtm.getcol(i).nonzero()[0]
-        lens.append(len(topic))
-        if len(topic) == 0:
-            zeros += 1
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
-    sb.set_theme(style="whitegrid")
-    ax = sb.boxplot(x=lens)
-    plt.show()
-
-
 if __name__ == '__main__':
     # Loading stuff and initialisation
     topic_doc_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
