@@ -140,8 +140,8 @@ def run_lda(path: str, cv_matrix, words, corpus):
     return lda
 
 
-def load_dict_file(path, seperator=','):
-    csv_reader = pd.read_csv(path, header=None, encoding='unicode_escape', sep=seperator)
+def load_dict_file(path, separator=','):
+    csv_reader = pd.read_csv(path, header=None, encoding='unicode_escape', sep=separator)
     test = dict(csv_reader.values.tolist())
     return test
 
@@ -151,6 +151,7 @@ if __name__ == '__main__':
     model_path = 'model_test'
     cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
     words = load_dict_file("../Generated Files/word2vec.csv")
-    mini_corpus = load_dict_file("../Generated Files/doc2word.csv", seperator='-')
+    mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
+    mini_corpus = [[int(y) for y in x] for x in mini_corpus]
     run_lda('/model/', cv, words, mini_corpus)
