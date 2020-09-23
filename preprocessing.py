@@ -74,17 +74,17 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     """
 
     words = key_dictionizer(cv2.get_feature_names())
-    mini_corpus = cv2.inverse_transform(cv_matrix)
-    mini_corpus = find_indexes(words, mini_corpus)
+    words = {v: k for k, v in words.items()}
+    corpus = cv2.inverse_transform(cv_matrix)
 
     if save:
         print('Step 6: saving files.')
         save_vector_file(word_save_filename, words.values())
         save_vector_file(doc_save_filename, documents.keys())
-        save_vector_file(doc_word_save_filename, mini_corpus, seperator='-')
+        save_vector_file(doc_word_save_filename, corpus)
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
     print('Finished Preprocessing Procedure.')
-    return cv_matrix, words, corpus, mini_corpus
+    return cv_matrix, words, corpus
 
 
 def find_indexes(dict, values):
