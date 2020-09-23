@@ -1,31 +1,38 @@
 import json
 import re
 import nltk
-import csv
+import pandas as pd
+import scipy.sparse as sparse
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
 from nltk.corpus import stopwords
 from wiktionaryparser import WiktionaryParser
 
-nltk.download('stopwords')
-
 
 def preprocess(load_filename="documents.json", word_save_filename="Generated Files/word2vec.csv",
-               doc_save_filename="Generated Files/doc2vec.csv", word_minimum_count=20, word_maximum_doc_percent=0.25,
-               doc_minimum_length=20, save=True):
+               doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
+               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
+               doc_minimum_length=20, save=True, word_check=True):
     """
-    preprocesses a json file into a doc_word count matrix, removing unhelpful words and documents
-    :param load_filename: path of .json file to load (default: "documents.json")
-    :param word_save_filename: path of .txt file to save words in vector format. Only relevant if save=True
+    preprocesses a json file into a docword count vectorization matrix, removing unhelpful words and documents.
+    :param load_filename: path of .json file to load. (default: "documents.json")
+    :param word_save_filename: path of .csv file to save words in vector format. Only relevant if save=True.
     (default: "Generated Files/word2vec.csv")
-    :param doc_save_filename: path of .txt file to save documents in vector format. Only relevant if save=True
+    :param doc_save_filename: path of .csv file to save documents in vector format. Only relevant if save=True.
     (default: "Generated Files/doc2vec.csv")
-    :param word_minimum_count: minimum amount of words for a document to be viable (default: 20).
+    :param doc_word_save_filename: path of .csv file to map documents and contained words using ids.
+    (default: "Generated Files/doc2word.csv")
+    :param doc_word_matrix_save_filename: path of the .npz file which contains the Count Vectorization matrix.
+    (default: "Generated Files/count_vec_matrix.npz")
+    :param word_minimum_count: minimum amount a word must be used in the document set to be considered viable
+    (default: 20).
     :param word_maximum_doc_percent: maximum percentage of documents that may contain a word for it to be considered
     viable (default: 0.25)
-    :param doc_minimum_length: minimum amount a word must be used in the documents to be considered viable.
+    :param doc_minimum_length: minimum amount of words for a document to be viable (default: 20).
     :param save: boolean indicating whether to save words and document files.
+    :param word_check: boolean indicating whether to check words against word databases.
+    Can be very slow when using new dataset, but is saved locally afterwards.
     :return: csr-matrix (sparse matrix) containing word frequencies for each document.
     """
     print('Beginning Preprocessing Procedure.')
@@ -38,17 +45,19 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
     print('Step 2: stop words and word frequency.')
+    nltk.download('stopwords')
     stop_words = stopwords.words('danish')
     cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
     cv.fit(corpus)
 
-    # cut off words that are not used in danish word databases or are wrong word type
-    print("Step 3: word databases and POS-tagging.")
-    words = cv.get_feature_names()
-    words = word_checker(words)
+    words = key_dictionizer(cv.get_feature_names())
+    if word_check:
+        # cut off words that are not used in danish word databases or are wrong word type
+        print("Step 3: word databases and POS-tagging.")
+        words = word_checker(words)
 
     # filter documents to remove docs that now contain too few words (after all the word filtering)
-    print("Step 4: refilter documents.")
+    print("Step 4: re-filter documents.")
     corpus = refilter_docs(words, corpus, doc_minimum_length)
 
     # transform documents into a matrix containing counts for each word in each document
@@ -64,12 +73,51 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     tfidf_matrix = tf.fit_transform(cv_matrix)
     """
 
+    words = key_dictionizer(cv2.get_feature_names())
+    mini_corpus = cv2.inverse_transform(cv_matrix)
+    mini_corpus = find_indexes(words, mini_corpus)
+
     if save:
-        print('Step 6: saving word and document lookup files.')
-        save_vector_file(word_save_filename, words)
+        print('Step 6: saving files.')
+        save_vector_file(word_save_filename, words.keys())
         save_vector_file(doc_save_filename, documents.keys())
+        save_vector_file(doc_word_save_filename, mini_corpus)
+        sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
     print('Finished Preprocessing Procedure.')
-    return cv_matrix, words, corpus
+    return cv_matrix, words, corpus, mini_corpus
+
+
+def find_indexes(dict, values):
+    for i in tqdm(range(0, len(values))):
+        list = []
+        for j in values[i]:
+            list.append(dict[j])
+        values[i] = list
+    return values
+
+def key_dictionizer(keys):
+    dict = {}
+    count = 0
+    for key in keys:
+        dict[key] = count
+        count += 1
+    return dict
+
+
+# TODO make faster. (how fast? sonic fast!)
+def cut_corpus(corpus, words):
+    cut = []
+    words_dict = {}
+    for word in tqdm(words):
+        words_dict[word] = 0
+    for doc in tqdm(corpus):
+        sen = []
+        for word in doc.split(" "):
+            if word in words_dict:
+                sen.append(word)
+        if len(sen) != 0:
+            cut.append(sen)
+    return cut
 
 
 def refilter_docs(words, corpus, doc_minimum_length):
@@ -86,7 +134,7 @@ def refilter_docs(words, corpus, doc_minimum_length):
                     break
         if count < doc_minimum_length:
             empty_docs.append(doc)
-    print("removed " + str(len(empty_docs)) + " docs, " + str(len(corpus) -len(empty_docs)) + " remaining.")
+    print("removed " + str(len(empty_docs)) + " docs, " + str(len(corpus) - len(empty_docs)) + " remaining.")
     return [x for x in corpus if x not in empty_docs]
 
 
@@ -131,10 +179,8 @@ def save_vector_file(filename, content):
     """
     print('Saving file "' + filename + '".')
     with open(filename, "w") as file:
-        id_counter = 0
-        for c in content:
-            file.write(str(id_counter) + ", " + str(c) + '\n')
-            id_counter += 1
+        for i, c in enumerate(content):
+            file.write(str(i) + ", " + str(c) + '\n')
     print('"' + filename + '" has been saved.')
 
 
@@ -149,7 +195,7 @@ def csv_append(filename, content, index=0):
     with open(filename, "a") as file:
         id_counter = index
         for c in content:
-            file.write(str(id_counter) + ", " + str(c) + '\n')
+            file.write(str(id_counter) + "," + str(c) + '\n')
             id_counter += 1
     print('"' + filename + '" has been saved.')
 
@@ -176,12 +222,8 @@ def new_word_db_fetch(words, wik_word_index=0, wik_nonword_index=0):
 def load_word_files(filenames):
     files = []
     for filename in filenames:
-        with open(filename, 'r') as file:
-            csv_reader = csv.reader(file)
-            content = []
-            for row in csv_reader:
-                content.append(row[1][1:])
-            files.append(content)
+        csv_df = pd.read_csv(filename, header=None, encoding='unicode_escape')
+        files.append(list(csv_df[1]))
     return files
 
 
@@ -196,7 +238,7 @@ def word_checker(words):
     if len(wik_remain_words) != 0:
         print("New words encountered, fetching data.")
         new_words, new_nonwords = new_word_db_fetch(wik_remain_words,
-                                                    wik_word_index=len(wik_words), wik_nonword_index= len(wik_nonwords))
+                                                    wik_word_index=len(wik_words), wik_nonword_index=len(wik_nonwords))
         wik_words.extend(new_words)
 
     # Test how many databases contain the given words
