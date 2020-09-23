@@ -1,4 +1,5 @@
 import math
+from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
@@ -42,7 +43,7 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str]) -> sp.dok_matrix:
+def create_document_topics(lda: LdaModel, corpus: List[str]) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
@@ -50,14 +51,15 @@ def create_document_topics(corpus: List[str]) -> sp.dok_matrix:
     """
     document_topics = []
     with Pool(8) as p:
-        document_topics.append(p.map(get_document_topics_from_model, corpus))
+        document_topics.append(p.map(partial(get_document_topics_from_model, lda=lda), corpus))
     matrix = save_topic_doc_matrix(document_topics[0])
     return matrix
 
 
-def get_document_topics_from_model(text: str) -> Dict[int, float]:
+def get_document_topics_from_model(lda: LdaModel, text: str) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
+    :param lda: the lda model
     :param text: a document string
     :return: a dict with the topics in the given document based on the lda model
     """
@@ -129,14 +131,14 @@ def evaluate_doc_topic_distributions(dtm):
     print("Zeros: " + str(zeros))
 
 
-def run_lda(path: str, cv_matrix, words, mini_corpus):
+def run_lda(path: str, cv_matrix, words, corpus):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
     save_lda(lda, path)
 
     # saving document topics to file
     print("creating document topics file")
-    create_document_topics(mini_corpus)
+    create_document_topics(lda,corpus)
 
     return lda
 

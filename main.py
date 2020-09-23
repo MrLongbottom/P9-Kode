@@ -7,10 +7,10 @@ if __name__ == '__main__':
     cv_matrix, words, corpus, mini_corpus = preprocess("documents.json")
 
     # Run LDA
-    run_lda(path="model_test",
+    run_lda(path="./model_test",
             cv_matrix=cv_matrix,
             words=words,
-            mini_corpus=mini_corpus)
+            corpus=corpus)
 
     # Make Graph
     # graph()
