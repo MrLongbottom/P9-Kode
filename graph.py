@@ -21,7 +21,7 @@ def similarity_between_documents(d1: Dict[int, float], d2: Dict[int, float]):
 def load_document_topics(path: str):
     with open(path, 'r') as file:
         document_topics = json.load(file)
-    return [ast.literal_eval(x) for x in document_topics]
+    return [ast.literal_eval(x) for x in document_topics][0]
 
 
 def create_document_topics(corpus: List[str]):
@@ -29,7 +29,7 @@ def create_document_topics(corpus: List[str]):
     with Pool(8) as p:
         document_topics.append(p.map(get_document_topics_from_model, corpus))
     with open('document_topics.json', 'w') as file:
-        json.dump(str(document_topics), file)
+        json.dump([str(document_topics[0])], file)
     return document_topics
 
 
@@ -78,12 +78,13 @@ def document_graph(document_topics=None) -> net.graph:
 
 
 if __name__ == '__main__':
-    # Loading stuff
+    # Loading stuff and initialisation
     # document_topics = load_document_topics("document_topics.json")
-    lda_model = LdaModel.load("LDA/model/docu_model")
     # doc_sim_matrix = sp.dok_matrix((len(document_topics), len(document_topics)))
-    documents = preprocess('documents.json')
-    create_document_topics(documents[2])
-    load_document_topics('document_topics.json')
+    lda_model = LdaModel.load("LDA/model/docu_model")
 
+    # documents = preprocess('documents.json')
+    # create_document_topics(documents[2])
+    documet_topics = load_document_topics('document_topics.json')
+    print("hello")
     # parallel_doc_sim_matrix(document_topics)
