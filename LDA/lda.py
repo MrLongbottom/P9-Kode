@@ -28,7 +28,7 @@ def fit_lda(data: csr_matrix, vocab: Dict):
     print('fitting lda...')
     return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
                         id2word=vocab,
-                        num_topics=math.floor(math.sqrt(data.shape[1])))
+                        num_topics=math.floor(math.sqrt(data.shape[1])/2))
 
 
 def save_lda(lda: LdaModel, path: str):
@@ -77,7 +77,7 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]]) -> sp.dok_mat
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
-    sp.save_npz("Generated Files/topic_doc_matrix", sp.csc_matrix(matrix))
+    sp.save_npz("Generated Files/test_topic_doc_matrix", sp.csc_matrix(matrix))
     return matrix
 
 
@@ -131,7 +131,7 @@ def evaluate_doc_topic_distributions(dtm):
 def run_lda(path: str, cv_matrix, words, mini_corpus):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
-    save_lda(lda_model, model_path)
+    save_lda(lda, path)
 
     # saving document topics to file
     print("creating document topics file")
