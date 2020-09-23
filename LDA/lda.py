@@ -14,7 +14,7 @@ from tqdm import tqdm
 import seaborn as sb
 from matplotlib import pyplot as plt
 
-from preprocessing import preprocess
+from preprocessing import load_word_files
 
 
 def fit_lda(data: csr_matrix, vocab: Dict):
@@ -128,14 +128,20 @@ def evaluate_doc_topic_distributions(dtm):
 
 
 if __name__ == '__main__':
+
     # Loading data and preprocessing
-    model_path = '/home/simba/Documents/P9/P9-Kode/LDA/model/model_18'
-    data, cv = preprocess('2018_data.json')
-    vocab = dict([(i, s) for i, s in enumerate(cv.get_feature_names())])
+    model_path = 'model_test'
+    cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
+    words, mini_corpus = load_word_files(["../Generated Files/word2vec.csv", "../Generated Files/doc2word.csv"])
 
     # Fitting the model and saving it
-    lda_model = fit_lda(data, vocab)
+    lda_model = fit_lda(cv, words)
     save_lda(lda_model, model_path)
 
     # Loading the model
-    lda = load_lda(model_path)
+    #lda = load_lda(model_path)
+
+    # Saving Docs
+    doc_topic_matrix = create_document_topics(mini_corpus)
+    print("test")
+

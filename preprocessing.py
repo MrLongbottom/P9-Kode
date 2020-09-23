@@ -76,6 +76,7 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     words = key_dictionizer(cv2.get_feature_names())
     mini_corpus = cv2.inverse_transform(cv_matrix)
     mini_corpus = find_indexes(words, mini_corpus)
+    words = {v: k for k, v in words.items()}
 
     if save:
         print('Step 6: saving files.')
