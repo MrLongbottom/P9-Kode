@@ -154,4 +154,5 @@ if __name__ == '__main__':
     words = load_dict_file("../Generated Files/word2vec.csv")
     mini_corpus = load_dict_file("../Generated Files/doc2word.csv", seperator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
+    mini_corpus = [[int(y) for y in x] for x in mini_corpus]
     run_lda('/model/', cv, words, mini_corpus)
