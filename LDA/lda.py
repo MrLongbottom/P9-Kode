@@ -3,12 +3,16 @@ from multiprocessing import Pool
 from typing import Dict, List
 
 import scipy.sparse as sp
+from scipy.stats import entropy
+import numpy as np
 from gensim import matutils
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel, LdaMulticore
 from gensim.test.utils import datapath
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
+import seaborn as sb
+from matplotlib import pyplot as plt
 
 from preprocessing import preprocess
 
@@ -87,6 +91,40 @@ def word_cloud(corpus):
     wordcloud.generate(long_string)
     # Visualize the word cloud
     wordcloud.to_image().show()
+
+
+def evaluate_doc_topic_distributions(dtm):
+    lens = []
+    zeros = 0
+    for i in tqdm(range(0, dtm.shape[1])):
+        topic = dtm.getcol(i).nonzero()[0]
+        lens.append(len(topic))
+        if len(topic) == 0:
+            zeros += 1
+    print("Topic-Doc distributions.")
+    print("Minimum: " + str(min(lens)))
+    print("Maximum: " + str(max(lens)))
+    print("Average: " + str(np.mean(lens)))
+    print("Entropy: " + str(entropy(lens, base=len(lens))))
+    print("Zeros: " + str(zeros))
+
+    sb.set_theme(style="whitegrid")
+    ax = sb.boxplot(x=lens)
+    plt.show()
+
+    lens = []
+    zeros = 0
+    for i in tqdm(range(0, dtm.shape[0])):
+        topic = dtm.getrow(i).nonzero()[0]
+        lens.append(len(topic))
+        if len(topic) == 0:
+            zeros += 1
+    print("Doc-Topic distributions.")
+    print("Minimum: " + str(min(lens)))
+    print("Maximum: " + str(max(lens)))
+    print("Average: " + str(np.mean(lens)))
+    print("Entropy: " + str(entropy(lens, base=len(lens))))
+    print("Zeros: " + str(zeros))
 
 
 if __name__ == '__main__':
