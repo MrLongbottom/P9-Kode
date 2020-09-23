@@ -10,6 +10,7 @@ from gensim.corpora import Dictionary
 from gensim.models import LdaModel, LdaMulticore
 from gensim.test.utils import datapath
 from scipy.sparse import csr_matrix
+from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
 import seaborn as sb
 from matplotlib import pyplot as plt
@@ -127,8 +128,19 @@ def evaluate_doc_topic_distributions(dtm):
     print("Zeros: " + str(zeros))
 
 
-if __name__ == '__main__':
+def run_lda(path: str, cv_matrix, words, mini_corpus):
+    # fitting the lda model and saving it
+    lda = fit_lda(cv_matrix, words)
+    save_lda(lda_model, model_path)
 
+    # saving document topics to file
+    print("creating document topics file")
+    create_document_topics(mini_corpus)
+
+    return lda
+
+
+if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'model_test'
     cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
@@ -139,9 +151,8 @@ if __name__ == '__main__':
     save_lda(lda_model, model_path)
 
     # Loading the model
-    #lda = load_lda(model_path)
+    # lda = load_lda(model_path)
 
     # Saving Docs
     doc_topic_matrix = create_document_topics(mini_corpus)
     print("test")
-
