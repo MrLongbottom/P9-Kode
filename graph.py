@@ -83,8 +83,8 @@ def document_graph(document_topics=None) -> net.graph:
 def evaluate_topics(dtm):
     lens = []
     zeros = 0
-    for i in tqdm(range(0, document_topic_matrix.shape[1])):
-        topic = document_topic_matrix.getcol(i).nonzero()[0]
+    for i in tqdm(range(0, dtm.shape[1])):
+        topic = dtm.getcol(i).nonzero()[0]
         lens.append(len(topic))
         if len(topic) == 0:
             zeros += 1
