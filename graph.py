@@ -1,16 +1,15 @@
 from multiprocessing import Pool
 from typing import Dict, List
-from preprocessing import preprocess
+
 import matplotlib.pyplot as plt
-import seaborn as sb
 import networkx as net
+import numpy as np
 import scipy.sparse as sp
+import seaborn as sb
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
-from tqdm import tqdm
 from scipy.stats import entropy
-
-from preprocessing import preprocess
+from tqdm import tqdm
 
 
 def similarity_between_documents(d1: int, d2: int):
@@ -23,7 +22,7 @@ def similarity_between_documents(d1: int, d2: int):
     return sum([min(topic_doc_matrix.getrow(d1).toarray()[0][number], topic_doc_matrix.getrow(d2).toarray()[0][number]) for number in set(topic_doc_matrix.getrow(0).nonzero()[1]) & set(topic_doc_matrix.getrow(1).nonzero()[1])])
 
 
-def create_document_topics(corpus: List[str]):
+def create_document_topics(corpus: List[str]) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
@@ -36,7 +35,7 @@ def create_document_topics(corpus: List[str]):
     return matrix
 
 
-def get_document_topics_from_model(text: str):
+def get_document_topics_from_model(text: str) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param text: a document string
@@ -49,7 +48,7 @@ def get_document_topics_from_model(text: str):
     return dict([x for x in query][0])
 
 
-def save_topic_doc_matrix(document_topics: List[Dict[int, float]]):
+def save_topic_doc_matrix(document_topics: List[Dict[int, float]]) -> sp.dok_matrix:
     """
     Saves the document topics (list of dicts) in a matrix
     :param document_topics: list of dicts
