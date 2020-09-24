@@ -73,8 +73,9 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     tfidf_matrix = tf.fit_transform(cv_matrix)
     """
 
-    words = key_dictionizer(cv2.get_feature_names())
-    words = {v: k for k, v in words.items()}
+    # Get new word dict (without the cut words)
+    words = value_dictionizer(cv2.get_feature_names())
+    # Get new corpus (without the cut words)
     corpus = cv2.inverse_transform(cv_matrix)
     corpus = [list(x) for x in corpus]
 
@@ -96,16 +97,22 @@ def find_indexes(dict, values):
         values[i] = list
     return values
 
+
 def key_dictionizer(keys):
     dict = {}
-    count = 0
-    for key in keys:
-        dict[key] = count
-        count += 1
+    for id, key in enumerate(keys):
+        dict[key] = id
     return dict
 
 
-# TODO make faster. (how fast? sonic fast!)
+def value_dictionizer(values):
+    dict = {}
+    for id, value in enumerate(values):
+        dict[id] = value
+    return dict
+
+
+# TODO make faster? (how fast? sonic fast!)
 def cut_corpus(corpus, words):
     cut = []
     words_dict = {}
