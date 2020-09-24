@@ -83,11 +83,10 @@ def word_cloud(corpus):
     # Import the wordcloud library
     from wordcloud import WordCloud
     # Join the different processed titles together.
-    long_string = ','.join(corpus)
     # Create a WordCloud object
     wordcloud = WordCloud(background_color="white", max_words=5000, contour_width=3, contour_color='steelblue')
     # Generate a word cloud
-    wordcloud.generate(long_string)
+    wordcloud.generate(str(corpus))
     # Visualize the word cloud
     wordcloud.to_image().show()
 
