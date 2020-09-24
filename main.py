@@ -4,7 +4,7 @@ from preprocessing import preprocess
 if __name__ == '__main__':
     # Setup pipeline for the project
     # Preprocess
-    cv_matrix, words, corpus, mini_corpus = preprocess("documents.json")
+    cv_matrix, words, corpus = preprocess("documents.json")
 
     # Run LDA
 
@@ -15,4 +15,3 @@ if __name__ == '__main__':
 
     # Make Graph
     # graph()
-

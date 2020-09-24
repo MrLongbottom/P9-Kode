@@ -10,7 +10,6 @@ import seaborn as sb
 from gensim import matutils
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel, LdaMulticore
-from gensim.test.utils import datapath
 from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
 from scipy.stats import entropy
@@ -60,9 +59,8 @@ def get_document_topics_from_model(text: str, lda: LdaModel) -> Dict[int, float]
     :param text: a document string
     :return: a dict with the topics in the given document based on the lda model
     """
-    tokenized_text = [text.split(' ')]
-    dictionary = Dictionary(tokenized_text)
-    corpus = [dictionary.doc2bow(t) for t in tokenized_text]
+    dictionary = Dictionary([text])
+    corpus = [dictionary.doc2bow(t) for t in [text]]
     query = lda.get_document_topics(corpus, minimum_probability=0.025)
     return dict([x for x in query][0])
 
