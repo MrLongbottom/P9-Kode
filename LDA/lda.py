@@ -144,7 +144,7 @@ def load_dict_file(path, separator=','):
 
 
 def print_topic_words(id: int, lda_model: LdaModel):
-    return dict(lda_model.show_topics())[id]
+    return dict(lda_model.show_topics(lda_model.num_topics))[id]
 
 
 if __name__ == '__main__':
