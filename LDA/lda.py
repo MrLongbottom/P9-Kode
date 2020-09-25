@@ -143,6 +143,10 @@ def load_dict_file(path, separator=','):
     return test
 
 
+def print_topic_words(id: int, lda_model: LdaModel):
+    return dict(lda_model.show_topics())[id]
+
+
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'model_test'
