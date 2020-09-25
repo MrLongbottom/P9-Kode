@@ -103,8 +103,15 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
 
 
 def stem_lem(corpus, words):
+    """
+    Updates a word list and a corpus to use stemmed words.
+    :param corpus: a list of sentences (strings of words separated by spaces)
+    :param words: a list of words
+    :return: new corpus and words list
+    """
     # Stemming
     stemmer = DanishStemmer()
+    # Update word list to use stemmed words
     translator = {}
     add = []
     remove = []
@@ -120,6 +127,7 @@ def stem_lem(corpus, words):
     words = [x for x in words if x not in remove]
     words.extend([x for x in add if x not in words])
 
+    # update corpus to use stemmed words
     for x in tqdm(range(len(corpus))):
         sen = corpus[x]
         sentence = sen.split(' ')
