@@ -100,7 +100,6 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
         print("Entropy: " + str(entropy(lens, base=len(lens))))
         print("Zeros: " + str(len(zeros)))
 
-    ax = sb.boxplot(x=lens)
     if prune:
         outlier_nums = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
         outliers = [lens.index(x) for x in outlier_nums]
@@ -108,6 +107,7 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
         outliers = list(set(outliers))
         dtm = slice_sparse_col(dtm, outliers)
     if show:
+        ax = sb.boxplot(x=lens)
         plt.show()
 
     # Doc-Topic
