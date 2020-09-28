@@ -69,7 +69,6 @@ def document_sim_matrix_par(td_matrix, doc_id):
     print(f"Doc: {doc_id} Skipped: {skips}")
     return sim_dict
 
-
 # def parallel(index, document):
 #     for second_index in range(index):
 #         sim = similarity_between_documents(document_topics[index], document_topics[second_index])
