@@ -6,9 +6,11 @@ import networkx as net
 import numpy as np
 import scipy.sparse as sp
 import seaborn as sb
+import pandas as pd
 from gensim.models import LdaModel
 from scipy.stats import entropy
 from tqdm import tqdm
+from matplotlib.cbook import boxplot_stats
 
 
 def similarity_between_documents(d1: int, d2: int):
@@ -80,9 +82,61 @@ def document_sim_matrix_par(td_matrix, doc_id):
 #         p.starmap(parallel, [x for x in enumerate(document_topics)])
 
 
+def evaluate_doc_topic_distributions(dtm):
+    sb.set_theme(style="whitegrid")
+    lens = []
+    zeros = 0
+    for i in tqdm(range(0, dtm.shape[1])):
+        topic = dtm.getcol(i).nonzero()[0]
+        lens.append(len(topic))
+        if len(topic) == 0:
+            zeros += 1
+    print("Topic-Doc distributions.")
+    print("Minimum: " + str(min(lens)))
+    print("Maximum: " + str(max(lens)))
+    print("Average: " + str(np.mean(lens)))
+    print("Entropy: " + str(entropy(lens, base=len(lens))))
+    print("Zeros: " + str(zeros))
+
+    ax = sb.boxplot(x=lens)
+    outlier_nums = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
+    outliers = [lens.index(x) for x in outlier_nums]
+    dtm = slice_sparse_col(dtm, outliers)
+    plt.show()
+
+    lens = []
+    zeros = 0
+    for i in tqdm(range(0, dtm.shape[0])):
+        topic = dtm.getrow(i).nonzero()[0]
+        lens.append(len(topic))
+        if len(topic) == 0:
+            zeros += 1
+    print("Doc-Topic distributions.")
+    print("Minimum: " + str(min(lens)))
+    print("Maximum: " + str(max(lens)))
+    print("Average: " + str(np.mean(lens)))
+    print("Entropy: " + str(entropy(lens, base=len(lens))))
+    print("Zeros: " + str(zeros))
+    return dtm
+
+
+def slice_sparse_col(M, col):
+    col.sort()
+    ms = []
+    prev = -1
+    for c in col:
+        ms.append(M[:, prev+1:c-1])
+        print(str(len(M.getcol(c).nonzero()[0])))
+        prev = c
+    ms.append(M[:, prev+1:])
+    return sp.hstack(ms)
+
+
 if __name__ == '__main__':
     # Loading stuff and initialisation
     topic_doc_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    topic_doc_matrix = evaluate_doc_topic_distributions(topic_doc_matrix)
+    evaluate_doc_topic_distributions(topic_doc_matrix)
     lda_model = LdaModel.load("LDA/model/docu_model")
     document_similarity_matrix_xyz(topic_doc_matrix)
     # documents = preprocess('documents.json')
