@@ -82,41 +82,56 @@ def document_sim_matrix_par(td_matrix, doc_id):
 #         p.starmap(parallel, [x for x in enumerate(document_topics)])
 
 
-def evaluate_doc_topic_distributions(dtm):
+def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
     sb.set_theme(style="whitegrid")
+    # Topic-Doc
     lens = []
-    zeros = 0
+    zeros = []
     for i in tqdm(range(0, dtm.shape[1])):
         topic = dtm.getcol(i).nonzero()[0]
         lens.append(len(topic))
         if len(topic) == 0:
-            zeros += 1
-    print("Topic-Doc distributions.")
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
+            zeros.append(i)
+    if tell:
+        print("Topic-Doc distributions.")
+        print("Minimum: " + str(min(lens)))
+        print("Maximum: " + str(max(lens)))
+        print("Average: " + str(np.mean(lens)))
+        print("Entropy: " + str(entropy(lens, base=len(lens))))
+        print("Zeros: " + str(len(zeros)))
 
     ax = sb.boxplot(x=lens)
-    outlier_nums = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
-    outliers = [lens.index(x) for x in outlier_nums]
-    dtm = slice_sparse_col(dtm, outliers)
-    plt.show()
+    if prune:
+        outlier_nums = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
+        outliers = [lens.index(x) for x in outlier_nums]
+        outliers.extend(zeros)
+        outliers = list(set(outliers))
+        dtm = slice_sparse_col(dtm, outliers)
+    if show:
+        plt.show()
 
+    # Doc-Topic
     lens = []
-    zeros = 0
+    zeros = []
     for i in tqdm(range(0, dtm.shape[0])):
         topic = dtm.getrow(i).nonzero()[0]
         lens.append(len(topic))
         if len(topic) == 0:
-            zeros += 1
-    print("Doc-Topic distributions.")
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
+            zeros.append(i)
+    if tell:
+        print("Doc-Topic distributions.")
+        print("Minimum: " + str(min(lens)))
+        print("Maximum: " + str(max(lens)))
+        print("Average: " + str(np.mean(lens)))
+        print("Entropy: " + str(entropy(lens, base=len(lens))))
+        print("Zeros: " + str(len(zeros)))
+    if prune:
+        dtm = sp.csr_matrix(dtm)
+        dtm = slice_sparse_row(dtm, zeros)
+    if show:
+        ax = sb.boxplot(x=lens)
+        plt.show()
+
     return dtm
 
 
@@ -126,17 +141,27 @@ def slice_sparse_col(M, col):
     prev = -1
     for c in col:
         ms.append(M[:, prev+1:c-1])
-        print(str(len(M.getcol(c).nonzero()[0])))
         prev = c
     ms.append(M[:, prev+1:])
     return sp.hstack(ms)
+
+
+def slice_sparse_row(M, row):
+    row.sort()
+    ms = []
+    prev = -1
+    for r in row:
+        ms.append(M[prev+1:r-1, :])
+        prev = r
+    ms.append(M[prev+1:, :])
+    return sp.vstack(ms)
 
 
 if __name__ == '__main__':
     # Loading stuff and initialisation
     topic_doc_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
     topic_doc_matrix = evaluate_doc_topic_distributions(topic_doc_matrix)
-    evaluate_doc_topic_distributions(topic_doc_matrix)
+    evaluate_doc_topic_distributions(topic_doc_matrix, prune=False, show=False)
     lda_model = LdaModel.load("LDA/model/docu_model")
     document_similarity_matrix_xyz(topic_doc_matrix)
     # documents = preprocess('documents.json')
