@@ -51,17 +51,15 @@ def document_similarity_matrix_xyz(td_matrix):
                 skips += len1-len2
             Y = {x: topic[x].data[0] for x in docs_in_topic if doc_id <= x}
             x = topic[doc_id].data[0]
-            test = sum_similarity(x, Y)
-            for key, val in test.items():
+            mini_sim = sum_similarity(x, Y)
+            for key, val in mini_sim.items():
                 sim[doc_id, key] = sim.get((doc_id, key), 0) + val
         print("\nSkipped: " + str(skips))
     return sim
 
-def sum_similarity (x, Y):
-    dict = {}
-    for id, y in Y.items():
-        dict[id] = min(x, y)
-    return dict
+
+def sum_similarity(x, Y):
+    return {id: min(x, y) for id, y in Y.items()}
 
 # def parallel(index, document):
 #     for second_index in range(index):
