@@ -75,6 +75,8 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
+    matrix = evaluate_doc_topic_distributions(matrix)
+    evaluate_doc_topic_distributions(matrix, prune=False, show=False)
     sp.save_npz("Generated Files/test_topic_doc_matrix", sp.csc_matrix(matrix))
     return matrix
 
@@ -91,38 +93,79 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
-def evaluate_doc_topic_distributions(dtm):
+def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
+    sb.set_theme(style="whitegrid")
+    # Topic-Doc
     lens = []
-    zeros = 0
+    zeros = []
     for i in tqdm(range(0, dtm.shape[1])):
         topic = dtm.getcol(i).nonzero()[0]
         lens.append(len(topic))
         if len(topic) == 0:
-            zeros += 1
-    print("Topic-Doc distributions.")
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
+            zeros.append(i)
+    if tell:
+        print("Topic-Doc distributions.")
+        print("Minimum: " + str(min(lens)))
+        print("Maximum: " + str(max(lens)))
+        print("Average: " + str(np.mean(lens)))
+        print("Entropy: " + str(entropy(lens, base=len(lens))))
+        print("Zeros: " + str(len(zeros)))
 
-    sb.set_theme(style="whitegrid")
-    ax = sb.boxplot(x=lens)
-    plt.show()
+    if prune:
+        outlier_nums = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
+        outliers = [lens.index(x) for x in outlier_nums]
+        outliers.extend(zeros)
+        outliers = list(set(outliers))
+        dtm = slice_sparse_col(dtm, outliers)
+    if show:
+        ax = sb.boxplot(x=lens)
+        plt.show()
 
+    # Doc-Topic
     lens = []
-    zeros = 0
+    zeros = []
     for i in tqdm(range(0, dtm.shape[0])):
         topic = dtm.getrow(i).nonzero()[0]
         lens.append(len(topic))
         if len(topic) == 0:
-            zeros += 1
-    print("Doc-Topic distributions.")
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
+            zeros.append(i)
+    if tell:
+        print("Doc-Topic distributions.")
+        print("Minimum: " + str(min(lens)))
+        print("Maximum: " + str(max(lens)))
+        print("Average: " + str(np.mean(lens)))
+        print("Entropy: " + str(entropy(lens, base=len(lens))))
+        print("Zeros: " + str(len(zeros)))
+    if prune:
+        dtm = sp.csr_matrix(dtm)
+        dtm = slice_sparse_row(dtm, zeros)
+    if show:
+        ax = sb.boxplot(x=lens)
+        plt.show()
+
+    return dtm
+
+
+def slice_sparse_col(M, col):
+    col.sort()
+    ms = []
+    prev = -1
+    for c in col:
+        ms.append(M[:, prev+1:c-1])
+        prev = c
+    ms.append(M[:, prev+1:])
+    return sp.hstack(ms)
+
+
+def slice_sparse_row(M, row):
+    row.sort()
+    ms = []
+    prev = -1
+    for r in row:
+        ms.append(M[prev+1:r-1, :])
+        prev = r
+    ms.append(M[prev+1:, :])
+    return sp.vstack(ms)
 
 
 def run_lda(path: str, cv_matrix, words, corpus):
