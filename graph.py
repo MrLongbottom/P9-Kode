@@ -1,3 +1,6 @@
+from functools import partial
+from multiprocessing import Pool
+
 import matplotlib.pyplot as plt
 import networkx as net
 import numpy as np
@@ -36,32 +39,36 @@ def document_similarity_matrix(matrix) -> net.graph:
 
 def document_similarity_matrix_xyz(td_matrix):
     sim = {}
-    for doc_id in tqdm(range(td_matrix.shape[0])):
-        doc = td_matrix.getrow(doc_id)
-        topics_in_doc = doc.nonzero()[1]
-        skips = 0
-        for topic_id in topics_in_doc:
-            topic = td_matrix.getcol(topic_id)
-            docs_in_topic = topic.nonzero()[0]
-            len1 = len(docs_in_topic)
-            # filter docs that have already been done, .ie documents earlier in the loop
-            docs_in_topic = [x for x in docs_in_topic if doc_id <= x]
-            len2 = len(docs_in_topic)
-            if len1 != len2:
-                skips += len1-len2
-            Y = {x: topic[x].data[0] for x in docs_in_topic if doc_id <= x}
-            x = topic[doc_id].data[0]
-            test = sum_similarity(x, Y)
-            for key, val in test.items():
-                sim[doc_id, key] = sim.get((doc_id, key), 0) + val
-        print("\nSkipped: " + str(skips))
+    with Pool(8) as p:
+        doc_sim = p.map(partial(document_sim_matrix_par, td_matrix), range(td_matrix.shape[0]))
+        for dictionary in tqdm(doc_sim):
+            sim.update(dictionary)
+    sp.save_npz(sp.dok_matrix(sim), "/Generated Files/adj_matrix")
     return sim
 
-def sum_similarity (x, Y):
-    dict = {}
-    for id, y in Y.items():
-        dict[id] = min(x, y)
-    return dict
+
+def document_sim_matrix_par(td_matrix, doc_id):
+    doc = td_matrix.getrow(doc_id)
+    topics_in_doc = doc.nonzero()[1]
+    skips = 0
+    sim_dict = {}
+    for topic_id in topics_in_doc:
+        topic = td_matrix.getcol(topic_id)
+        docs_in_topic = topic.nonzero()[0]
+        len1 = len(docs_in_topic)
+        # filter docs that have already been done, .ie documents earlier in the loop
+        docs_in_topic = [x for x in docs_in_topic if doc_id <= x]
+        len2 = len(docs_in_topic)
+        if len1 != len2:
+            skips += len1 - len2
+        Y = {x: topic[x].data[0] for x in docs_in_topic if doc_id <= x}
+        x = topic[doc_id].data[0]
+        similarity_sum = {id: min(x, y) for id, y in Y.items()}
+        for key, val in similarity_sum.items():
+            sim_dict[doc_id, key] = sim_dict.get((doc_id, key), 0) + val
+    print(f"Doc: {doc_id} Skipped: {skips}")
+    return sim_dict
+
 
 # def parallel(index, document):
 #     for second_index in range(index):
