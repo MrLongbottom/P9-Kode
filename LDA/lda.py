@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
 from scipy.stats import entropy
 from tqdm import tqdm
+from matplotlib.cbook import boxplot_stats
 
 
 def fit_lda(data: csr_matrix, vocab: Dict):
@@ -95,7 +96,7 @@ def word_cloud(corpus):
 
 def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
     sb.set_theme(style="whitegrid")
-    # Topic-Doc
+    # Topic-Doc distributions
     lens = []
     zeros = []
     for i in tqdm(range(0, dtm.shape[1])):
@@ -112,8 +113,10 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
         print("Zeros: " + str(len(zeros)))
 
     if prune:
-        outlier_nums = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
-        outliers = [lens.index(x) for x in outlier_nums]
+        # find outlier topics based on the boxplot
+        outlier_values = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
+        outliers = [lens.index(x) for x in outlier_values]
+        # also prune topics with no documents
         outliers.extend(zeros)
         outliers = list(set(outliers))
         dtm = slice_sparse_col(dtm, outliers)
@@ -121,7 +124,7 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
         ax = sb.boxplot(x=lens)
         plt.show()
 
-    # Doc-Topic
+    # Doc-Topic distributions
     lens = []
     zeros = []
     for i in tqdm(range(0, dtm.shape[0])):
@@ -137,6 +140,7 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
         print("Entropy: " + str(entropy(lens, base=len(lens))))
         print("Zeros: " + str(len(zeros)))
     if prune:
+        # Prune documents with no topic distributions
         dtm = sp.csr_matrix(dtm)
         dtm = slice_sparse_row(dtm, zeros)
     if show:
