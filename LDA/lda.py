@@ -137,6 +137,14 @@ def run_lda(path: str, cv_matrix, words, corpus):
     return lda
 
 
+def save_topic_word_matrix(lda: LdaModel, name: str):
+    return sp.save_npz(lda.get_topics(), name)
+
+
+def get_topic_word_matrix(lda: LdaModel) -> np.ndarray:
+    return lda.get_topics()
+
+
 def load_dict_file(path, separator=','):
     csv_reader = pd.read_csv(path, header=None, encoding='unicode_escape', sep=separator)
     test = dict(csv_reader.values.tolist())
