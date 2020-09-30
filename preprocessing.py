@@ -40,18 +40,14 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     step = 1
     # load documents file
     print(f'Step {step}: loading documents.')
-    documents = load_document_file(load_filename)
+    documents = load_document_file(load_filename) if isinstance(load_filename, str) else load_filename
     # filter documents and create corpus
     documents, corpus = filter_documents(documents, doc_minimum_length)
 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
     step += 1
     print(f'Step {step}: stop words and word frequency.')
-    nltk.download('stopwords')
-    stop_words = stopwords.words('danish')
-    cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
-    cv.fit(corpus)
-    words = key_dictionizer(cv.get_feature_names())
+    words = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count)
 
     print(len(words))
     if word_check:
@@ -100,6 +96,38 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus
+
+
+def preprocess_query(query: str, word_check=True):
+    # cut off words that are used too often or too little (max/min document frequency) or are stop words
+    step = 1
+    print(f'Step {step}: stop words and word frequency.')
+    words = cut_off_words([query], 1.0, 1)
+
+    print(len(words))
+    if word_check:
+        # cut off words that are not used in danish word databases or are wrong word type
+        step += 1
+        print(f"Step {step}: word databases and POS-tagging.")
+        # TODO possibly replace with real POS tagging, rather than database checks.
+        words = word_checker(words)
+
+    # Stemming to combine word declensions
+    step += 1
+    print(f"Step {step}: Apply Stemming / Lemming")
+    corpus, words = stem_lem([query], words)
+
+    print('Finished Query Preprocessing.')
+    return words
+
+
+def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count):
+    nltk.download('stopwords')
+    stop_words = stopwords.words('danish')
+    cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
+    cv.fit(corpus)
+    words = key_dictionizer(cv.get_feature_names())
+    return words
 
 
 def stem_lem(corpus, words):
