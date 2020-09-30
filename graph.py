@@ -41,7 +41,7 @@ def document_similarity_matrix(matrix) -> net.graph:
 #
 
 
-def document_sim_matrix_par(td_matrix, doc_id):
+def document_similarity(td_matrix, doc_id):
     doc = td_matrix.getrow(doc_id)
     topics_in_doc = doc.nonzero()[1]
     skips = 0
@@ -64,17 +64,23 @@ def document_sim_matrix_par(td_matrix, doc_id):
     return sim_dict
 
 
+def document_chunk_similarity(td_matrix, chunk):
+    doc_sim = {}
+    for document_id in chunk:
+        doc_sim.update(document_similarity(td_matrix, document_id))
+    return doc_sim, chunk[0]
+
+
 def document_similarity_matrix_xyz(td_matrix, chunks):
-    for index, chunk in enumerate(chunks):
-        sim = {}
-        with Pool(8) as p:
-            doc_sim = p.map(partial(document_sim_matrix_par, td_matrix), chunk)
-        for dictionary in tqdm(doc_sim):
-            sim.update(dictionary)
-        dok = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
-        for (a, b), v in sim.items():
-            dok[a, b] = v
-        sp.save_npz(f"Generated Files/adj_matrix{index}", sp.csr_matrix(dok))
+    sim = {}
+    with Pool(8) as p:
+        doc_sim, name = p.map(partial(document_chunk_similarity, td_matrix), chunks)
+    for dictionary in tqdm(doc_sim):
+        sim.update(dictionary)
+    dok = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
+    for (a, b), v in sim.items():
+        dok[a, b] = v
+    sp.save_npz(f"Generated Files/adj_matrix{name}", sp.csr_matrix(dok))
 
 
 # def parallel(index):
