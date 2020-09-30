@@ -127,6 +127,7 @@ def load_node_graph(path: str):
 
 if __name__ == '__main__':
     # Loading stuff and initialisation
+    document_graph = net.Graph()
     matrix = sp.load_npz("Generated Files/test_topic_doc_matrix.npz")
     node_graph = load_node_graph("Generated Files/node_graph")
     add_similarity_to_node_graph(node_graph)
