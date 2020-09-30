@@ -5,8 +5,6 @@ import networkx as net
 import scipy.sparse as sp
 from tqdm import tqdm
 
-from preprocessing import preprocess
-
 
 def similarity_between_documents(d1: int, d2: int):
     """
@@ -32,13 +30,6 @@ def document_similarity_matrix(matrix) -> net.graph:
             doc_sim_matrix[index, second_index] = sim
     sp.save_npz("Generated Files/doc_sim_matrix", doc_sim_matrix)
     return doc_sim_matrix
-
-
-# def document_similarity_matrix_xyz(td_matrix):
-#     iterable = [(i, x) for i, x in enumerate(td_matrix)]
-#     with Pool(8) as p:
-#         p.map(document_sim_matrix_par, iterable)
-#
 
 
 def document_similarity(td_matrix, doc_id):
@@ -83,29 +74,35 @@ def document_similarity_matrix_xyz(td_matrix, chunks):
     sp.save_npz(f"Generated Files/adj_matrix{name}", sp.csr_matrix(dok))
 
 
-# def parallel(index):
-#     for second_index in range(index):
-#         doc_sim_matrix[index, second_index] = similarity_between_documents(index, second_index)
-#
-#
-# def parallel_doc_sim_matrix(matrix):
-#     with Pool(8) as p:
-#         max_ = matrix.shape[0]
-#         with tqdm(total=max_) as pbar:
-#             for i, _ in enumerate(p.imap_unordered(parallel, list(range(matrix.shape[0])))):
-#                 pbar.update()
-
-
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
 
+def inner_graph_func(index):
+    document_graph.add_node(index)
+    for second_index in range(index):
+        similarity = similarity_between_documents(index, second_index)
+        document_graph.add_edge(index, second_index, weight=similarity)
+
+
+def make_document_graph(matrix: sp.dok_matrix):
+    with Pool(8) as p:
+        max_ = matrix.shape[0]
+        with tqdm(total=max_) as pbar:
+            for i, _ in enumerate(p.imap_unordered(inner_graph_func, range(matrix.shape[0]))):
+                pbar.update()
+    return document_graph
+
+
 if __name__ == '__main__':
     # Loading stuff and initialisation
     matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    document_graph = net.Graph()
+    net.write_gpickle(document_graph, "Generated Files/graph")
     # document_similarity_matrix_xyz(td_matrix)
-    chunks = chunks(range(matrix.shape[0]), 100)
-
-    document_similarity_matrix_xyz(matrix, chunks)
+    # chunks = chunks(range(matrix.shape[0]), 100)
+    #
+    # document_similarity_matrix_xyz(matrix, chunks)
+    make_document_graph(matrix)
