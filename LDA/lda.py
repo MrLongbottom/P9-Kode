@@ -150,25 +150,41 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
     return dtm
 
 
-def slice_sparse_col(M, col):
-    col.sort()
+def slice_sparse_col(matrix: sp.csc_matrix, cols: List[int]):
+    """
+    Remove some columns from a sparse matrix.
+    :param matrix: CSC matrix.
+    :param cols: list of column numbers to be removed.
+    :return: modified matrix without the specified columns.
+    """
+    cols.sort()
     ms = []
     prev = -1
-    for c in col:
-        ms.append(M[:, prev+1:c-1])
+    for c in cols:
+        # add slices of the matrix, skipping column c
+        ms.append(matrix[:, prev + 1:c - 1])
         prev = c
-    ms.append(M[:, prev+1:])
+    ms.append(matrix[:, prev + 1:])
+    # combine matrix slices
     return sp.hstack(ms)
 
 
-def slice_sparse_row(M, row):
-    row.sort()
+def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
+    """
+    Remove some rows from a sparse matrix.
+    :param matrix: CSR matrix.
+    :param rows: list of row numbers to be removed.
+    :return: modified matrix without the specified columns.
+    """
+    rows.sort()
     ms = []
     prev = -1
-    for r in row:
-        ms.append(M[prev+1:r-1, :])
+    for r in rows:
+        # add slices of the matrix, skipping row r
+        ms.append(matrix[prev + 1:r - 1, :])
         prev = r
-    ms.append(M[prev+1:, :])
+    ms.append(matrix[prev + 1:, :])
+    # combine matrix slices
     return sp.vstack(ms)
 
 
