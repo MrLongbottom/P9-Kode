@@ -1,13 +1,8 @@
-from functools import partial
 from multiprocessing import Pool
 
-import matplotlib.pyplot as plt
+import h5py
 import networkx as net
-import numpy as np
 import scipy.sparse as sp
-import seaborn as sb
-from gensim.models import LdaModel
-from scipy.stats import entropy
 from tqdm import tqdm
 
 
@@ -38,36 +33,38 @@ def document_similarity_matrix(matrix) -> net.graph:
 
 
 def document_similarity_matrix_xyz(td_matrix):
-    sim = {}
+    iterable = [(i, x) for i, x in enumerate(td_matrix)]
     with Pool(8) as p:
-        doc_sim = p.map(partial(document_sim_matrix_par, td_matrix), range(td_matrix.shape[0]))
-        for dictionary in tqdm(doc_sim):
-            sim.update(dictionary)
-    sp.save_npz(sp.dok_matrix(sim), "/Generated Files/adj_matrix")
-    return sim
+        p.map(document_sim_matrix_par, iterable)
 
 
-def document_sim_matrix_par(td_matrix, doc_id):
-    doc = td_matrix.getrow(doc_id)
+def document_sim_matrix_par(pair):
+    doc_id = pair[0]
+    doc = pair[1]
     topics_in_doc = doc.nonzero()[1]
     skips = 0
     sim_dict = {}
-    for topic_id in topics_in_doc:
-        topic = td_matrix.getcol(topic_id)
-        docs_in_topic = topic.nonzero()[0]
-        len1 = len(docs_in_topic)
-        # filter docs that have already been done, .ie documents earlier in the loop
-        docs_in_topic = [x for x in docs_in_topic if doc_id <= x]
-        len2 = len(docs_in_topic)
-        if len1 != len2:
-            skips += len1 - len2
-        Y = {x: topic[x].data[0] for x in docs_in_topic if doc_id <= x}
-        x = topic[doc_id].data[0]
-        similarity_sum = {id: min(x, y) for id, y in Y.items()}
-        for key, val in similarity_sum.items():
-            sim_dict[doc_id, key] = sim_dict.get((doc_id, key), 0) + val
-    print(f"Doc: {doc_id} Skipped: {skips}")
-    return sim_dict
+    with h5py.File('adj.hdf5', 'a') as file:
+        skipable = file['data'][doc_id].any()
+    if not skipable:
+        for topic_id in topics_in_doc:
+            topic = td_matrix.getcol(topic_id)
+            docs_in_topic = topic.nonzero()[0]
+            len1 = len(docs_in_topic)
+            # filter docs that have already been done, .ie documents earlier in the loop
+            docs_in_topic = [x for x in docs_in_topic if doc_id <= x]
+            len2 = len(docs_in_topic)
+            if len1 != len2:
+                skips += len1 - len2
+            Y = {x: topic[x].data[0] for x in docs_in_topic if doc_id <= x}
+            x = topic[doc_id].data[0]
+            similarity_sum = {id: min(x, y) for id, y in Y.items()}
+            for key, val in similarity_sum.items():
+                sim_dict[doc_id, key] = sim_dict.get((doc_id, key), 0) + val
+            with h5py.File('adj.hdf5', 'a') as file:
+                file['data'][doc_id].put(list(sim_dict.keys()), list(sim_dict.values()))
+        print(f"Doc: {doc_id} Skipped: {skips}")
+
 
 # def parallel(index, document):
 #     for second_index in range(index):
@@ -82,8 +79,14 @@ def document_sim_matrix_par(td_matrix, doc_id):
 
 if __name__ == '__main__':
     # Loading stuff and initialisation
-    topic_doc_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-    lda_model = LdaModel.load("LDA/model/docu_model")
-    document_similarity_matrix_xyz(topic_doc_matrix)
+    td_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    adj_matrix = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
+    with h5py.File('adj.hdf5', 'a') as file:
+        if not file['data']:
+            file.create_dataset("data", adj_matrix.shape)
+
+    with h5py.File('adj.hdf5', 'a') as file:
+        skipable = file['data'].any()
+    document_similarity_matrix_xyz(td_matrix)
     # documents = preprocess('documents.json')
     # create_document_topics(documents[2])
