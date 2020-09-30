@@ -7,6 +7,7 @@ import scipy.sparse as sparse
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
 from nltk.corpus import stopwords
+from nltk.stem.snowball import DanishStemmer
 from wiktionaryparser import WiktionaryParser
 
 
@@ -36,32 +37,43 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     :return: csr-matrix (sparse matrix) containing word frequencies for each document.
     """
     print('Beginning Preprocessing Procedure.')
-
+    step = 1
     # load documents file
-    print('Step 1: loading documents.')
+    print(f'Step {step}: loading documents.')
     documents = load_document_file(load_filename)
     # filter documents and create corpus
     documents, corpus = filter_documents(documents, doc_minimum_length)
 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
-    print('Step 2: stop words and word frequency.')
+    step += 1
+    print(f'Step {step}: stop words and word frequency.')
     nltk.download('stopwords')
     stop_words = stopwords.words('danish')
     cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
     cv.fit(corpus)
-
     words = key_dictionizer(cv.get_feature_names())
+
+    print(len(words))
     if word_check:
         # cut off words that are not used in danish word databases or are wrong word type
-        print("Step 3: word databases and POS-tagging.")
+        step += 1
+        print(f"Step {step}: word databases and POS-tagging.")
+        # TODO possibly replace with real POS tagging, rather than database checks.
         words = word_checker(words)
 
+    # Stemming to combine word declensions
+    step += 1
+    print(f"Step {step}: Apply Stemming / Lemming")
+    corpus, words = stem_lem(corpus, words)
+
     # filter documents to remove docs that now contain too few words (after all the word filtering)
-    print("Step 4: re-filter documents.")
+    step += 1
+    print(f"Step {step}: re-filter documents.")
     corpus = refilter_docs(words, corpus, doc_minimum_length)
 
     # transform documents into a matrix containing counts for each word in each document
-    print("Step 5: doc-word matrix construction")
+    step += 1
+    print(f"Step {step}: doc-word matrix construction")
     cv2 = CountVectorizer(vocabulary=words)
     cv_matrix = cv2.fit_transform(corpus)
     print("Matrix is: " + str(cv_matrix.shape))
@@ -80,13 +92,52 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     corpus = [list(x) for x in corpus]
 
     if save:
-        print('Step 6: saving files.')
+        step += 1
+        print(f'Step {step}: saving files.')
         save_vector_file(word_save_filename, words.values())
         save_vector_file(doc_save_filename, documents.keys())
         save_vector_file(doc_word_save_filename, corpus, seperator='-')
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus
+
+
+def stem_lem(corpus, words):
+    """
+    Updates a word list and a corpus to use stemmed words.
+    :param corpus: a list of sentences (strings of words separated by spaces)
+    :param words: a list of words
+    :return: new corpus and words list
+    """
+    # Stemming
+    stemmer = DanishStemmer()
+    # Update word list to use stemmed words
+    translator = {}
+    add = []
+    remove = []
+    for word in tqdm(words):
+        stem = stemmer.stem(word)
+        if stem != word:
+            if word not in remove:
+                remove.append(word)
+            if stem not in add:
+                add.append(stem)
+            if word not in translator:
+                translator[word] = stem
+    words = [x for x in words if x not in remove]
+    words.extend([x for x in add if x not in words])
+
+    # update corpus to use stemmed words
+    for x in tqdm(range(len(corpus))):
+        sen = corpus[x]
+        sentence = sen.split(' ')
+        for i in range(len(sentence)):
+            word = sentence[i]
+            if word in translator:
+                sentence.append(translator[word])
+                sentence.remove(word)
+        corpus[x] = ' '.join(sentence)
+    return corpus, words
 
 
 def find_indexes(dict, values):
@@ -99,25 +150,17 @@ def find_indexes(dict, values):
 
 
 def key_dictionizer(keys):
-    dict = {}
-    for id, key in enumerate(keys):
-        dict[key] = id
-    return dict
+    return {y: x for x, y in enumerate(keys)}
 
 
 def value_dictionizer(values):
-    dict = {}
-    for id, value in enumerate(values):
-        dict[id] = value
-    return dict
+    return {x: y for x, y in enumerate(values)}
 
 
 # TODO make faster? (how fast? sonic fast!)
 def cut_corpus(corpus, words):
     cut = []
-    words_dict = {}
-    for word in tqdm(words):
-        words_dict[word] = 0
+    words_dict = {x: 0 for x in words}
     for doc in tqdm(corpus):
         sen = []
         for word in doc.split(" "):
@@ -172,6 +215,7 @@ def filter_documents(documents, doc_minimum_length):
         if len(text) < doc_minimum_length:
             bad_docs.append(doc)
             continue
+        # reconstruct documents
         text = ' '.join(text)
         documents[doc[0]] = text
         corpus.append(text)
@@ -213,6 +257,7 @@ def csv_append(filename, content, index=0):
 
 def new_word_db_fetch(words, wik_word_index=0, wik_nonword_index=0):
     # setup Wiktionary Parser
+
     wik_parser = WiktionaryParser()
     wik_parser.set_default_language('danish')
     wik_parser.RELATIONS = []
