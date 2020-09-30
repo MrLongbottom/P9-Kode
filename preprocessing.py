@@ -204,6 +204,9 @@ def filter_documents(documents, doc_minimum_length):
     print('Filtering documents.')
     corpus = []
     bad_docs = []
+    # Reverse dictionary to get unique values only (ie. remove duplicate documents).
+    reverse = {v: k for k, v in documents.items()}
+    documents = {v: k for k, v in reverse.items()}
     for doc in tqdm(documents.items()):
         text = doc[1]
         text = text.lower()
