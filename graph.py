@@ -67,16 +67,20 @@ def document_chunk_similarity(td_matrix, chunk):
     return doc_sim, chunk[0]
 
 
-def document_similarity_matrix_xyz(td_matrix, chunks):
+def document_similarity_matrix_xyz(td_matrix, chunk_size):
     sim = {}
-    with Pool(8) as p:
-        doc_sim, name = p.map(partial(document_chunk_similarity, td_matrix), chunks)
-    for dictionary in tqdm(doc_sim):
-        sim.update(dictionary)
-    dok = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
-    for (a, b), v in sim.items():
-        dok[a, b] = v
-    sp.save_npz(f"Generated Files/adj_matrix{name}", sp.csr_matrix(dok))
+    for i in range(290, int(td_matrix.shape[0]/chunk_size)):
+        print(f"Starting chunk {i}.")
+        start = i*chunk_size
+        end = min((i+1)*chunk_size, td_matrix.shape[0])
+        with Pool(5) as p:
+            test = p.map(partial(document_similarity, td_matrix), range(start, end))
+        for dictionary in tqdm(test):
+            sim.update(dictionary)
+        dok = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
+        for (a, b), v in sim.items():
+            dok[a, b] = v
+        sp.save_npz(f"Generated Files/adj_matrix{i}", sp.csr_matrix(dok))
 
 
 def chunks(lst, n):
@@ -135,4 +139,4 @@ if __name__ == '__main__':
     # node_graph = make_node_graph(matrix)
     # node_graph = add_similarity_to_node_graph(node_graph)
     # net.write_gpickle(node_graph, "Generated Files/graph")
-    document_similarity_matrix(matrix)
+    document_similarity_matrix_xyz(matrix, 100)
