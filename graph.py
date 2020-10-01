@@ -1,13 +1,9 @@
 from functools import partial
 from multiprocessing import Pool
 
-import matplotlib.pyplot as plt
-import networkx as net
 import numpy as np
+import networkx as net
 import scipy.sparse as sp
-import seaborn as sb
-from gensim.models import LdaModel
-from scipy.stats import entropy
 from tqdm import tqdm
 
 
@@ -18,9 +14,13 @@ def similarity_between_documents(d1: int, d2: int):
     :param d2: document 2
     :return: a similarity value between 0 and 1
     """
-    return sum(
-        [min(topic_doc_matrix.getrow(d1).toarray()[0][number], topic_doc_matrix.getrow(d2).toarray()[0][number]) for
-         number in set(topic_doc_matrix.getrow(0).nonzero()[1]) & set(topic_doc_matrix.getrow(1).nonzero()[1])])
+    sim_set = set(matrix.getrow(0).nonzero()[1]) & set(matrix.getrow(1).nonzero()[1])
+    if len(sim_set) >= 0:
+        return sum(
+            [min(matrix.getrow(d1).toarray()[0][number], matrix.getrow(d2).toarray()[0][number]) for
+             number in sim_set])
+    else:
+        return 0
 
 
 def document_similarity_matrix(matrix) -> net.graph:
@@ -37,17 +37,7 @@ def document_similarity_matrix(matrix) -> net.graph:
     return doc_sim_matrix
 
 
-def document_similarity_matrix_xyz(td_matrix):
-    sim = {}
-    with Pool(8) as p:
-        doc_sim = p.map(partial(document_sim_matrix_par, td_matrix), range(td_matrix.shape[0]))
-        for dictionary in tqdm(doc_sim):
-            sim.update(dictionary)
-    sp.save_npz(sp.dok_matrix(sim), "/Generated Files/adj_matrix")
-    return sim
-
-
-def document_sim_matrix_par(td_matrix, doc_id):
+def document_similarity(td_matrix, doc_id):
     doc = td_matrix.getrow(doc_id)
     topics_in_doc = doc.nonzero()[1]
     skips = 0
@@ -69,21 +59,76 @@ def document_sim_matrix_par(td_matrix, doc_id):
     print(f"Doc: {doc_id} Skipped: {skips}")
     return sim_dict
 
-# def parallel(index, document):
-#     for second_index in range(index):
-#         sim = similarity_between_documents(document_topics[index], document_topics[second_index])
-#         doc_sim_matrix[index, second_index] = sim
-#
-#
-# def parallel_doc_sim_matrix(document_topics):
-#     with Pool(8) as p:
-#         p.starmap(parallel, [x for x in enumerate(document_topics)])
+
+def document_chunk_similarity(td_matrix, chunk):
+    doc_sim = {}
+    for document_id in chunk:
+        doc_sim.update(document_similarity(td_matrix, document_id))
+    return doc_sim, chunk[0]
+
+
+def document_similarity_matrix_xyz(td_matrix, chunks):
+    sim = {}
+    with Pool(8) as p:
+        doc_sim, name = p.map(partial(document_chunk_similarity, td_matrix), chunks)
+    for dictionary in tqdm(doc_sim):
+        sim.update(dictionary)
+    dok = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
+    for (a, b), v in sim.items():
+        dok[a, b] = v
+    sp.save_npz(f"Generated Files/adj_matrix{name}", sp.csr_matrix(dok))
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
+def inner_graph_func(index):
+    document_graph.add_node(index)
+    for second_index in range(index):
+        similarity = similarity_between_documents(index, second_index)
+        document_graph.add_edge(index, second_index, weight=similarity)
+
+
+def make_document_graph(matrix: sp.dok_matrix):
+    with Pool(8) as p:
+        max_ = matrix.shape[0]
+        with tqdm(total=max_) as pbar:
+            for i, _ in enumerate(p.imap_unordered(inner_graph_func, range(matrix.shape[0]))):
+                pbar.update()
+    return document_graph
+
+
+def make_node_graph(matrix):
+    for document in range(matrix.shape[0]):
+        document_graph.add_node(document)
+    net.write_gpickle(document_graph, "Generated Files/node_graph")
+
+
+def add_similarity_to_node_graph(node_graph: net.Graph):
+    with Pool(8) as p:
+        max_ = matrix.shape[0]
+        with tqdm(total=max_) as pbar:
+            for i, _ in enumerate(p.imap_unordered(add_sim_sub_func, node_graph.nodes)):
+                pbar.update()
+
+
+def add_sim_sub_func(document):
+    for second_document in range(document):
+        node_graph.add_edge(document, second_document,
+                            weigth=similarity_between_documents(document, second_document))
+
+
+def load_node_graph(path: str):
+    return net.read_gpickle(path)
 
 
 if __name__ == '__main__':
     # Loading stuff and initialisation
-    topic_doc_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-    lda_model = LdaModel.load("LDA/model/docu_model")
-    document_similarity_matrix_xyz(topic_doc_matrix)
-    # documents = preprocess('documents.json')
-    # create_document_topics(documents[2])
+    document_graph = net.Graph()
+    matrix = sp.load_npz("Generated Files/test_topic_doc_matrix.npz")
+    node_graph = load_node_graph("Generated Files/node_graph")
+    add_similarity_to_node_graph(node_graph)
+    net.write_gpickle(node_graph, "Generated Files/graph")
