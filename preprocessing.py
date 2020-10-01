@@ -9,6 +9,7 @@ from tqdm import tqdm
 from nltk.corpus import stopwords
 from wiktionaryparser import WiktionaryParser
 
+
 def preprocess(load_filename="documents.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
                doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
@@ -72,18 +73,20 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     tfidf_matrix = tf.fit_transform(cv_matrix)
     """
 
-    words = key_dictionizer(cv2.get_feature_names())
-    mini_corpus = cv2.inverse_transform(cv_matrix)
-    mini_corpus = find_indexes(words, mini_corpus)
+    # Get new word dict (without the cut words)
+    words = value_dictionizer(cv2.get_feature_names())
+    # Get new corpus (without the cut words)
+    corpus = cv2.inverse_transform(cv_matrix)
+    corpus = [list(x) for x in corpus]
 
     if save:
         print('Step 6: saving files.')
-        save_vector_file(word_save_filename, words.keys())
+        save_vector_file(word_save_filename, words.values())
         save_vector_file(doc_save_filename, documents.keys())
-        save_vector_file(doc_word_save_filename, mini_corpus)
+        save_vector_file(doc_word_save_filename, corpus, seperator='-')
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
     print('Finished Preprocessing Procedure.')
-    return cv_matrix, words, corpus, mini_corpus
+    return cv_matrix, words, corpus
 
 
 def find_indexes(dict, values):
@@ -94,16 +97,22 @@ def find_indexes(dict, values):
         values[i] = list
     return values
 
+
 def key_dictionizer(keys):
     dict = {}
-    count = 0
-    for key in keys:
-        dict[key] = count
-        count += 1
+    for id, key in enumerate(keys):
+        dict[key] = id
     return dict
 
 
-# TODO make faster. (how fast? sonic fast!)
+def value_dictionizer(values):
+    dict = {}
+    for id, value in enumerate(values):
+        dict[id] = value
+    return dict
+
+
+# TODO make faster? (how fast? sonic fast!)
 def cut_corpus(corpus, words):
     cut = []
     words_dict = {}
@@ -169,7 +178,7 @@ def filter_documents(documents, doc_minimum_length):
     return documents, corpus
 
 
-def save_vector_file(filename, content):
+def save_vector_file(filename, content, seperator=','):
     """
     Saves content of list as a vector in a file, similar to a Word2Vec document.
     :param filename: path of file to save.
@@ -179,7 +188,7 @@ def save_vector_file(filename, content):
     print('Saving file "' + filename + '".')
     with open(filename, "w") as file:
         for i, c in enumerate(content):
-            file.write(str(i) + ", " + str(c) + '\n')
+            file.write(str(i) + seperator + str(c) + '\n')
     print('"' + filename + '" has been saved.')
 
 
