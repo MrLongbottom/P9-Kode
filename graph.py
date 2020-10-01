@@ -33,7 +33,7 @@ def document_similarity_matrix(matrix) -> net.graph:
         for second_index in range(index):
             sim = similarity_between_documents(index, second_index)
             doc_sim_matrix[index, second_index] = sim
-    sp.save_npz("Generated Files/doc_sim_matrix", doc_sim_matrix)
+    sp.save_npz("Generated Files/doc_sim_matrix", sp.csr_matrix(np.add(doc_sim_matrix, doc_sim_matrix.transpose())))
     return doc_sim_matrix
 
 
@@ -102,20 +102,23 @@ def make_document_graph(matrix: sp.dok_matrix):
 
 
 def make_node_graph(matrix):
+    node_graph = net.Graph()
     for document in range(matrix.shape[0]):
-        document_graph.add_node(document)
-    net.write_gpickle(document_graph, "Generated Files/node_graph")
+        node_graph.add_node(document)
+    net.write_gpickle(node_graph, "Generated Files/graph")
+    return node_graph
 
 
 def add_similarity_to_node_graph(node_graph: net.Graph):
     with Pool(8) as p:
         max_ = matrix.shape[0]
         with tqdm(total=max_) as pbar:
-            for i, _ in enumerate(p.imap_unordered(add_sim_sub_func, node_graph.nodes)):
+            for i, _ in enumerate(p.imap_unordered(partial(add_sim_sub_func, node_graph), node_graph.nodes)):
                 pbar.update()
+    return node_graph
 
 
-def add_sim_sub_func(document):
+def add_sim_sub_func(node_graph, document):
     for second_document in range(document):
         node_graph.add_edge(document, second_document,
                             weigth=similarity_between_documents(document, second_document))
@@ -129,6 +132,7 @@ if __name__ == '__main__':
     # Loading stuff and initialisation
     document_graph = net.Graph()
     matrix = sp.load_npz("Generated Files/test_topic_doc_matrix.npz")
-    node_graph = load_node_graph("Generated Files/node_graph")
-    add_similarity_to_node_graph(node_graph)
-    net.write_gpickle(node_graph, "Generated Files/graph")
+    # node_graph = make_node_graph(matrix)
+    # node_graph = add_similarity_to_node_graph(node_graph)
+    # net.write_gpickle(node_graph, "Generated Files/graph")
+    document_similarity_matrix(matrix)
