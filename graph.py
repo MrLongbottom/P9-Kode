@@ -78,12 +78,12 @@ def document_similarity_matrix_xyz(td_matrix, start, end):
         similarities = p.map(partial(document_similarity, td_matrix), range(start, end))
     for dictionary in tqdm(similarities):
         sim.update(dictionary)
-    dok = sp.dok_matrix((end-start, td_matrix.shape[0]))
+    matrix = sp.lil_matrix((end-start, td_matrix.shape[0]))
     for (a, b), v in sim.items():
-        dok[a-start, b] = v
-    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(dok))
+        matrix[a-start, b] = v
+    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(matrix))
     del sim
-    del dok
+    del matrix
     del similarities
 
 
@@ -141,11 +141,12 @@ def load_node_graph(path: str):
 
 
 if __name__ == '__main__':
-    #stack_matrixes_in_folder("Generated Files/adj2/")
     # Loading stuff and initialisation
-    document_graph = net.Graph()
     matrix = sp.load_npz("Generated Files/test_topic_doc_matrix.npz")
+    doc_sim_chunker(matrix, 500)
+    sp.save_npz(stack_matrixes_in_folder("Generated Files/adj/"), "Generated Files/adj_matrix.npz")
+
+    document_graph = net.Graph()
     # node_graph = make_node_graph(matrix)
     # node_graph = add_similarity_to_node_graph(node_graph)
     # net.write_gpickle(node_graph, "Generated Files/graph")
-    doc_sim_chunker(matrix, 100)
