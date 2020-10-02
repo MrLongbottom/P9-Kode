@@ -60,33 +60,29 @@ def document_similarity(td_matrix, doc_id):
     return sim_dict
 
 
-def document_chunk_similarity(td_matrix, chunk):
-    doc_sim = {}
-    for document_id in chunk:
-        doc_sim.update(document_similarity(td_matrix, document_id))
-    return doc_sim, chunk[0]
-
-
-def document_similarity_matrix_xyz(td_matrix, chunk_size):
-    sim = {}
-    for i in range(290, int(td_matrix.shape[0]/chunk_size)):
+def doc_sim_chunker(td_matrix, chunk_size):
+    max = int(td_matrix.shape[0] / chunk_size)
+    for i in range(213, max):
         print(f"Starting chunk {i}.")
         start = i*chunk_size
         end = min((i+1)*chunk_size, td_matrix.shape[0])
-        with Pool(5) as p:
-            test = p.map(partial(document_similarity, td_matrix), range(start, end))
-        for dictionary in tqdm(test):
-            sim.update(dictionary)
-        dok = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
-        for (a, b), v in sim.items():
-            dok[a, b] = v
-        sp.save_npz(f"Generated Files/adj_matrix{i}", sp.csr_matrix(dok))
+        document_similarity_matrix_xyz(td_matrix, start, end)
+    print("Done.")
 
 
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+def document_similarity_matrix_xyz(td_matrix, start, end):
+    sim = {}
+    with Pool(5) as p:
+        test = p.map(partial(document_similarity, td_matrix), range(start, end))
+    for dictionary in tqdm(test):
+        sim.update(dictionary)
+    dok = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
+    for (a, b), v in sim.items():
+        dok[a, b] = v
+    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(dok))
+    del sim
+    del dok
+    del test
 
 
 def inner_graph_func(index):
@@ -139,4 +135,4 @@ if __name__ == '__main__':
     # node_graph = make_node_graph(matrix)
     # node_graph = add_similarity_to_node_graph(node_graph)
     # net.write_gpickle(node_graph, "Generated Files/graph")
-    document_similarity_matrix_xyz(matrix, 100)
+    doc_sim_chunker(matrix, 100)
