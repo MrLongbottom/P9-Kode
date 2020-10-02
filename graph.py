@@ -1,3 +1,5 @@
+import os
+import re
 from functools import partial
 from multiprocessing import Pool
 
@@ -62,7 +64,7 @@ def document_similarity(td_matrix, doc_id):
 
 def doc_sim_chunker(td_matrix, chunk_size):
     max = int(td_matrix.shape[0] / chunk_size)
-    for i in range(213, max):
+    for i in range(0, max):
         print(f"Starting chunk {i}.")
         start = i*chunk_size
         end = min((i+1)*chunk_size, td_matrix.shape[0])
@@ -72,17 +74,27 @@ def doc_sim_chunker(td_matrix, chunk_size):
 
 def document_similarity_matrix_xyz(td_matrix, start, end):
     sim = {}
-    with Pool(5) as p:
-        test = p.map(partial(document_similarity, td_matrix), range(start, end))
-    for dictionary in tqdm(test):
+    with Pool(8) as p:
+        similarities = p.map(partial(document_similarity, td_matrix), range(start, end))
+    for dictionary in tqdm(similarities):
         sim.update(dictionary)
-    dok = sp.dok_matrix((td_matrix.shape[0], td_matrix.shape[0]))
+    dok = sp.dok_matrix((end-start, td_matrix.shape[0]))
     for (a, b), v in sim.items():
-        dok[a, b] = v
+        dok[a-start, b] = v
     sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(dok))
     del sim
     del dok
-    del test
+    del similarities
+
+
+def stack_matrixes_in_folder(path):
+    files = os.listdir(path)
+    doc = sp.load_npz(path+files[0])
+    for file in files[1:]:
+        doc2 = sp.load_npz(path+file)
+        doc = sp.vstack([doc, doc2])
+        print(doc.shape)
+    return doc
 
 
 def inner_graph_func(index):
@@ -129,6 +141,7 @@ def load_node_graph(path: str):
 
 
 if __name__ == '__main__':
+    #stack_matrixes_in_folder("Generated Files/adj2/")
     # Loading stuff and initialisation
     document_graph = net.Graph()
     matrix = sp.load_npz("Generated Files/test_topic_doc_matrix.npz")
