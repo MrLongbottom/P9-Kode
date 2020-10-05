@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
 from scipy.stats import entropy
 from tqdm import tqdm
+from gensim.models import CoherenceModel
 
 
 def fit_lda(data: csr_matrix, vocab: Dict):
@@ -134,10 +135,10 @@ def run_lda(path: str, cv_matrix, words, corpus, save_path):
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path+"topic_doc_matrix.npz")
+    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz")
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path+"topic_word_matrix.npz")
+    tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz")
 
     return lda
 
@@ -159,6 +160,12 @@ def load_dict_file(path, separator=','):
 
 def print_topic_words(id: int, lda_model: LdaModel):
     return dict(lda_model.show_topics(lda_model.num_topics))[id]
+
+
+def coherence_score(lda: LdaModel, texts, id2word, measure: str = 'c_v'):
+    coherence_model_lda = CoherenceModel(model=lda, texts=texts, dictionary=id2word, coherence=measure)
+    coherence_lda = coherence_model_lda.get_coherence()
+    print('\nCoherence Score: ', coherence_lda)
 
 
 if __name__ == '__main__':
