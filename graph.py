@@ -3,8 +3,6 @@ import re
 from functools import partial
 from multiprocessing import Pool
 
-import numpy as np
-import networkx as net
 import scipy.sparse as sp
 from tqdm import tqdm
 
@@ -25,21 +23,14 @@ def similarity_between_documents(d1: int, d2: int):
         return 0
 
 
-def document_similarity_matrix(matrix) -> net.graph:
-    """
-    Todo still not optimized
-    """
-    length = matrix.shape[0]
-    doc_sim_matrix = sp.dok_matrix((length, length))
-    for index in tqdm(range(length)):
-        for second_index in range(index):
-            sim = similarity_between_documents(index, second_index)
-            doc_sim_matrix[index, second_index] = sim
-    sp.save_npz("Generated Files/doc_sim_matrix", sp.csr_matrix(np.add(doc_sim_matrix, doc_sim_matrix.transpose())))
-    return doc_sim_matrix
-
-
 def document_similarity(td_matrix, doc_id):
+    """
+    Takes a term-document matrix and calculates the similarity for a given id
+    against all other id's which are similar to the given document.
+    :param td_matrix: term-document matri
+    :param doc_id: the id of the given document
+    :return: a dictionary of similarity scores
+    """
     doc = td_matrix.getrow(doc_id)
     topics_in_doc = doc.nonzero()[1]
     skips = 0
@@ -63,24 +54,38 @@ def document_similarity(td_matrix, doc_id):
 
 
 def doc_sim_chunker(td_matrix, chunk_size):
+    """
+    Takes the term-document matrix and splits the matrix into chunks and
+    calls the document similarity function on each
+    :param td_matrix:
+    :param chunk_size:
+    :return:
+    """
     max = int(td_matrix.shape[0] / chunk_size)
-    for i in range(0, max):
+    for i in range(max, max + 1):
         print(f"Starting chunk {i}.")
-        start = i*chunk_size
-        end = min((i+1)*chunk_size, td_matrix.shape[0])
-        document_similarity_matrix_xyz(td_matrix, start, end)
+        start = i * chunk_size
+        end = min((i + 1) * chunk_size, td_matrix.shape[0])
+        save_document_similarity(td_matrix, start, end)
     print("Done.")
 
 
-def document_similarity_matrix_xyz(td_matrix, start, end):
+def save_document_similarity(td_matrix, start, end):
+    """
+    Constructs similarity based on a start and an end index
+    :param td_matrix: term-document matrix
+    :param start: start index
+    :param end: end index
+    :return: saves matrix to file
+    """
     sim = {}
     with Pool(8) as p:
         similarities = p.map(partial(document_similarity, td_matrix), range(start, end))
     for dictionary in tqdm(similarities):
         sim.update(dictionary)
-    dok = sp.dok_matrix((end-start, td_matrix.shape[0]))
+    dok = sp.dok_matrix((end - start, td_matrix.shape[0]))
     for (a, b), v in sim.items():
-        dok[a-start, b] = v
+        dok[a - start, b] = v
     sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(dok))
     del sim
     del dok
@@ -88,64 +93,28 @@ def document_similarity_matrix_xyz(td_matrix, start, end):
 
 
 def stack_matrixes_in_folder(path):
+    """
+    Stack adj_matrixes on top of each other and return the full adj matrix
+    :param path: folder
+    :return:
+    """
     files = os.listdir(path)
-    doc = sp.load_npz(path+files[0])
+    files.sort(key=lambda f: int(re.sub('\D', '', f)))
+    doc = sp.load_npz(path + files[0])
     for file in files[1:]:
-        doc2 = sp.load_npz(path+file)
+        doc2 = sp.load_npz(path + file)
         doc = sp.vstack([doc, doc2])
         print(doc.shape)
     return doc
 
 
-def inner_graph_func(index):
-    document_graph.add_node(index)
-    for second_index in range(index):
-        similarity = similarity_between_documents(index, second_index)
-        document_graph.add_edge(index, second_index, weight=similarity)
-
-
-def make_document_graph(matrix: sp.dok_matrix):
-    with Pool(8) as p:
-        max_ = matrix.shape[0]
-        with tqdm(total=max_) as pbar:
-            for i, _ in enumerate(p.imap_unordered(inner_graph_func, range(matrix.shape[0]))):
-                pbar.update()
-    return document_graph
-
-
-def make_node_graph(matrix):
-    node_graph = net.Graph()
-    for document in range(matrix.shape[0]):
-        node_graph.add_node(document)
-    net.write_gpickle(node_graph, "Generated Files/graph")
-    return node_graph
-
-
-def add_similarity_to_node_graph(node_graph: net.Graph):
-    with Pool(8) as p:
-        max_ = matrix.shape[0]
-        with tqdm(total=max_) as pbar:
-            for i, _ in enumerate(p.imap_unordered(partial(add_sim_sub_func, node_graph), node_graph.nodes)):
-                pbar.update()
-    return node_graph
-
-
-def add_sim_sub_func(node_graph, document):
-    for second_document in range(document):
-        node_graph.add_edge(document, second_document,
-                            weigth=similarity_between_documents(document, second_document))
-
-
-def load_node_graph(path: str):
-    return net.read_gpickle(path)
-
-
 if __name__ == '__main__':
-    #stack_matrixes_in_folder("Generated Files/adj2/")
     # Loading stuff and initialisation
-    document_graph = net.Graph()
-    matrix = sp.load_npz("Generated Files/test_topic_doc_matrix.npz")
-    # node_graph = make_node_graph(matrix)
-    # node_graph = add_similarity_to_node_graph(node_graph)
-    # net.write_gpickle(node_graph, "Generated Files/graph")
-    doc_sim_chunker(matrix, 100)
+    matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    doc_sim_chunker(matrix, 500)
+
+    # Save full matrix
+    sp.save_npz("Generated Files/full_matrix", stack_matrixes_in_folder("Generated Files/adj/"))
+
+    # Load full matrix
+    adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
