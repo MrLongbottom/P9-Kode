@@ -62,7 +62,7 @@ def doc_sim_chunker(td_matrix, chunk_size):
     :return:
     """
     max = int(td_matrix.shape[0] / chunk_size)
-    for i in range(max, max + 1):
+    for i in range(0, max + 1):
         print(f"Starting chunk {i}.")
         start = i * chunk_size
         end = min((i + 1) * chunk_size, td_matrix.shape[0])
