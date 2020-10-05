@@ -127,23 +127,24 @@ def evaluate_doc_topic_distributions(dtm):
     print("Zeros: " + str(zeros))
 
 
-def run_lda(path: str, cv_matrix, words, corpus):
+def run_lda(path: str, cv_matrix, words, corpus, save_path):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
     save_lda(lda, path)
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, "Generated Files/topic_doc_matrix")
+    td_matrix = create_document_topics(corpus, lda, save_path+"topic_doc_matrix.npz")
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, "Generated Files/topic_word_matrix")
+    tw_matrix = save_topic_word_matrix(lda, save_path+"topic_word_matrix.npz")
 
     return lda
 
 
 def save_topic_word_matrix(lda: LdaModel, name: str):
-    return sp.save_npz(lda.get_topics(), name)
+    matrix = sp.csc_matrix(lda.get_topics())
+    return sp.save_npz(name, matrix)
 
 
 def get_topic_word_matrix(lda: LdaModel) -> np.ndarray:
@@ -168,4 +169,4 @@ if __name__ == '__main__':
     mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    run_lda('/model/', cv, words, mini_corpus)
+    run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")

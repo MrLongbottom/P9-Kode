@@ -8,10 +8,11 @@ if __name__ == '__main__':
 
     # Run LDA
 
-    run_lda(path="LDA/model/test_model",
+    run_lda(path="LDA/model/document_model",
             cv_matrix=cv_matrix,
             words=words,
-            corpus=corpus)
+            corpus=corpus,
+            save_path="Generated Files/")
 
     # Make Graph
     # graph()
