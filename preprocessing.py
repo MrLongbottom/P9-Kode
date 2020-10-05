@@ -40,6 +40,7 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     step = 1
     # load documents file
     print(f'Step {step}: loading documents.')
+    # If load_filename is a string, load documents from path, else continue as if given documents directly
     documents = load_document_file(load_filename) if isinstance(load_filename, str) else load_filename
     # filter documents and create corpus
     documents, corpus = filter_documents(documents, doc_minimum_length)
