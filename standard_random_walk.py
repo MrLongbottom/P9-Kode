@@ -48,6 +48,6 @@ def random_walk(steps: int, adj_matrix) -> Dict[str, float]:
 
 
 if __name__ == '__main__':
-    matrix = construct_transition_probability_matrix(sp.load_npz("Generated Files/full_matrix.npz")[:1000, :1000])
-    list_of_index = random_walk(10, matrix)
-    print(list_of_index)
+    matrix = construct_transition_probability_matrix(sp.load_npz("Generated Files/full_matrix.npz")[:10000, :10000])
+    list_of_index = random_walk(10, matrix)[:10]
+    print(list_of_index[0,:10])

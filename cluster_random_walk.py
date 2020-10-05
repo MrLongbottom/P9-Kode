@@ -47,10 +47,10 @@ def construct_new_transition_matrix(adj_matrix,
     similarity_clus_doc_set = np.zeros(shape=(len(clusters),))  # Cluster to Document Set
 
     # Calculate the similarity scores
-    for index, sentence in enumerate(documents):
-        similarity_doc_clus[index] = similarity_between_document_and_clusters(sentence, clusters)
+    for index, document in enumerate(documents):
+        similarity_doc_clus[index] = similarity_between_document_and_clusters(document, clusters)
     for x in clusters:
-        similarity_clus_doc_set = similarity_between_cluster_and_document_set(clusters, graph)
+        similarity_clus_doc_set = similarity_between_cluster_and_document_set(clusters, documents)
 
     # Normalize similarity vectors
     similarity_clus_doc_set = similarity_clus_doc_set / similarity_clus_doc_set.sum(0)
