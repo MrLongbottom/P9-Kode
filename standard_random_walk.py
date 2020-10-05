@@ -8,13 +8,14 @@ import scipy.sparse as sp
 def construct_transition_probability_matrix(adj_matrix):
     """
     This function constructs a transition probability matrix
-    based on the adjacency matrix of the graph
+    based on the adjacency matrix of the graph.
+    The diagonal is set to 0 in order to avoid self transitions
     :param adj_matrix: an adjacency matrix based on the documents
     :return: np.array
     """
     adj_matrix = adj_matrix.todense()
     adj_matrix = adj_matrix + adj_matrix.T
-    np.fill_diagonal(adj_matrix, 1)
+    np.fill_diagonal(adj_matrix, 0)
     row_normalized_matrix = adj_matrix / adj_matrix.sum(axis=0)
 
     return row_normalized_matrix
