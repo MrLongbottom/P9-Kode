@@ -5,16 +5,19 @@ import numpy as np
 import scipy.sparse as sp
 
 
-def construct_transition_probability_matrix(adj_matrix) -> np.ndarray:
+def construct_transition_probability_matrix(adj_matrix):
     """
-    This function constructs a transistion probability matrix
+    This function constructs a transition probability matrix
     based on the adjacency matrix of the graph
     :param adj_matrix: an adjacency matrix based on the documents
     :return: np.array
     """
     adj_matrix = adj_matrix.todense()
+    adj_matrix = adj_matrix + adj_matrix.T
+    np.fill_diagonal(adj_matrix, 1)
     row_normalized_matrix = adj_matrix / adj_matrix.sum(axis=0)
-    return np.array(row_normalized_matrix, dtype=np.float64)
+
+    return row_normalized_matrix
 
 
 def step_vector(adj_matrix) -> np.array:
@@ -27,7 +30,7 @@ def step_vector(adj_matrix) -> np.array:
     random_index = random.randrange(0, adj_matrix.shape[0])
     step = np.zeros(adj_matrix.shape[0])
     step[random_index] = 1
-    return step
+    return sp.csr_matrix(step)
 
 
 def random_walk(steps: int, adj_matrix) -> Dict[str, float]:
@@ -39,11 +42,11 @@ def random_walk(steps: int, adj_matrix) -> Dict[str, float]:
     """
     step = step_vector(adj_matrix)
     for index in range(steps):
-        step = np.dot(step, adj_matrix.T)
+        step = step.dot(adj_matrix.T)
     return step.argsort()[:][::-1]
 
 
 if __name__ == '__main__':
-    matrix = construct_transition_probability_matrix(sp.load_npz("Generated Files/full_matrix.npz"))
+    matrix = construct_transition_probability_matrix(sp.load_npz("Generated Files/full_matrix.npz")[:1000, :1000])
     list_of_index = random_walk(10, matrix)
     print(list_of_index)
