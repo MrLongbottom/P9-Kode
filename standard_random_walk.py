@@ -33,6 +33,7 @@ def step_vector(adj_matrix) -> np.array:
 def random_walk(steps: int, adj_matrix) -> Dict[str, float]:
     """
     Computes the random walk on a sentence graph
+    :param adj_matrix: the adj matrix
     :param steps: The number power iterations
     :return: a dict comprised of sentences and their score
     """
