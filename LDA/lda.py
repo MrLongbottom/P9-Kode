@@ -174,7 +174,7 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     Remove some rows from a sparse matrix.
     :param matrix: CSR matrix.
     :param rows: list of row numbers to be removed.
-    :return: modified matrix without the specified columns.
+    :return: modified matrix without the specified rows.
     """
     rows.sort()
     ms = []
