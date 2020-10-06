@@ -98,13 +98,24 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
-def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
+def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, tell: bool = True, prune: bool = True):
+    """
+    Evaluate document-topic distribution matrix, involving a combination of:
+    * printing statistics
+    * showing boxplot
+    * pruning empty docs and topics, and pruning topics that are too common
+    :param dt_matrix: document-topic distribution matrix
+    :param show: whether to show boxplot
+    :param tell: whether to print statistics
+    :param prune: whether to prune
+    :return: potentially pruned matrix.
+    """
     sb.set_theme(style="whitegrid")
     # Topic-Doc distributions
     lens = []
     zeros = []
-    for i in tqdm(range(0, dtm.shape[1])):
-        topic = dtm.getcol(i).nonzero()[0]
+    for i in tqdm(range(0, dt_matrix.shape[1])):
+        topic = dt_matrix.getcol(i).nonzero()[0]
         lens.append(len(topic))
         if len(topic) == 0:
             zeros.append(i)
@@ -123,7 +134,7 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
         # also prune topics with no documents
         outliers.extend(zeros)
         outliers = list(set(outliers))
-        dtm = slice_sparse_col(dtm, outliers)
+        dt_matrix = slice_sparse_col(dt_matrix, outliers)
     if show:
         ax = sb.boxplot(x=lens)
         plt.show()
@@ -131,8 +142,8 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
     # Doc-Topic distributions
     lens = []
     zeros = []
-    for i in tqdm(range(0, dtm.shape[0])):
-        topic = dtm.getrow(i).nonzero()[0]
+    for i in tqdm(range(0, dt_matrix.shape[0])):
+        topic = dt_matrix.getrow(i).nonzero()[0]
         lens.append(len(topic))
         if len(topic) == 0:
             zeros.append(i)
@@ -145,13 +156,13 @@ def evaluate_doc_topic_distributions(dtm, show=True, tell=True, prune=True):
         print("Zeros: " + str(len(zeros)))
     if prune:
         # Prune documents with no topic distributions
-        dtm = sp.csr_matrix(dtm)
-        dtm = slice_sparse_row(dtm, zeros)
+        dt_matrix = sp.csr_matrix(dt_matrix)
+        dt_matrix = slice_sparse_row(dt_matrix, zeros)
     if show:
         ax = sb.boxplot(x=lens)
         plt.show()
 
-    return dtm
+    return dt_matrix
 
 
 def slice_sparse_col(matrix: sp.csc_matrix, cols: List[int]):
