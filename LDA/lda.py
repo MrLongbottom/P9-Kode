@@ -94,40 +94,6 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
-def evaluate_doc_topic_distributions(dtm):
-    lens = []
-    zeros = 0
-    for i in tqdm(range(0, dtm.shape[1])):
-        topic = dtm.getcol(i).nonzero()[0]
-        lens.append(len(topic))
-        if len(topic) == 0:
-            zeros += 1
-    print("Topic-Doc distributions.")
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
-
-    sb.set_theme(style="whitegrid")
-    ax = sb.boxplot(x=lens)
-    plt.show()
-
-    lens = []
-    zeros = 0
-    for i in tqdm(range(0, dtm.shape[0])):
-        topic = dtm.getrow(i).nonzero()[0]
-        lens.append(len(topic))
-        if len(topic) == 0:
-            zeros += 1
-    print("Doc-Topic distributions.")
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
-
-
 def run_lda(path: str, cv_matrix, words, corpus, save_path):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
