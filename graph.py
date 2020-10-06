@@ -2,7 +2,7 @@ import os
 import re
 from functools import partial
 from multiprocessing import Pool
-
+import  numpy as np
 import scipy.sparse as sp
 from tqdm import tqdm
 
@@ -33,23 +33,22 @@ def document_similarity(td_matrix, doc_id):
     """
     doc = td_matrix.getrow(doc_id)
     topics_in_doc = doc.nonzero()[1]
-    skips = 0
-    sim_dict = {}
+    rows = np.array([])
+    cols = np.array([])
+    vals = np.array([])
     for topic_id in topics_in_doc:
         topic = td_matrix.getcol(topic_id)
         docs_in_topic = topic.nonzero()[0]
-        len1 = len(docs_in_topic)
         # filter docs that have already been done, .ie documents earlier in the loop
         docs_in_topic = [x for x in docs_in_topic if doc_id <= x]
-        len2 = len(docs_in_topic)
-        if len1 != len2:
-            skips += len1 - len2
         Y = {x: topic[x].data[0] for x in docs_in_topic if doc_id <= x}
         x = topic[doc_id].data[0]
         similarity_sum = {id: min(x, y) for id, y in Y.items()}
-        for key, val in similarity_sum.items():
-            sim_dict[doc_id, key] = sim_dict.get((doc_id, key), 0) + val
-    print(f"Doc: {doc_id} Skipped: {skips}")
+        rows = np.concatenate((rows, np.zeros(len(similarity_sum))))
+        cols = np.concatenate((cols, np.array(list(similarity_sum.keys()))))
+        vals = np.concatenate((vals, np.array(list(similarity_sum.values()))))
+    sim_dict = sp.coo_matrix((vals, (rows, cols)), shape=(1, td_matrix.shape[0]))
+    print(f"Doc: {doc_id} done.")
     return sim_dict
 
 
@@ -59,7 +58,6 @@ def doc_sim_chunker(td_matrix, chunk_size):
     calls the document similarity function on each
     :param td_matrix:
     :param chunk_size:
-    :return:
     """
     max = int(td_matrix.shape[0] / chunk_size)
     for i in range(0, max + 1):
@@ -72,23 +70,16 @@ def doc_sim_chunker(td_matrix, chunk_size):
 
 def save_document_similarity(td_matrix, start, end):
     """
-    Constructs similarity based on a start and an end index
+    Constructs similarity based on a start and an end index. saves matrix to file
     :param td_matrix: term-document matrix
     :param start: start index
     :param end: end index
-    :return: saves matrix to file
     """
-    sim = {}
     with Pool(8) as p:
         similarities = p.map(partial(document_similarity, td_matrix), range(start, end))
-    for dictionary in tqdm(similarities):
-        sim.update(dictionary)
-    dok = sp.dok_matrix((end - start, td_matrix.shape[0]))
-    for (a, b), v in sim.items():
-        dok[a - start, b] = v
-    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(dok))
-    del sim
-    del dok
+    matrix = sp.vstack(similarities)
+    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(matrix))
+    del matrix
     del similarities
 
 
