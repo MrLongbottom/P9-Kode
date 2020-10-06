@@ -154,8 +154,8 @@ def get_topic_word_matrix(lda: LdaModel) -> np.ndarray:
 
 def load_dict_file(path, separator=','):
     csv_reader = pd.read_csv(path, header=None, encoding='unicode_escape', sep=separator)
-    test = dict(csv_reader.values.tolist())
-    return test
+    dic = dict(csv_reader.values.tolist())
+    return dic
 
 
 def print_topic_words(id: int, lda_model: LdaModel):
