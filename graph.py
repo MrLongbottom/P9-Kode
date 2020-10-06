@@ -7,23 +7,41 @@ import scipy.sparse as sp
 from tqdm import tqdm
 
 
-def similarity_between_documents(d1: int, d2: int):
+def doc_sim_chunker(td_matrix: sp.spmatrix, chunk_size: int, pool: int):
     """
-    Computes similarity between two documents by summing the minimum of their topic distribution.
-    :param d1: document 1
-    :param d2: document 2
-    :return: a similarity value between 0 and 1
+    Takes the topic-document matrix and splits the matrix into chunks
+    and calls the document similarity function on each.
+    This is done to save intermediate progress in files before cleaning memory and continuing.
+    :param td_matrix: topic-document distribution matrix in sparse format.
+    :param chunk_size: how many documents to run before saving.
+    :param pool: how many threads to use.
     """
-    sim_set = set(matrix.getrow(0).nonzero()[1]) & set(matrix.getrow(1).nonzero()[1])
-    if len(sim_set) >= 0:
-        return sum(
-            [min(matrix.getrow(d1).toarray()[0][number], matrix.getrow(d2).toarray()[0][number]) for
-             number in sim_set])
-    else:
-        return 0
+    max = int(td_matrix.shape[0] / chunk_size)
+    for i in range(0, max + 1):
+        print(f"Starting chunk {i}.")
+        start = i * chunk_size
+        end = min((i + 1) * chunk_size, td_matrix.shape[0])
+        save_document_similarity(td_matrix, start, end, pool)
+    print("Done.")
 
 
-def document_similarity(td_matrix, doc_id):
+def save_document_similarity(td_matrix: sp.spmatrix, start: int, end: int, pool: int):
+    """
+    Constructs similarity based on a start and an end index. Saves matrix to file.
+    :param td_matrix: topic-document matrix
+    :param start: start index
+    :param end: end index
+    :param pool: how many threads to use
+    """
+    with Pool(pool) as p:
+        similarities = p.map(partial(document_similarity, td_matrix), range(start, end))
+    matrix = sp.vstack(similarities)
+    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(matrix))
+    del matrix
+    del similarities
+
+
+def document_similarity(td_matrix: sp.spmatrix, doc_id: int):
     """
     Takes a topic-document matrix and calculates the similarity for a given id
     against all other id's which are similar to the given document.
@@ -40,47 +58,31 @@ def document_similarity(td_matrix, doc_id):
         topic = td_matrix.getcol(topic_id)
         docs_in_topic = topic.nonzero()[0]
         # filter docs that have already been done, .ie documents earlier in the loop
-        docs_in_topic = [x for x in docs_in_topic if doc_id <= x]
-        Y = {x: topic[x].data[0] for x in docs_in_topic if doc_id <= x}
+        docs_in_topic = [d for d in docs_in_topic if doc_id < d]
+        # put documents that share the same topic as the main document into a dictionary.
+        # mapping doc_id -> topic distribution value
+        Y = {y: topic[y].data[0] for y in docs_in_topic if doc_id < y}
         x = topic[doc_id].data[0]
-        similarity_sum = {id: min(x, y) for id, y in Y.items()}
+        similarity_sum = similarity_function(x, Y)
+        # add values to numpy arrays based on row_ids, column_ids and values
+        # this is to efficiently construct a coo_matrix
         rows = np.concatenate((rows, np.zeros(len(similarity_sum))))
         cols = np.concatenate((cols, np.array(list(similarity_sum.keys()))))
         vals = np.concatenate((vals, np.array(list(similarity_sum.values()))))
+    # construct similarity coo_matrix based on the documents that share topics with the main document.
     sim_dict = sp.coo_matrix((vals, (rows, cols)), shape=(1, td_matrix.shape[0]))
     print(f"Doc: {doc_id} done.")
     return sim_dict
 
 
-def doc_sim_chunker(td_matrix, chunk_size: int):
+def similarity_function(x, Y):
     """
-    Takes the term-document matrix and splits the matrix into chunks and calls the document similarity function on each.
-    This is done to save intermediate progress in files before cleaning memory and continuing.
-    :param td_matrix: topic document distribution matrix in sparse format.
-    :param chunk_size: how many documents to run before saving.
+    Based on topic-document distributions calculates similarities between main document and other documents.
+    :param x: main document's distribution to specific topic
+    :param Y: other document's distribution to same topic
+    :return: dict where each element y in Y, is the minimum of y and x
     """
-    max = int(td_matrix.shape[0] / chunk_size)
-    for i in range(0, max + 1):
-        print(f"Starting chunk {i}.")
-        start = i * chunk_size
-        end = min((i + 1) * chunk_size, td_matrix.shape[0])
-        save_document_similarity(td_matrix, start, end)
-    print("Done.")
-
-
-def save_document_similarity(td_matrix, start, end):
-    """
-    Constructs similarity based on a start and an end index. Saves matrix to file.
-    :param td_matrix: term-document matrix
-    :param start: start index
-    :param end: end index
-    """
-    with Pool(8) as p:
-        similarities = p.map(partial(document_similarity, td_matrix), range(start, end))
-    matrix = sp.vstack(similarities)
-    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(matrix))
-    del matrix
-    del similarities
+    return {id: min(x, y) for id, y in Y.items()}
 
 
 def stack_matrices_in_folder(path: str):
@@ -100,9 +102,11 @@ def stack_matrices_in_folder(path: str):
 
 
 if __name__ == '__main__':
-    # Loading stuff and initialisation
-    matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-    doc_sim_chunker(matrix, 500)
+    # Loading topic-document distribution matrix and initialisation
+    # convert to dok_matrix for faster lookup
+    # TODO test whether dok conversion improves computation speed, as both getcol() and lookups are used.
+    matrix = sp.dok_matrix(sp.load_npz("Generated Files/topic_doc_matrix.npz"))
+    doc_sim_chunker(matrix, 500, 8)
 
     # Save full matrix
     sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
