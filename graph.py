@@ -105,7 +105,7 @@ if __name__ == '__main__':
     doc_sim_chunker(matrix, 500)
 
     # Save full matrix
-    sp.save_npz("Generated Files/full_matrix", stack_matrixes_in_folder("Generated Files/adj/"))
+    sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
 
     # Load full matrix
     adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
