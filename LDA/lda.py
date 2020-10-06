@@ -15,6 +15,7 @@ from scipy.sparse import csr_matrix
 from scipy.stats import entropy
 from tqdm import tqdm
 from matplotlib.cbook import boxplot_stats
+from gensim.models import CoherenceModel
 
 
 def fit_lda(data: csr_matrix, vocab: Dict):
@@ -39,7 +40,7 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel, filename: str) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
@@ -49,7 +50,7 @@ def create_document_topics(corpus: List[str], lda: LdaModel) -> sp.dok_matrix:
     par = partial(get_document_topics_from_model, lda=lda)
     with Pool(8) as p:
         document_topics.append(p.map(par, corpus))
-    matrix = save_topic_doc_matrix(document_topics[0], lda)
+    matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
     return matrix
 
 
@@ -66,19 +67,22 @@ def get_document_topics_from_model(text: str, lda: LdaModel) -> Dict[int, float]
     return dict([x for x in query][0])
 
 
-def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel) -> sp.dok_matrix:
+def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel, filename: str) -> sp.dok_matrix:
     """
     Saves the document topics (list of dicts) in a matrix
     :param document_topics: list of dicts
+    :param lda: the lda model
+    :param file_name: path of file to save
     :return: a matrix (scipy)
     """
     matrix = sp.dok_matrix((len(document_topics), lda.num_topics))
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
-    matrix = evaluate_doc_topic_distributions(matrix)
-    evaluate_doc_topic_distributions(matrix, prune=False, show=False)
-    sp.save_npz("Generated Files/test_topic_doc_matrix", sp.csc_matrix(matrix))
+    matrix = evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=True)
+    # print once again to show improvement
+    evaluate_doc_topic_distributions(matrix, show=False, tell=True, prune=False)
+    sp.save_npz(filename, sp.csc_matrix(matrix))
     return matrix
 
 
@@ -188,26 +192,44 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus):
+def run_lda(path: str, cv_matrix, words, corpus, save_path):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
     save_lda(lda, path)
 
     # saving document topics to file
     print("creating document topics file")
-    create_document_topics(corpus, lda)
+    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz")
+    # saving topic words to file
+    print("creating topic words file")
+    tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz")
 
     return lda
 
 
+def save_topic_word_matrix(lda: LdaModel, name: str):
+    matrix = sp.csc_matrix(lda.get_topics())
+    return sp.save_npz(name, matrix)
+
+
+def get_topic_word_matrix(lda: LdaModel) -> np.ndarray:
+    return lda.get_topics()
+
+
 def load_dict_file(path, separator=','):
     csv_reader = pd.read_csv(path, header=None, encoding='unicode_escape', sep=separator)
-    test = dict(csv_reader.values.tolist())
-    return test
+    dic = dict(csv_reader.values.tolist())
+    return dic
 
 
 def print_topic_words(id: int, lda_model: LdaModel):
     return dict(lda_model.show_topics(lda_model.num_topics))[id]
+
+
+def coherence_score(lda: LdaModel, texts, id2word, measure: str = 'c_v'):
+    coherence_model_lda = CoherenceModel(model=lda, texts=texts, dictionary=id2word, coherence=measure)
+    coherence_lda = coherence_model_lda.get_coherence()
+    print('\nCoherence Score: ', coherence_lda)
 
 
 if __name__ == '__main__':
@@ -218,4 +240,4 @@ if __name__ == '__main__':
     mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    run_lda('/model/', cv, words, mini_corpus)
+    run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")
