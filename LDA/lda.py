@@ -98,6 +98,8 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
+# TODO when we prune, we also need to update generated files otherwise ids wont match up.
+#  possibly return sliced topic and doc ids and then remove from generated files in another function?
 def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, tell: bool = True, prune: bool = True):
     """
     Evaluate document-topic distribution matrix, involving a combination of:
