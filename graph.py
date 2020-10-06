@@ -83,9 +83,9 @@ def save_document_similarity(td_matrix, start, end):
     del similarities
 
 
-def stack_matrixes_in_folder(path):
+def stack_matrices_in_folder(path):
     """
-    Stack adj_matrixes on top of each other and return the full adj matrix
+    Stack adj_matrices on top of each other and return the full adj matrix
     :param path: folder
     :return:
     """
