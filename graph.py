@@ -25,11 +25,11 @@ def similarity_between_documents(d1: int, d2: int):
 
 def document_similarity(td_matrix, doc_id):
     """
-    Takes a term-document matrix and calculates the similarity for a given id
+    Takes a topic-document matrix and calculates the similarity for a given id
     against all other id's which are similar to the given document.
-    :param td_matrix: term-document matri
+    :param td_matrix: topic-document matrix
     :param doc_id: the id of the given document
-    :return: a dictionary of similarity scores
+    :return: a coo_matrix consisting of one documents similarity score (one row).
     """
     doc = td_matrix.getrow(doc_id)
     topics_in_doc = doc.nonzero()[1]
@@ -52,12 +52,12 @@ def document_similarity(td_matrix, doc_id):
     return sim_dict
 
 
-def doc_sim_chunker(td_matrix, chunk_size):
+def doc_sim_chunker(td_matrix, chunk_size: int):
     """
-    Takes the term-document matrix and splits the matrix into chunks and
-    calls the document similarity function on each
-    :param td_matrix:
-    :param chunk_size:
+    Takes the term-document matrix and splits the matrix into chunks and calls the document similarity function on each.
+    This is done to save intermediate progress in files before cleaning memory and continuing.
+    :param td_matrix: topic document distribution matrix in sparse format.
+    :param chunk_size: how many documents to run before saving.
     """
     max = int(td_matrix.shape[0] / chunk_size)
     for i in range(0, max + 1):
@@ -70,7 +70,7 @@ def doc_sim_chunker(td_matrix, chunk_size):
 
 def save_document_similarity(td_matrix, start, end):
     """
-    Constructs similarity based on a start and an end index. saves matrix to file
+    Constructs similarity based on a start and an end index. Saves matrix to file.
     :param td_matrix: term-document matrix
     :param start: start index
     :param end: end index
@@ -83,11 +83,11 @@ def save_document_similarity(td_matrix, start, end):
     del similarities
 
 
-def stack_matrices_in_folder(path):
+def stack_matrices_in_folder(path: str):
     """
-    Stack adj_matrices on top of each other and return the full adj matrix
-    :param path: folder
-    :return:
+    Stack adj_matrices on top of each other and return the full adj matrix.
+    :param path: folder path
+    :return: stacked matrix
     """
     files = os.listdir(path)
     files.sort(key=lambda f: int(re.sub('\D', '', f)))
