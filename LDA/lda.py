@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
 from scipy.stats import entropy
 from tqdm import tqdm
+from gensim.models import CoherenceModel
 
 
 def fit_lda(data: csr_matrix, vocab: Dict):
@@ -93,40 +94,6 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
-def evaluate_doc_topic_distributions(dtm):
-    lens = []
-    zeros = 0
-    for i in tqdm(range(0, dtm.shape[1])):
-        topic = dtm.getcol(i).nonzero()[0]
-        lens.append(len(topic))
-        if len(topic) == 0:
-            zeros += 1
-    print("Topic-Doc distributions.")
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
-
-    sb.set_theme(style="whitegrid")
-    ax = sb.boxplot(x=lens)
-    plt.show()
-
-    lens = []
-    zeros = 0
-    for i in tqdm(range(0, dtm.shape[0])):
-        topic = dtm.getrow(i).nonzero()[0]
-        lens.append(len(topic))
-        if len(topic) == 0:
-            zeros += 1
-    print("Doc-Topic distributions.")
-    print("Minimum: " + str(min(lens)))
-    print("Maximum: " + str(max(lens)))
-    print("Average: " + str(np.mean(lens)))
-    print("Entropy: " + str(entropy(lens, base=len(lens))))
-    print("Zeros: " + str(zeros))
-
-
 def run_lda(path: str, cv_matrix, words, corpus, save_path):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
@@ -134,10 +101,10 @@ def run_lda(path: str, cv_matrix, words, corpus, save_path):
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path+"topic_doc_matrix.npz")
+    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz")
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path+"topic_word_matrix.npz")
+    tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz")
 
     return lda
 
@@ -153,12 +120,18 @@ def get_topic_word_matrix(lda: LdaModel) -> np.ndarray:
 
 def load_dict_file(path, separator=','):
     csv_reader = pd.read_csv(path, header=None, encoding='unicode_escape', sep=separator)
-    test = dict(csv_reader.values.tolist())
-    return test
+    dic = dict(csv_reader.values.tolist())
+    return dic
 
 
 def print_topic_words(id: int, lda_model: LdaModel):
     return dict(lda_model.show_topics(lda_model.num_topics))[id]
+
+
+def coherence_score(lda: LdaModel, texts, id2word, measure: str = 'c_v'):
+    coherence_model_lda = CoherenceModel(model=lda, texts=texts, dictionary=id2word, coherence=measure)
+    coherence_lda = coherence_model_lda.get_coherence()
+    print('\nCoherence Score: ', coherence_lda)
 
 
 if __name__ == '__main__':
