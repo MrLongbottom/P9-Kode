@@ -265,11 +265,15 @@ def new_word_db_fetch(words, wik_word_index=0, wik_nonword_index=0):
     new_words = []
     new_nonwords = []
     for word in tqdm(words):
-        data = wik_parser.fetch(word)
-        if len(data) == 0:
-            new_nonwords.append(word)
-        else:
-            new_words.append(word)
+        try:
+            data = wik_parser.fetch(word)
+            if len(data) == 0:
+                new_nonwords.append(word)
+            else:
+                new_words.append(word)
+        except AttributeError:
+            print("something went wrong, with fidning a word on WikWord.")
+            continue
     csv_append('NLP/wik_nonwords.csv', new_nonwords, wik_nonword_index)
     csv_append('NLP/wik_words.csv', new_words, wik_word_index)
     return new_words, new_nonwords
