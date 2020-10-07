@@ -20,6 +20,7 @@ def document_scores(adj_matrix, dmp_factor=0.85, num_steps=10):
     :param num_steps: number of power iterations
     :return: sorted list of document based on their scores
     """
+    # initialization (e is the personalization vector.)
     e = np.ones(adj_matrix.shape[0])
     document_score = np.ones(adj_matrix.shape[0])
 
