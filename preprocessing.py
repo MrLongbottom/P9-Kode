@@ -11,13 +11,13 @@ from nltk.stem.snowball import DanishStemmer
 from wiktionaryparser import WiktionaryParser
 
 
-def preprocess(load_filename="documents.json", word_save_filename="Generated Files/word2vec.csv",
+def preprocess(filename_or_docs="documents.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
                doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
                doc_minimum_length=20, save=True, word_check=True):
     """
     preprocesses a json file into a docword count vectorization matrix, removing unhelpful words and documents.
-    :param load_filename: path of .json file to load. (default: "documents.json")
+    :param filename_or_docs: path of .json file to load (default: "documents.json") or the documents to preprocess
     :param word_save_filename: path of .csv file to save words in vector format. Only relevant if save=True.
     (default: "Generated Files/word2vec.csv")
     :param doc_save_filename: path of .csv file to save documents in vector format. Only relevant if save=True.
@@ -40,8 +40,8 @@ def preprocess(load_filename="documents.json", word_save_filename="Generated Fil
     step = 1
     # load documents file
     print(f'Step {step}: loading documents.')
-    # If load_filename is a string, load documents from path, else continue as if given documents directly
-    documents = load_document_file(load_filename) if isinstance(load_filename, str) else load_filename
+    # If filename_or_docs is a string, load documents from path, else continue as if given documents directly
+    documents = load_document_file(filename_or_docs) if isinstance(filename_or_docs, str) else filename_or_docs
     # filter documents and create corpus
     documents, corpus = filter_documents(documents, doc_minimum_length)
 
@@ -322,9 +322,12 @@ def word_checker(words):
     # Load new words from fetch databases
     if len(wik_remain_words) != 0:
         print("New words encountered, fetching data.")
-        new_words, new_nonwords = new_word_db_fetch(wik_remain_words,
-                                                    wik_word_index=len(wik_words), wik_nonword_index=len(wik_nonwords))
-        wik_words.extend(new_words)
+        try:
+            new_words, new_nonwords = new_word_db_fetch(wik_remain_words,
+                                                        wik_word_index=len(wik_words), wik_nonword_index=len(wik_nonwords))
+            wik_words.extend(new_words)
+        except AttributeError:
+            print("something went wrong, with fidning a word on WikWord.")
 
     # Test how many databases contain the given words
     bad_words = []
