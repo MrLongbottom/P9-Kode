@@ -265,11 +265,15 @@ def new_word_db_fetch(words, wik_word_index=0, wik_nonword_index=0):
     new_words = []
     new_nonwords = []
     for word in tqdm(words):
-        data = wik_parser.fetch(word)
-        if len(data) == 0:
-            new_nonwords.append(word)
-        else:
-            new_words.append(word)
+        try:
+            data = wik_parser.fetch(word)
+            if len(data) == 0:
+                new_nonwords.append(word)
+            else:
+                new_words.append(word)
+        except AttributeError:
+            print("something went wrong, with fidning a word on WikWord.")
+            continue
     csv_append('NLP/wik_nonwords.csv', new_nonwords, wik_nonword_index)
     csv_append('NLP/wik_words.csv', new_words, wik_word_index)
     return new_words, new_nonwords
@@ -293,12 +297,9 @@ def word_checker(words):
     # Load new words from fetch databases
     if len(wik_remain_words) != 0:
         print("New words encountered, fetching data.")
-        try:
-            new_words, new_nonwords = new_word_db_fetch(wik_remain_words,
-                                                        wik_word_index=len(wik_words), wik_nonword_index=len(wik_nonwords))
-            wik_words.extend(new_words)
-        except AttributeError:
-            print("something went wrong, with fidning a word on WikWord.")
+        new_words, new_nonwords = new_word_db_fetch(wik_remain_words,
+                                                    wik_word_index=len(wik_words), wik_nonword_index=len(wik_nonwords))
+        wik_words.extend(new_words)
 
     # Test how many databases contain the given words
     bad_words = []
