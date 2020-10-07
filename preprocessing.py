@@ -322,9 +322,12 @@ def word_checker(words):
     # Load new words from fetch databases
     if len(wik_remain_words) != 0:
         print("New words encountered, fetching data.")
-        new_words, new_nonwords = new_word_db_fetch(wik_remain_words,
-                                                    wik_word_index=len(wik_words), wik_nonword_index=len(wik_nonwords))
-        wik_words.extend(new_words)
+        try:
+            new_words, new_nonwords = new_word_db_fetch(wik_remain_words,
+                                                        wik_word_index=len(wik_words), wik_nonword_index=len(wik_nonwords))
+            wik_words.extend(new_words)
+        except AttributeError:
+            print("something went wrong, with fidning a word on WikWord.")
 
     # Test how many databases contain the given words
     bad_words = []
