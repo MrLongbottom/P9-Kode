@@ -1,3 +1,4 @@
+import json
 import math
 from functools import partial
 from multiprocessing import Pool
@@ -53,6 +54,12 @@ def create_document_topics(corpus: List[str], lda: LdaModel, filename: str) -> s
     return matrix
 
 
+def load_corpus(name: str):
+    with open(name, 'r', encoding='utf8') as json_file:
+        corpus = json.loads(json_file.read())
+    return corpus
+
+
 def get_document_topics_from_model(text: str, lda: LdaModel) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
@@ -60,9 +67,9 @@ def get_document_topics_from_model(text: str, lda: LdaModel) -> Dict[int, float]
     :param text: a document string
     :return: a dict with the topics in the given document based on the lda model
     """
-    dictionary = Dictionary([text])
+    dictionary = Dictionary(load_corpus("Generated Files/corpus"))
     corpus = [dictionary.doc2bow(t) for t in [text]]
-    query = lda.get_document_topics(corpus, minimum_probability=0.025)
+    query = lda.get_document_topics(corpus)
     return dict([x for x in query][0])
 
 

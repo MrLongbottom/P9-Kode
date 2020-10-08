@@ -5,29 +5,28 @@ from LDA.lda import load_lda
 from standard_random_walk import construct_transition_probability_matrix
 
 
-def cluster_page_rank(adj_matrix: sp.csr_matrix) -> np.array:
+def cluster_page_rank(adj_matrix: sp.csr_matrix, query: np.ndarray = None) -> np.array:
     adj_matrix = construct_transition_probability_matrix(adj_matrix)
-    ranking_of_documents = document_scores(adj_matrix)
+    ranking_of_documents = document_scores(adj_matrix, query=query)
     return ranking_of_documents
 
 
-def document_scores(adj_matrix, dmp_factor=0.85, num_steps=10):
+def document_scores(adj_matrix, dmp_factor=0.85, num_steps=10, query: np.ndarray = None):
     """
     Calculates the document scores for each document in the adj_matrix
     by constructing the new transition probability matrix and random walking it
     :param adj_matrix: adj_matrix
     :param dmp_factor: 0.85
     :param num_steps: number of power iterations
+    :param query: the query to be searched for
     :return: sorted list of document based on their scores
     """
-    # initialization (e is the personalization vector.)
-    e = np.ones(adj_matrix.shape[0])
     document_score = np.ones(adj_matrix.shape[0])
 
     m_star = construct_new_transition_matrix(adj_matrix)
 
     for x in range(num_steps):
-        document_score = dmp_factor * np.dot(document_score, m_star.T) + (1 - dmp_factor) / adj_matrix.shape[0] * e
+        document_score = dmp_factor * np.dot(document_score, m_star.T) + (1 - dmp_factor) / adj_matrix.shape[0] * query
     return document_score.argsort()[:][::-1]
 
 
