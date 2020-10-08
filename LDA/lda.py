@@ -99,6 +99,7 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
+# TODO accessing model will no longer provide the correct ids after pruning, avoid usage for now.
 def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, tell: bool = True,
                                      prune: bool = False, prune_treshhold = 0.5):
     """
@@ -110,7 +111,7 @@ def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, 
     :param show: whether to show boxplot
     :param tell: whether to print statistics
     :param prune: whether to prune
-    :param prune_treshhold:
+    :param prune_treshhold: how much percentage of the doc set a topic can cover at max.
     :return: potentially pruned matrix.
     """
     sb.set_theme(style="whitegrid")
@@ -137,8 +138,11 @@ def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, 
     if prune:
         # TODO model cannot be accessed normally after this. Which may be a problem
         # find outlier topics based on the boxplot
-        #outlier_values = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
-        #outliers = [lens.index(x) for x in outlier_values]
+        # this feature was currently discarded as running lda multiple times in a row would prune more and more.
+        """
+        outlier_values = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
+        outliers = [lens.index(x) for x in outlier_values]
+        """
         # also prune topics with no documents
         outliers.extend(top_zeros)
         dt_matrix = slice_sparse_col(dt_matrix, outliers)
@@ -166,6 +170,7 @@ def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, 
         print("Zeros: " + str(len(doc_zeros)))
     if prune:
         # TODO needs to be tested more thoroughly
+        # TODO model cannot be accessed normally after this. Which may be a problem
         if len(doc_zeros) > 0:
             # Prune documents with no topic distributions
             dt_matrix = sp.csr_matrix(dt_matrix)
