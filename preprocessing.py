@@ -140,6 +140,7 @@ def stem_lem(corpus, words, documents):
     """
     # Stemming
     stemmer = DanishStemmer()
+    stop_words = stopwords.words('danish')
     # Update word list to use stemmed words
     translator = {}
     add = []
@@ -149,9 +150,9 @@ def stem_lem(corpus, words, documents):
         if stem != word:
             if word not in remove:
                 remove.append(word)
-            if stem not in add:
+            if stem not in add and stem not in stop_words:
                 add.append(stem)
-            if word not in translator:
+            if word not in translator and stem not in stop_words:
                 translator[word] = stem
     words = [x for x in words if x not in remove]
     words.extend([x for x in add if x not in words])
