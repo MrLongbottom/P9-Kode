@@ -71,7 +71,7 @@ def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Diction
     :return: a dict with the topics in the given document based on the lda model
     """
     corpus = [dictionary.doc2bow(t) for t in [text]]
-    query = lda.get_document_topics(corpus)
+    query = lda.get_document_topics(corpus, minimum_probability=0.025)
     return dict([x for x in query][0])
 
 
@@ -293,7 +293,7 @@ if __name__ == '__main__':
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
     run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")
-    
+
     # lda = load_lda("model/docu_model_sqrt_div2")
     # corpus = load_corpus("../Generated Files/corpus")
     # coherence_score(lda, corpus, Dictionary(corpus))

@@ -2,8 +2,9 @@ from typing import Dict
 
 import numpy as np
 import scipy.sparse as sp
+from gensim.corpora import Dictionary
 
-from LDA.lda import load_lda, get_document_topics_from_model
+from LDA.lda import load_lda, get_document_topics_from_model, load_corpus
 from cluster_random_walk import cluster_page_rank
 from preprocessing import preprocess_query
 
@@ -19,7 +20,8 @@ def query_topics(query: str, model_path: str, topic_doc_path) -> np.ndarray:
     processed_query = preprocess_query(query)
     lda = load_lda(model_path)
     topic_doc_matrix = sp.load_npz(topic_doc_path)
-    q_topics = get_document_topics_from_model(processed_query, lda)
+    corpus = Dictionary(load_corpus("Generated Files/corpus"))
+    q_topics = get_document_topics_from_model(processed_query, lda, corpus)
     return make_personalization_vector(q_topics, topic_doc_matrix)
 
 
@@ -33,8 +35,8 @@ if __name__ == '__main__':
     query1 = "fodbold spiller"
     query2 = "katte i vand"
 
-    r_list1 = search(query1, 1000, "LDA/model/search_model", "Generated Files/topic_doc_matrix.npz")
-    r_list2 = search(query2, 1000, "LDA/model/search_model", "Generated Files/topic_doc_matrix.npz")
+    r_list1 = search(query1, 100, "LDA/model/docu_model_sqrt_div2", "Generated Files/topic_doc_matrix.npz")
+    r_list2 = search(query2, 100, "LDA/model/docu_model_sqrt_div2", "Generated Files/topic_doc_matrix.npz")
 
     print(r_list1[:10])
     print(r_list2[:10])
