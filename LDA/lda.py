@@ -4,6 +4,7 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
+import preprocessing
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -15,6 +16,7 @@ from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
 from scipy.stats import entropy
 from tqdm import tqdm
+from matplotlib.cbook import boxplot_stats
 from gensim.models import CoherenceModel
 
 
@@ -85,6 +87,9 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
+    #matrix = evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=True)
+    # print once again to show improvement
+    evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=False)
     sp.save_npz(filename, sp.csc_matrix(matrix))
     return matrix
 
@@ -101,17 +106,155 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
+# TODO accessing model will no longer provide the correct ids after pruning, avoid usage for now.
+def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, tell: bool = True,
+                                     prune: bool = False, prune_treshhold = 0.5):
+    """
+    Evaluate document-topic distribution matrix, involving a combination of:
+    * printing statistics
+    * showing boxplot
+    * pruning empty docs and topics, and pruning topics that are too common
+    :param dt_matrix: document-topic distribution matrix
+    :param show: whether to show boxplot
+    :param tell: whether to print statistics
+    :param prune: whether to prune
+    :param prune_treshhold: how much percentage of the doc set a topic can cover at max.
+    :return: potentially pruned matrix.
+    """
+    sb.set_theme(style="whitegrid")
+    # Topic-Doc distributions
+    lens = []
+    top_zeros = []
+    outliers = []
+    threshold = dt_matrix.shape[0] * prune_treshhold
+    for i in tqdm(range(0, dt_matrix.shape[1])):
+        topic = dt_matrix.getcol(i).nonzero()[0]
+        lens.append(len(topic))
+        if len(topic) > threshold:
+            outliers.append(i)
+        if len(topic) == 0:
+            top_zeros.append(i)
+    if tell:
+        print("Topic-Doc distributions.")
+        print("Minimum: " + str(min(lens)))
+        print("Maximum: " + str(max(lens)))
+        print("Average: " + str(np.mean(lens)))
+        print("Entropy: " + str(entropy(lens, base=len(lens))))
+        print("Zeros: " + str(len(top_zeros)))
+
+    if prune:
+        # TODO model cannot be accessed normally after this. Which may be a problem
+        # find outlier topics based on the boxplot
+        # this feature was currently discarded as running lda multiple times in a row would prune more and more.
+        """
+        outlier_values = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
+        outliers = [lens.index(x) for x in outlier_values]
+        """
+        # also prune topics with no documents
+        outliers.extend(top_zeros)
+        dt_matrix = slice_sparse_col(dt_matrix, outliers)
+        tw_matrix = sp.load_npz("../Generated Files/topic_word_matrix.npz")
+        tw_matrix = slice_sparse_row(tw_matrix, outliers)
+        sp.save_npz("../Generated Files/topic_word_matrix.npz", tw_matrix)
+    if show:
+        ax = sb.boxplot(x=lens)
+        plt.show()
+
+    # Doc-Topic distributions
+    lens = []
+    doc_zeros = []
+    for i in tqdm(range(0, dt_matrix.shape[0])):
+        doc = dt_matrix.getrow(i).nonzero()[0]
+        lens.append(len(doc))
+        if len(doc) == 0:
+            doc_zeros.append(i)
+    if tell:
+        print("Doc-Topic distributions.")
+        print("Minimum: " + str(min(lens)))
+        print("Maximum: " + str(max(lens)))
+        print("Average: " + str(np.mean(lens)))
+        print("Entropy: " + str(entropy(lens, base=len(lens))))
+        print("Zeros: " + str(len(doc_zeros)))
+    if prune:
+        # TODO needs to be tested more thoroughly
+        # TODO model cannot be accessed normally after this. Which may be a problem
+        if len(doc_zeros) > 0:
+            # Prune documents with no topic distributions
+            dt_matrix = sp.csr_matrix(dt_matrix)
+            dt_matrix = slice_sparse_row(dt_matrix, doc_zeros)
+            remove_from_rows_from_file("../Generated Files/count_vec_matrix.npz", doc_zeros)
+            remove_from_rows_from_file("../Generated Files/doc2vec.csv", doc_zeros)
+            remove_from_rows_from_file("../Generated Files/doc2word.csv", doc_zeros, separator="-")
+    if show:
+        ax = sb.boxplot(x=lens)
+        plt.show()
+
+    return dt_matrix
+
+
+def remove_from_rows_from_file (path, rows, separator=","):
+    if path[-4:] == ".csv":
+        doc = load_dict_file(path, separator=separator)
+        doc = [x for x in doc.values() if x not in rows]
+        preprocessing.save_vector_file(path, doc, seperator=separator)
+    elif path[-4:] == ".npz":
+        matrix = sp.load_npz(path)
+        s = matrix.shape
+        matrix = slice_sparse_row(matrix, rows)
+        s2 = matrix.shape
+        print()
+
+
+def slice_sparse_col(matrix: sp.csc_matrix, cols: List[int]):
+    """
+    Remove some columns from a sparse matrix.
+    :param matrix: CSC matrix.
+    :param cols: list of column numbers to be removed.
+    :return: modified matrix without the specified columns.
+    """
+    cols.sort()
+    ms = []
+    prev = -1
+    for c in cols:
+        # add slices of the matrix, skipping column c
+        ms.append(matrix[:, prev + 1:c - 1])
+        prev = c
+    ms.append(matrix[:, prev + 1:])
+    # combine matrix slices
+    return sp.hstack(ms)
+
+
+def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
+    """
+    Remove some rows from a sparse matrix.
+    :param matrix: CSR matrix.
+    :param rows: list of row numbers to be removed.
+    :return: modified matrix without the specified rows.
+    """
+    rows.sort()
+    ms = []
+    prev = -1
+    for r in rows:
+        # add slices of the matrix, skipping row r
+        ms.append(matrix[prev + 1:r - 1, :])
+        prev = r
+    ms.append(matrix[prev + 1:, :])
+    # combine matrix slices
+    return sp.vstack(ms)
+
+
 def run_lda(path: str, cv_matrix, words, corpus, save_path):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
     save_lda(lda, path)
 
-    # saving document topics to file
-    print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz")
     # saving topic words to file
     print("creating topic words file")
     tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz")
+
+    # saving document topics to file
+    print("creating document topics file")
+    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz")
 
     return lda
 
