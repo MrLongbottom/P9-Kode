@@ -23,11 +23,18 @@ def query_topics(query: str, model_path: str, topic_doc_path) -> np.ndarray:
     return make_personalization_vector(q_topics, topic_doc_matrix)
 
 
+def search(query: str, size_of_adj: int, lda_path: str, topic_doc_matrix_path: str) -> np.ndarray:
+    search_vector = query_topics(query, lda_path, topic_doc_matrix_path)
+    adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")[:size_of_adj, :size_of_adj]
+    return cluster_page_rank(adj_matrix, search_vector[:size_of_adj])
+
+
 if __name__ == '__main__':
-    query = "fodbold spiller"
+    query1 = "fodbold spiller"
     query2 = "katte i vand"
 
-    search_vector = query_topics(query2, "LDA/model/search_model", "Generated Files/search/topic_doc_matrix.npz")
-    adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")[:1000, :1000]
-    ranked_list = cluster_page_rank(adj_matrix, search_vector[:1000])[:10]
-    print(ranked_list)
+    r_list1 = search(query1, 1000, "LDA/model/search_model", "Generated Files/topic_doc_matrix.npz")
+    r_list2 = search(query2, 1000, "LDA/model/search_model", "Generated Files/topic_doc_matrix.npz")
+
+    print(r_list1[:10])
+    print(r_list2[:10])
