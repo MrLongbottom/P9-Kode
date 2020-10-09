@@ -61,12 +61,12 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     # Stemming to combine word declensions
     step += 1
     print(f"Step {step}: Apply Stemming / Lemming")
-    corpus, words = stem_lem(corpus, words)
+    corpus, words, documents = stem_lem(corpus, words, documents)
 
     # filter documents to remove docs that now contain too few words (after all the word filtering)
     step += 1
     print(f"Step {step}: re-filter documents.")
-    corpus = refilter_docs(words, corpus, doc_minimum_length)
+    corpus, documents = refilter_docs(words, corpus, doc_minimum_length, documents)
 
     # transform documents into a matrix containing counts for each word in each document
     step += 1
@@ -131,7 +131,7 @@ def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count):
     return words
 
 
-def stem_lem(corpus, words):
+def stem_lem(corpus, words, documents):
     """
     Updates a word list and a corpus to use stemmed words.
     :param corpus: a list of sentences (strings of words separated by spaces)
@@ -166,7 +166,8 @@ def stem_lem(corpus, words):
                 sentence.append(translator[word])
                 sentence.remove(word)
         corpus[x] = ' '.join(sentence)
-    return corpus, words
+
+    return corpus, words, dict(zip(documents.keys(), corpus))
 
 
 def find_indexes(dict, values):
@@ -200,7 +201,7 @@ def cut_corpus(corpus, words):
     return cut
 
 
-def refilter_docs(words, corpus, doc_minimum_length):
+def refilter_docs(words, corpus, doc_minimum_length, documents):
     words_dict = {}
     for word in tqdm(words):
         words_dict[word] = 0
@@ -215,7 +216,7 @@ def refilter_docs(words, corpus, doc_minimum_length):
         if count < doc_minimum_length:
             empty_docs.append(doc)
     print("removed " + str(len(empty_docs)) + " docs, " + str(len(corpus) - len(empty_docs)) + " remaining.")
-    return [x for x in corpus if x not in empty_docs]
+    return [x for x in corpus if x not in empty_docs], {a: b for a,b in documents.items() if b not in empty_docs}
 
 
 def load_document_file(filename):
