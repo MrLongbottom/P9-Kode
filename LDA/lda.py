@@ -42,14 +42,14 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
     :return: a topic_document matrix
     """
     document_topics = []
-    par = partial(get_document_topics_from_model, lda=lda)
+    par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary)
     with Pool(8) as p:
         document_topics.append(p.map(par, corpus))
     matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
@@ -62,14 +62,14 @@ def load_corpus(name: str):
     return corpus
 
 
-def get_document_topics_from_model(text: str, lda: LdaModel) -> Dict[int, float]:
+def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Dictionary) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
     :param text: a document string
+    :param dictionary: the dictionary over the whole document
     :return: a dict with the topics in the given document based on the lda model
     """
-    dictionary = Dictionary(load_corpus("Generated Files/corpus"))
     corpus = [dictionary.doc2bow(t) for t in [text]]
     query = lda.get_document_topics(corpus)
     return dict([x for x in query][0])
@@ -87,7 +87,7 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
-    #matrix = evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=True)
+    # matrix = evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=True)
     # print once again to show improvement
     evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=False)
     sp.save_npz(filename, sp.csc_matrix(matrix))
@@ -108,7 +108,7 @@ def word_cloud(corpus):
 
 # TODO accessing model will no longer provide the correct ids after pruning, avoid usage for now.
 def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, tell: bool = True,
-                                     prune: bool = False, prune_treshhold = 0.5):
+                                     prune: bool = False, prune_treshhold=0.5):
     """
     Evaluate document-topic distribution matrix, involving a combination of:
     * printing statistics
@@ -192,7 +192,7 @@ def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, 
     return dt_matrix
 
 
-def remove_from_rows_from_file (path, rows, separator=","):
+def remove_from_rows_from_file(path, rows, separator=","):
     if path[-4:] == ".csv":
         doc = load_dict_file(path, separator=separator)
         doc = [x for x in doc.values() if x not in rows]
@@ -243,7 +243,7 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, save_path):
+def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
     save_lda(lda, path)
@@ -254,7 +254,7 @@ def run_lda(path: str, cv_matrix, words, corpus, save_path):
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz")
+    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", dictionary)
 
     return lda
 
@@ -293,3 +293,7 @@ if __name__ == '__main__':
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
     run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")
+    
+    # lda = load_lda("model/docu_model_sqrt_div2")
+    # corpus = load_corpus("../Generated Files/corpus")
+    # coherence_score(lda, corpus, Dictionary(corpus))
