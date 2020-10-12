@@ -10,12 +10,9 @@ if __name__ == '__main__':
 
     # Run LDA
 
-    run_lda(path="LDA/model/docu_model_sqrt_div2",
+    run_lda(path="LDA/model/document_model",
             cv_matrix=cv_matrix,
             words=words,
             corpus=corpus,
             save_path="Generated Files/",
             dictionary=Dictionary(corpus))
-
-    # Make Graph
-    # graph()

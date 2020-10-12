@@ -4,20 +4,20 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
-import preprocessing
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import seaborn as sb
 from gensim import matutils
 from gensim.corpora import Dictionary
+from gensim.models import CoherenceModel
 from gensim.models import LdaModel, LdaMulticore
 from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
 from scipy.stats import entropy
 from tqdm import tqdm
-from matplotlib.cbook import boxplot_stats
-from gensim.models import CoherenceModel
+
+import preprocessing
 
 
 def fit_lda(data: csr_matrix, vocab: Dict):
@@ -284,6 +284,34 @@ def coherence_score(lda: LdaModel, texts, id2word, measure: str = 'c_v'):
     print('\nCoherence Score: ', coherence_lda)
 
 
+def compute_coherence_values(cv_matrix, words, dictionary, texts, limit, start=2, step=10):
+    """
+    Compute c_v coherence for various number of topics
+
+    Parameters:
+    ----------
+    dictionary : Gensim dictionary
+    corpus : Gensim corpus
+    texts : List of input texts
+    limit : Max num of topics
+
+    Returns:
+    -------
+    model_list : List of LDA topic models
+    coherence_values : Coherence values corresponding to the LDA model with respective number of topics
+    """
+    coherence_values = []
+    model_list = []
+
+    for num_topics in tqdm(range(start, limit, step)):
+        model = fit_lda(cv_matrix, words)
+        model_list.append(model)
+        coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+        coherence_values.append(coherencemodel.get_coherence())
+
+    return model_list, coherence_values
+
+
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'model_test'
@@ -294,6 +322,6 @@ if __name__ == '__main__':
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
     run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")
 
-    # lda = load_lda("model/docu_model_sqrt_div2")
+    # lda = load_lda("model/document_model")
     # corpus = load_corpus("../Generated Files/corpus")
     # coherence_score(lda, corpus, Dictionary(corpus))
