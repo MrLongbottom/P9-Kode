@@ -20,9 +20,10 @@ from tqdm import tqdm
 import preprocessing
 
 
-def fit_lda(data: csr_matrix, vocab: Dict):
+def fit_lda(data: csr_matrix, vocab: Dict, K:int):
     """
     Fit LDA from a scipy CSR matrix (data).
+    :param K: number of topics
     :param data: a csr_matrix representing the vectorized words
     :param vocab: a dictionary over the words
     :return: a lda model trained on the data and vocab
@@ -30,7 +31,7 @@ def fit_lda(data: csr_matrix, vocab: Dict):
     print('fitting lda...')
     return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
                         id2word=vocab,
-                        num_topics=math.floor(math.sqrt(data.shape[1]) / 2))
+                        num_topics=K)
 
 
 def save_lda(lda: LdaModel, path: str):
@@ -304,7 +305,7 @@ def compute_coherence_values(cv_matrix, words, dictionary, texts, limit, start=2
     model_list = []
 
     for num_topics in tqdm(range(start, limit, step)):
-        model = fit_lda(cv_matrix, words)
+        model = fit_lda(cv_matrix, words, num_topics)
         model_list.append(model)
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())

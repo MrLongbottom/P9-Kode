@@ -27,3 +27,7 @@ def grid_search_coherence():
     plt.ylabel("Coherence score")
     plt.legend(("coherence_values"), loc='best')
     plt.show()
+
+
+if __name__ == '__main__':
+    grid_search_coherence()
