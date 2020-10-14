@@ -13,7 +13,7 @@ from wiktionaryparser import WiktionaryParser
 
 def preprocess(filename_or_docs="documents.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
-               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
+               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", tfidf_matrix_filename = "Generated Files/tfidf_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
                doc_minimum_length=20, save=True, word_check=True):
     """
     preprocesses a json file into a docword count vectorization matrix, removing unhelpful words and documents.
@@ -81,6 +81,8 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     tf = TfidfTransformer()
     tfidf_matrix = tf.fit_transform(cv_matrix)
     """
+    tf = TfidfTransformer()
+    tf_matrix = tf.fit_transform(cv_matrix)
 
     # Get new word dict (without the cut words)
     words = value_dictionizer(cv2.get_feature_names())
@@ -95,6 +97,7 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
         save_vector_file(doc_save_filename, documents.keys())
         save_vector_file(doc_word_save_filename, corpus, seperator='-')
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
+        sparse.save_npz(tfidf_matrix_filename, tf_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus
 
