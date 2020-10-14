@@ -320,7 +320,7 @@ if __name__ == '__main__':
     mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")
+    run_lda('model/document_model', cv, words, mini_corpus, Dictionary(mini_corpus), "../Generated Files/")
 
     # lda = load_lda("model/document_model")
     # corpus = load_corpus("../Generated Files/corpus")
