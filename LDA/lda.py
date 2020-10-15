@@ -245,7 +245,7 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
 
 def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path):
     # fitting the lda model and saving it
-    lda = fit_lda(cv_matrix, words, math.floor(math.sqrt(cv_matrix.shape[0])/2))
+    lda = fit_lda(cv_matrix, words)
     save_lda(lda, path)
 
     # saving topic words to file
