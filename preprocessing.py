@@ -1,8 +1,10 @@
 import json
+import random
 import re
 import nltk
 import pandas as pd
 import scipy.sparse as sparse
+import numpy as np
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
@@ -13,7 +15,7 @@ from wiktionaryparser import WiktionaryParser
 
 def preprocess(filename_or_docs="documents.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
-               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
+               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", tfidf_matrix_filename = "Generated Files/tfidf_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
                doc_minimum_length=20, save=True, word_check=True):
     """
     preprocesses a json file into a docword count vectorization matrix, removing unhelpful words and documents.
@@ -81,6 +83,10 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     tf = TfidfTransformer()
     tfidf_matrix = tf.fit_transform(cv_matrix)
     """
+    tf = TfidfTransformer()
+    tf_matrix = tf.fit_transform(cv_matrix)
+    queries = generate_queries(tf_matrix, words, 1000, 4)
+
 
     # Get new word dict (without the cut words)
     words = value_dictionizer(cv2.get_feature_names())
@@ -97,8 +103,26 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
         with open("Generated Files/corpus", 'w', encoding='utf8') as json_file:
             json.dump(corpus, json_file, ensure_ascii=False)
+        sparse.save_npz(tfidf_matrix_filename, tf_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus
+
+
+def generate_queries(matrix, words, count, max_length):
+    queries = {}
+    documents_count = matrix.shape[0]
+    for i in tqdm(range(count)):
+        doc_id = random.randrange(0, documents_count)
+        query_length = random.randrange(1, max_length+1)
+        query = []
+        doc_vec = matrix.getrow(doc_id)
+        word_ids = doc_vec.toarray()[0].argsort()[-query_length:][::-1]
+        for word_id in word_ids:
+            word = words[word_id]
+            query.append(word)
+        query = ' '.join(query)
+        queries[doc_id] = query
+    return queries
 
 
 def preprocess_query(query: str, word_check=True):
