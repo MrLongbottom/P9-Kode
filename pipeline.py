@@ -1,3 +1,5 @@
+from gensim.corpora import Dictionary
+
 from LDA.lda import run_lda
 from preprocessing import preprocess
 
@@ -12,7 +14,5 @@ if __name__ == '__main__':
             cv_matrix=cv_matrix,
             words=words,
             corpus=corpus,
-            save_path="Generated Files/")
-
-    # Make Graph
-    # graph()
+            save_path="Generated Files/",
+            dictionary=Dictionary(corpus))
