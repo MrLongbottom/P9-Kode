@@ -1,8 +1,10 @@
 import json
+import random
 import re
 import nltk
 import pandas as pd
 import scipy.sparse as sparse
+import numpy as np
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
@@ -83,6 +85,8 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     """
     tf = TfidfTransformer()
     tf_matrix = tf.fit_transform(cv_matrix)
+    queries = generate_queries(tf_matrix, words, 1000)
+
 
     # Get new word dict (without the cut words)
     words = value_dictionizer(cv2.get_feature_names())
@@ -100,6 +104,23 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
         sparse.save_npz(tfidf_matrix_filename, tf_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus
+
+
+def generate_queries(matrix, words, count):
+    queries = {}
+    documents_count = matrix.shape[0]
+    for i in tqdm(range(count)):
+        doc_id = random.randrange(0, documents_count)
+        query_length = random.randrange(1, 5)
+        query = []
+        doc_vec = matrix.getrow(doc_id)
+        word_ids = doc_vec.toarray()[0].argsort()[-query_length:][::-1]
+        for word_id in word_ids:
+            word = words[word_id]
+            query.append(word)
+        query = ' '.join(query)
+        queries[doc_id] = query
+    return queries
 
 
 def preprocess_query(query: str, word_check=True):
