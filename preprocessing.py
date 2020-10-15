@@ -85,7 +85,7 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     """
     tf = TfidfTransformer()
     tf_matrix = tf.fit_transform(cv_matrix)
-    queries = generate_queries(tf_matrix, words, 1000)
+    queries = generate_queries(tf_matrix, words, 1000, 4)
 
 
     # Get new word dict (without the cut words)
@@ -106,12 +106,12 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     return cv_matrix, words, corpus
 
 
-def generate_queries(matrix, words, count):
+def generate_queries(matrix, words, count, max_length):
     queries = {}
     documents_count = matrix.shape[0]
     for i in tqdm(range(count)):
         doc_id = random.randrange(0, documents_count)
-        query_length = random.randrange(1, 5)
+        query_length = random.randrange(1, max_length+1)
         query = []
         doc_vec = matrix.getrow(doc_id)
         word_ids = doc_vec.toarray()[0].argsort()[-query_length:][::-1]
