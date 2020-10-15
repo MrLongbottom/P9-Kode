@@ -50,7 +50,7 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     print(f'Step {step}: stop words and word frequency.')
     words = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count)
 
-    print(len(words))
+    print(f'{len(words)} words remain.')
     if word_check:
         # cut off words that are not used in danish word databases or are wrong word type
         step += 1
