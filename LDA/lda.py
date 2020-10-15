@@ -317,10 +317,8 @@ if __name__ == '__main__':
     model_path = 'model_test'
     cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
     words = load_dict_file("../Generated Files/word2vec.csv")
-    mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
-    mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
-    mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    run_lda('model/document_model', cv, words, mini_corpus, Dictionary(mini_corpus), "../Generated Files/")
+    corpus = load_corpus("../Generated Files/corpus")
+    run_lda('model/document_model', cv, words, corpus, Dictionary(corpus), "../Generated Files/")
 
     # lda = load_lda("model/document_model")
     # corpus = load_corpus("../Generated Files/corpus")
