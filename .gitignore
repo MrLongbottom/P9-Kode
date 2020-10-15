@@ -1,5 +1,6 @@
 
 Generated Files/*
+!Generated Files/empty
 LDA/model/*
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,python,git
