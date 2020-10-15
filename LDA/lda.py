@@ -67,7 +67,7 @@ def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Diction
     A method used concurrently in create_document_topics
     :param lda: the lda model
     :param text: a document string
-    :param dictionary: the dictionary over the whole document
+    :param dictionary: the dictionary over the whole corpus
     :return: a dict with the topics in the given document based on the lda model
     """
     corpus = [dictionary.doc2bow(t) for t in [text]]
