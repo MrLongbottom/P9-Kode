@@ -2,8 +2,9 @@ import os
 import re
 from functools import partial
 from multiprocessing import Pool
-import  numpy as np
+import numpy as np
 import scipy.sparse as sp
+from scipy.spatial import distance
 from tqdm import tqdm
 
 
@@ -101,14 +102,30 @@ def stack_matrices_in_folder(path: str):
     return doc
 
 
+def matrix_construction(td_matrix):
+    max = 500
+    with Pool(processes=8) as p:
+        p.map(partial(inner_matrix_loop, td_matrix), range(max))
+
+
+def inner_matrix_loop(td_matrix, i):
+    doc1 = td_matrix.getrow(i).toarray()[0]
+    for j in range(i):
+        doc2 = td_matrix.getrow(j).toarray()[0]
+        adj_matrix[i, j] = distance.jensenshannon(doc1, doc2)
+
+
 if __name__ == '__main__':
     # Loading topic-document distribution matrix and initialisation
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
-    matrix = sp.csr_matrix(sp.load_npz("Generated Files/topic_doc_matrix.npz"))
-    doc_sim_chunker(matrix, 500, 8)
+    matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    # doc_sim_chunker(matrix, 500, 8)
+    adj_matrix = sp.lil_matrix((matrix.shape[0], matrix.shape[0]))
+    matrix_construction(matrix)
+    sp.save_npz("new_matrix.npz", sp.csr_matrix(adj_matrix))
 
-    # Save full matrix
-    sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
-
-    # Load full matrix
-    adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
+    # # Save full matrix
+    # sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
+    #
+    # # Load full matrix
+    # adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
