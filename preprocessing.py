@@ -77,22 +77,15 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     cv_matrix = cv2.fit_transform(corpus)
     print("Matrix is: " + str(cv_matrix.shape))
 
-    """
-    # calculate term frequency - inverse document frequency
-    # (might not be needed)
-    tf = TfidfTransformer()
-    tfidf_matrix = tf.fit_transform(cv_matrix)
-    """
-    tf = TfidfTransformer()
-    tf_matrix = tf.fit_transform(cv_matrix)
-    queries = generate_queries(tf_matrix, words, 1000, 4)
-
-
     # Get new word dict (without the cut words)
     words = value_dictionizer(cv2.get_feature_names())
     # Get new corpus (without the cut words)
     corpus = cv2.inverse_transform(cv_matrix)
     corpus = [list(x) for x in corpus]
+
+    tf = TfidfTransformer()
+    tf_matrix = tf.fit_transform(cv_matrix)
+    queries = generate_queries(tf_matrix, words, 1000, 4)
 
     if save:
         step += 1
