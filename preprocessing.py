@@ -99,14 +99,22 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     return cv_matrix, words, corpus
 
 
-def generate_queries(matrix, words, count, max_length):
+def generate_queries(tfidf_matrix, words, count, max_length):
+    """
+    Generates queries for random documents based on tfidf values
+    :param tfidf_matrix: TFIDF matrix
+    :param words: words dictionary
+    :param count: Number of queries wanted
+    :param max_length: Max words per query (exact length is random)
+    :return: dictionary mapping document ids to queries
+    """
     queries = {}
-    documents_count = matrix.shape[0]
+    documents_count = tfidf_matrix.shape[0]
     for i in tqdm(range(count)):
         doc_id = random.randrange(0, documents_count)
         query_length = random.randrange(1, max_length+1)
         query = []
-        doc_vec = matrix.getrow(doc_id)
+        doc_vec = tfidf_matrix.getrow(doc_id)
         word_ids = doc_vec.toarray()[0].argsort()[-query_length:][::-1]
         for word_id in word_ids:
             word = words[word_id]
