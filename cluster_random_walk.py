@@ -47,10 +47,10 @@ def construct_new_transition_matrix(adj_matrix, dmp_factor=0.85) -> np.array:
     clus_doc_set_sim = np.array(similarity_between_cluster_and_document_set(doc_clus_sim))
 
     # Creating the new row normalized adjacency matrix
-    m_star = dmp_factor * np.dot(doc_clus_sim, clus_doc_set_sim) * np.array(adj_matrix) + (1 - dmp_factor) / adj_matrix.shape[0]
+    adj_matrix = dmp_factor * np.dot(doc_clus_sim, clus_doc_set_sim).T * np.array(adj_matrix) + (1 - dmp_factor) / adj_matrix.shape[0]
 
     # Returning the normalized version
-    return m_star
+    return adj_matrix
 
 
 def similarity_between_cluster_and_document_set(td_matrix) -> np.array:

@@ -38,6 +38,6 @@ def search(size_of_adj: int, lda_path: str, topic_doc_matrix_path: str, adj_matr
 
 
 if __name__ == '__main__':
-    search(500, "LDA/model/document_model",
+    search(500, "LDA/model/2017_model",
            "Generated Files/topic_doc_matrix.npz",
            "new_matrix.npz")
