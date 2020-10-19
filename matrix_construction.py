@@ -101,14 +101,32 @@ def stack_matrices_in_folder(path: str):
     return doc
 
 
+def matrix_connection_check(adj_matrix, node=0, visited=None):
+    if node == 0:
+        visited = [False for x in range(0, adj_matrix.shape[0])]
+    visited[node] = True
+    neighboors = [x for x in adj_matrix.getrow(0).nonzero()[0] if x not in visited]
+    for n in neighboors:
+        matrix_connection_check(adj_matrix, n, visited)
+    if False in visited:
+        print(len([x for x in visited if x is True]))
+        return False
+    else:
+        return True
+
+
+
+
+
 if __name__ == '__main__':
     # Loading topic-document distribution matrix and initialisation
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
-    matrix = sp.csr_matrix(sp.load_npz("Generated Files/topic_doc_matrix.npz"))
-    doc_sim_chunker(matrix, 500, 8)
+    #matrix = sp.csr_matrix(sp.load_npz("Generated Files/topic_doc_matrix.npz"))
+    #doc_sim_chunker(matrix, 500, 8)
 
     # Save full matrix
-    sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
+    #sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
 
     # Load full matrix
     adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
+    matrix_connection_check(adj_matrix)
