@@ -103,6 +103,22 @@ def stack_matrices_in_folder(path: str):
     return doc
 
 
+def fill_half_matrix(matrix):
+    """
+    Fills out the other half of symmetric matrix, that has only been half filled out to optimize.
+    :param matrix: sparse matrix
+    :return: filled out sparse matrix
+    """
+    # if the matrix size is uneven, cut to the smallest even size.
+    size = min(matrix.shape[0], matrix.shape[1])
+    matrix = matrix[:size, :size]
+    # add transposed matrix and make diagonal 0
+    matrix = matrix.todense()
+    matrix = matrix + matrix.T
+    np.fill_diagonal(matrix, 0)
+    return sp.csr_matrix(matrix)
+
+
 def matrix_connection_check(adj_matrix) -> bool:
     """
     Checks if a graph is fully connected repeatedly checking unvisited neighbors.
@@ -136,12 +152,7 @@ if __name__ == '__main__':
 
     # Load full (half filled) matrix
     adj_matrix = sp.load_npz("Generated Files/adj_matrix.npz")
-    # convert to fully filled matrix of specific size
-    adj_matrix = adj_matrix[:500, :500]
-    adj_matrix = adj_matrix.todense()
-    adj_matrix = adj_matrix + adj_matrix.T
-    np.fill_diagonal(adj_matrix, 0)
-    adj_matrix = sp.csr_matrix(adj_matrix)
+    adj_matrix = fill_half_matrix(adj_matrix)
 
     # Check connection
     print(matrix_connection_check(adj_matrix))
