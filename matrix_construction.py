@@ -105,7 +105,7 @@ def matrix_connection_check(adj_matrix, node=0, visited=None):
     if node == 0:
         visited = [False for x in range(0, adj_matrix.shape[0])]
     visited[node] = True
-    neighboors = [x for x in adj_matrix.getrow(0).nonzero()[0] if x not in visited]
+    neighboors = [x for x in adj_matrix.getrow(0).nonzero()[0] if visited[x] is False]
     for n in neighboors:
         matrix_connection_check(adj_matrix, n, visited)
     if False in visited:
