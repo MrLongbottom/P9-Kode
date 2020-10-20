@@ -105,17 +105,15 @@ def matrix_connection_check(adj_matrix, node=0, visited=None):
     if node == 0:
         visited = [False for x in range(0, adj_matrix.shape[0])]
     visited[node] = True
-    neighboors = [x for x in adj_matrix.getrow(0).nonzero()[0] if visited[x] is False]
+    neighboors = [x for x in adj_matrix.getrow(0).nonzero()[1] if visited[x] is False]
     for n in neighboors:
         matrix_connection_check(adj_matrix, n, visited)
-    if False in visited:
-        print(len([x for x in visited if x is True]))
-        return False
-    else:
-        return True
-
-
-
+    if node == 0:
+        if False in visited:
+            print(f"Only found {len([x for x in visited if x is True])} connected nodes, out of {adj_matrix.shape[0]}.")
+            return False
+        else:
+            return True
 
 
 if __name__ == '__main__':
