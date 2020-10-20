@@ -80,9 +80,9 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
-    #matrix = evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=True)
+    # matrix = evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=True)
     # print once again to show improvement
-    evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=False)
+    # evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=False)
     sp.save_npz(filename, sp.csc_matrix(matrix))
     return matrix
 
