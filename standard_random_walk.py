@@ -47,7 +47,32 @@ def random_walk(steps: int, adj_matrix) -> Dict[str, float]:
     return step.argsort()[:][::-1]
 
 
+def random_walk_with_teleport(adj_matrix: sp.csr_matrix,
+                              teleport_vector: np.ndarray,
+                              steps: int = 10,
+                              damp_factor=0.85) -> Dict[str, float]:
+    """
+    This function is just like random walk but with a teleport vector
+    :param adj_matrix: the adjecancy
+    :param steps: The number power iterations
+    :param teleport_vector: a numpy array which indicates which nodes to favor
+    :param damp_factor: 0.85
+    :return: a dict comprised of sentences and their score
+    """
+    # normalized_teleport = teleport_vector / teleport_vector.sum(axis=0)
+    trans_prob_matrix = np.array(construct_transition_probability_matrix(adj_matrix))
+
+    # random start node
+    adj_length = adj_matrix.shape[0]
+    index = random.randrange(0, adj_length)
+    step = np.zeros(adj_length)
+    step[index] = 1
+    for index in range(steps):
+        step = damp_factor * np.dot(step, trans_prob_matrix.T) + (1 - damp_factor) * teleport_vector
+    return step.argsort()[:][::-1]
+
+
 if __name__ == '__main__':
-    matrix = construct_transition_probability_matrix(sp.load_npz("Generated Files/full_matrix.npz")[:100, :100])
+    matrix = construct_transition_probability_matrix(sp.load_npz("new_matrix.npz")[:500, :500])
     list_of_index = random_walk(10, matrix)[:10]
     print(list_of_index)
