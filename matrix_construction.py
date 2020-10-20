@@ -103,9 +103,13 @@ def stack_matrices_in_folder(path: str):
 
 
 def matrix_construction(td_matrix):
-    max = 500
-    with Pool(processes=8) as p:
-        distances = p.map(partial(inner_matrix_loop, td_matrix), range(max))
+    distances = []
+    with Pool(processes=4) as p:
+        max_ = td_matrix.shape[0]
+        with tqdm(total=max_) as pbar:
+            for distance, _ in enumerate(p.imap_unordered(partial(inner_matrix_loop, td_matrix), range(max_))):
+                distances.append(distance)
+                pbar.update()
     matrix = np.vstack(distances)
     return matrix
 
