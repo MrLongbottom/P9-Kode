@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
     matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
     # doc_sim_chunker(matrix, 500, 8)
-    sp.save_npz("new_matrix.npz", sp.csr_matrix(matrix_construction(matrix)))
+    sp.save_npz("Generated Files/new_matrix.npz", sp.csr_matrix(matrix_construction(matrix)))
 
     # # Save full matrix
     # sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
