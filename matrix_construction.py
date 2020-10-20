@@ -120,7 +120,8 @@ def inner_matrix_loop(td_matrix, i):
     array = np.zeros(td_matrix.shape[0])
     for j in range(i):
         doc2 = td_matrix.getrow(j).toarray()[0]
-        array[j] = distance.jensenshannon(doc1, doc2)
+        # value is set to be similarity (1 - distance)
+        array[j] = 1 - distance.jensenshannon(doc1, doc2)
     return array
 
 
