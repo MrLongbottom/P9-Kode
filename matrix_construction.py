@@ -107,7 +107,7 @@ def matrix_construction(td_matrix, poolsize=8):
     with Pool(processes=poolsize) as p:
         max_ = td_matrix.shape[0]
         with tqdm(total=max_) as pbar:
-            for distance, _ in enumerate(p.imap_unordered(partial(inner_matrix_loop, td_matrix), range(max_))):
+            for _, distance in enumerate(p.imap_unordered(partial(inner_matrix_loop, td_matrix), range(max_))):
                 distances.append(distance)
                 pbar.update()
     adj_matrix = np.vstack(distances)
