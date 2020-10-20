@@ -20,7 +20,7 @@ from tqdm import tqdm
 import preprocessing
 
 
-def fit_lda(data: csr_matrix, vocab: Dict, K:int):
+def fit_lda(data: csr_matrix, vocab: Dict, K: int):
     """
     Fit LDA from a scipy CSR matrix (data).
     :param K: number of topics
@@ -244,9 +244,9 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path):
+def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, K: int):
     # fitting the lda model and saving it
-    lda = fit_lda(cv_matrix, words)
+    lda = fit_lda(cv_matrix, words, K)
     save_lda(lda, path)
 
     # saving topic words to file
@@ -321,7 +321,14 @@ if __name__ == '__main__':
     mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    run_lda('model/document_model', cv, words, mini_corpus, Dictionary(mini_corpus), "../Generated Files/")
+    K = math.floor(math.sqrt(cv.shape[0]) / 2)
+    run_lda('LDA/model/document_model',
+            cv,
+            words,
+            mini_corpus,
+            Dictionary(mini_corpus),
+            "../Generated Files/",
+            K)
 
     # lda = load_lda("model/document_model")
     # corpus = load_corpus("../Generated Files/corpus")

@@ -1,3 +1,4 @@
+import math
 from gensim.corpora import Dictionary
 
 from LDA.lda import run_lda
@@ -9,10 +10,11 @@ if __name__ == '__main__':
     cv_matrix, words, corpus = preprocess("documents.json")
 
     # Run LDA
-
+    K = math.floor(math.sqrt(cv_matrix.shape[0]) / 2)
     run_lda(path="LDA/model/document_model",
             cv_matrix=cv_matrix,
             words=words,
             corpus=corpus,
             save_path="Generated Files/",
-            dictionary=Dictionary(corpus))
+            dictionary=Dictionary(corpus),
+            K=K)
