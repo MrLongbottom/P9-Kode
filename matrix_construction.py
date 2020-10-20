@@ -102,12 +102,17 @@ def stack_matrices_in_folder(path: str):
     return doc
 
 
-def matrix_construction(td_matrix):
-    max = 500
-    with Pool(processes=8) as p:
-        distances = p.map(partial(inner_matrix_loop, td_matrix), range(max))
-    matrix = np.vstack(distances)
-    return matrix
+def matrix_construction(td_matrix, poolsize=8):
+    distances = []
+    with Pool(processes=poolsize) as p:
+        max_ = td_matrix.shape[0]
+        with tqdm(total=max_) as pbar:
+            for _, distance in enumerate(p.imap_unordered(partial(inner_matrix_loop, td_matrix), range(max_))):
+                distances.append(distance)
+                pbar.update()
+    adj_matrix = np.vstack(distances)
+    adj_matrix = sp.csr_matrix(adj_matrix)
+    return adj_matrix
 
 
 def inner_matrix_loop(td_matrix, i):
@@ -115,7 +120,8 @@ def inner_matrix_loop(td_matrix, i):
     array = np.zeros(td_matrix.shape[0])
     for j in range(i):
         doc2 = td_matrix.getrow(j).toarray()[0]
-        array[j] = distance.jensenshannon(doc1, doc2)
+        # value is set to be similarity (1 - distance)
+        array[j] = 1 - distance.jensenshannon(doc1, doc2)
     return array
 
 
@@ -123,8 +129,7 @@ if __name__ == '__main__':
     # Loading topic-document distribution matrix and initialisation
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
     matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-    # doc_sim_chunker(matrix, 500, 8)
-    sp.save_npz("new_matrix.npz", sp.csr_matrix(matrix_construction(matrix)))
+    sp.save_npz("Generated Files/adj_matrix.npz", matrix_construction(matrix))
 
     # # Save full matrix
     # sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
