@@ -1,10 +1,12 @@
 import os
 import re
+from typing import Type
 from functools import partial
 from multiprocessing import Pool
-import  numpy as np
+import numpy as np
 import scipy.sparse as sp
 from tqdm import tqdm
+from typing import List
 
 
 def doc_sim_chunker(td_matrix: sp.spmatrix, chunk_size: int, pool: int):
@@ -101,7 +103,14 @@ def stack_matrices_in_folder(path: str):
     return doc
 
 
-def matrix_connection_check(adj_matrix, node=0, visited=None):
+def matrix_connection_check(adj_matrix: Type[sp.spmatrix], node: int = 0, visited: List[bool] = None) -> bool:
+    """
+    Checks if a graph is fully connected by recursively checking unvisited neighbors.
+    :param adj_matrix: sparse adjacency matrix
+    :param node: current node (recursion parameter)
+    :param visited: list of which nodes has been visited (recursion parameter)
+    :return: bool indicating whether adj_matrix is connected
+    """
     if node == 0:
         visited = [False for x in range(0, adj_matrix.shape[0])]
     visited[node] = True
