@@ -10,6 +10,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
 from nltk.corpus import stopwords
 from nltk.stem.snowball import DanishStemmer
+from typing import Dict
 from wiktionaryparser import WiktionaryParser
 
 
@@ -94,7 +95,7 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     return cv_matrix, words, corpus
 
 
-def generate_queries(count_matrix, words: dict[int:str], count: int, min_length: int = 1, max_length: int = 4):
+def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1, max_length: int = 4):
     """
     Generates queries for random documents based on tfidf values
     :param count_matrix: CountVectorization matrix
