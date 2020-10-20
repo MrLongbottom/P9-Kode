@@ -103,26 +103,26 @@ def stack_matrices_in_folder(path: str):
     return doc
 
 
-def matrix_connection_check(adj_matrix: Type[sp.spmatrix], node: int = 0, visited: List[bool] = None) -> bool:
+def matrix_connection_check(adj_matrix) -> bool:
     """
-    Checks if a graph is fully connected by recursively checking unvisited neighbors.
+    Checks if a graph is fully connected repeatedly checking unvisited neighbors.
     :param adj_matrix: sparse adjacency matrix
-    :param node: current node (recursion parameter)
-    :param visited: list of which nodes has been visited (recursion parameter)
     :return: bool indicating whether adj_matrix is connected
     """
-    if node == 0:
-        visited = [False for x in range(0, adj_matrix.shape[0])]
-    visited[node] = True
-    neighboors = [x for x in adj_matrix.getrow(0).nonzero()[1] if visited[x] is False]
-    for n in neighboors:
-        matrix_connection_check(adj_matrix, n, visited)
-    if node == 0:
-        if False in visited:
-            print(f"Only found {len([x for x in visited if x is True])} connected nodes, out of {adj_matrix.shape[0]}.")
-            return False
-        else:
-            return True
+    visited = [False for x in range(0, adj_matrix.shape[0])]
+    todo = []
+    n = 0
+    visited[n] = True
+    todo.extend([x for x in adj_matrix.getrow(n).nonzero()[1] if visited[x] is False and x not in todo])
+    while len(todo) > 0:
+        n = todo.pop()
+        visited[n] = True
+        todo.extend([x for x in adj_matrix.getrow(n).nonzero()[1] if visited[x] is False and x not in todo])
+    if False in visited:
+        print(f"Only found {len([x for x in visited if x is True])} connected nodes, out of {adj_matrix.shape[0]}.")
+        return False
+    else:
+        return True
 
 
 if __name__ == '__main__':
@@ -134,6 +134,14 @@ if __name__ == '__main__':
     # Save full matrix
     #sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
 
-    # Load full matrix
-    adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
-    matrix_connection_check(adj_matrix)
+    # Load full (half filled) matrix
+    adj_matrix = sp.load_npz("Generated Files/adj_matrix.npz")
+    # convert to fully filled matrix of specific size
+    adj_matrix = adj_matrix[:500, :500]
+    adj_matrix = adj_matrix.todense()
+    adj_matrix = adj_matrix + adj_matrix.T
+    np.fill_diagonal(adj_matrix, 0)
+    adj_matrix = sp.csr_matrix(adj_matrix)
+
+    # Check connection
+    print(matrix_connection_check(adj_matrix))
