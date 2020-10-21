@@ -13,7 +13,6 @@ def construct_transition_probability_matrix(adj_matrix):
     :param adj_matrix: an adjacency matrix based on the documents
     :return: np.array
     """
-    adj_matrix = adj_matrix.todense()
     adj_matrix = adj_matrix + adj_matrix.T
     np.fill_diagonal(adj_matrix, 0)
     row_normalized_matrix = adj_matrix / adj_matrix.sum(axis=0)
@@ -30,8 +29,8 @@ def step_vector(adj_matrix) -> np.array:
     """
     random_index = random.randrange(0, adj_matrix.shape[0])
     step = np.zeros(adj_matrix.shape[0])
-    step[random_index] = 1
-    return sp.csr_matrix(step)
+    step[0] = 1
+    return step
 
 
 def random_walk(steps: int, adj_matrix) -> Dict[str, float]:
@@ -42,12 +41,13 @@ def random_walk(steps: int, adj_matrix) -> Dict[str, float]:
     :return: a dict comprised of sentences and their score
     """
     step = step_vector(adj_matrix)
+    adj_matrix = adj_matrix / adj_matrix.sum(0)
     for index in range(steps):
         step = step.dot(adj_matrix.T)
-    return step.argsort()[:][::-1]
+    return step
 
 
-def random_walk_with_teleport(adj_matrix: sp.csr_matrix,
+def random_walk_with_teleport(adj_matrix: np.ndarray,
                               teleport_vector: np.ndarray,
                               steps: int = 10,
                               damp_factor=0.85) -> Dict[str, float]:
@@ -60,7 +60,7 @@ def random_walk_with_teleport(adj_matrix: sp.csr_matrix,
     :return: a dict comprised of sentences and their score
     """
     # normalized_teleport = teleport_vector / teleport_vector.sum(axis=0)
-    trans_prob_matrix = np.array(construct_transition_probability_matrix(adj_matrix))
+    trans_prob_matrix = construct_transition_probability_matrix(adj_matrix)
 
     # random start node
     adj_length = adj_matrix.shape[0]
@@ -69,7 +69,7 @@ def random_walk_with_teleport(adj_matrix: sp.csr_matrix,
     step[index] = 1
     for index in range(steps):
         step = damp_factor * np.dot(step, trans_prob_matrix.T) + (1 - damp_factor) * teleport_vector
-    return step.argsort()[:][::-1]
+    return step
 
 
 if __name__ == '__main__':
