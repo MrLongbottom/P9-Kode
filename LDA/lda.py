@@ -1,5 +1,6 @@
 import json
 import math
+import itertools
 from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
@@ -20,18 +21,27 @@ from tqdm import tqdm
 import preprocessing
 
 
-def fit_lda(data: csr_matrix, vocab: Dict, K: int):
+def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: float = None):
     """
     Fit LDA from a scipy CSR matrix (data).
-    :param K: number of topics
     :param data: a csr_matrix representing the vectorized words
     :param vocab: a dictionary over the words
+    :param K: number of topics
+    :param alpha: the alpha prior weight of topics in documents
+    :param eta: the eta prior weight of words in topics
     :return: a lda model trained on the data and vocab
     """
     print('fitting lda...')
-    return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
-                        id2word=vocab,
-                        num_topics=K)
+    if (alpha, eta) is None:
+        return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
+                            id2word=vocab,
+                            num_topics=K)
+    else:
+        return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
+                            id2word=vocab,
+                            num_topics=K,
+                            alpha=alpha,
+                            eta=eta)
 
 
 def save_lda(lda: LdaModel, path: str):
@@ -306,6 +316,38 @@ def compute_coherence_values(cv_matrix, words, dictionary, texts, limit, start=2
 
     for num_topics in tqdm(range(start, limit, step)):
         model = fit_lda(cv_matrix, words, num_topics)
+        model_list.append(model)
+        coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+        coherence_values.append(coherencemodel.get_coherence())
+
+    return model_list, coherence_values
+
+
+def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
+                                          Ks: List[int], alphas: List[float], etas: List[float]):
+    """
+    Compute c_v coherence for various number of topics and priors
+
+    Parameters:
+    ----------
+    dictionary : Gensim dictionary
+    corpus : Gensim corpus
+    texts : List of input texts
+    Ks : A list of K values to apply
+    alphas : A list of alpha values to apply
+    etas : A list of eta values to apply
+
+    Returns:
+    -------
+    model_list : List of LDA topic models
+    coherence_values : Coherence values corresponding to the LDA model with respective number of topics and priors
+    """
+    coherence_values = []
+    model_list = []
+
+    test_combinations = list(itertools.product(Ks, alphas, etas))
+    for combination in tqdm(test_combinations):
+        model = fit_lda(cv_matrix, words, combination[0], combination[1], combination[2])
         model_list.append(model)
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())
