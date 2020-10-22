@@ -100,14 +100,14 @@ def word_cloud(corpus):
 
 
 # TODO accessing model will no longer provide the correct ids after pruning, avoid usage for now.
-def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, tell: bool = True,
-                                     prune: bool = False, prune_treshhold = 0.5):
+def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tell: bool = True,
+                                 name1: str = "A", name2: str = "B"):
     """
     Evaluate document-topic distribution matrix, involving a combination of:
     * printing statistics
     * showing boxplot
     * pruning empty docs and topics, and pruning topics that are too common
-    :param dt_matrix: document-topic distribution matrix
+    :param dis_matrix: document-topic distribution matrix
     :param show: whether to show boxplot
     :param tell: whether to print statistics
     :param prune: whether to prune
@@ -115,77 +115,57 @@ def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, 
     :return: potentially pruned matrix.
     """
     sb.set_theme(style="whitegrid")
-    # Topic-Doc distributions
-    lens = []
-    top_zeros = []
-    outliers = []
-    threshold = dt_matrix.shape[0] * prune_treshhold
-    for i in tqdm(range(0, dt_matrix.shape[1])):
-        topic = dt_matrix.getcol(i).nonzero()[0]
-        lens.append(len(topic))
-        if len(topic) > threshold:
-            outliers.append(i)
-        if len(topic) == 0:
-            top_zeros.append(i)
-    if tell:
-        print("Topic-Doc distributions.")
-        print("Minimum: " + str(min(lens)))
-        print("Maximum: " + str(max(lens)))
-        print("Average: " + str(np.mean(lens)))
-        print("Entropy: " + str(entropy(lens, base=len(lens))))
-        print("Zeros: " + str(len(top_zeros)))
+    # loop over A-B distribution, then B-A distribution
+    for ab in range(0, 2):
+        zeros = []
+        empties = []
+        avgs = []
+        maxs = []
+        mins = []
+        medians = []
+        entropies = []
+        max_loop = 1 if ab == 0 else 0
+        for i in tqdm(range(0, dis_matrix.shape[max_loop])):
+            vec = dis_matrix.getcol(i) if ab == 0 else dis_matrix.getrow(i)
+            non_vec = vec.nonzero()[ab]
+            zeros.append(vec.shape[ab] - len(non_vec))
+            avgs.append(vec.mean())
+            maxs.append(vec.max())
+            mins.append(vec.min())
+            medians.append(np.median(vec.toarray()))
+            if len(non_vec) == 0:
+                empties.append(i)
+            else:
+                # TODO check if this should always be transposed (i think its only for one of the two ab's)
+                entropies.append(entropy(vec.toarray().T[0], base=vec.shape[ab]))
+        if tell:
+            if ab == 0:
+                print(f"{name1}-{name2} Distributions.")
+            else:
+                print(f"{name2}-{name1} distributions.")
+            print(f"{len(empties)} empty vectors")
+            stats = {"Number of zeros": zeros, "Minimums": mins, "Maximums": maxs, "Averages": avgs, "Medians": medians,
+                     "Entropies": entropies}
+            for name, stat in stats.items():
+                stats_of_list(stat, name=name)
 
-    if prune:
-        # TODO model cannot be accessed normally after this. Which may be a problem
-        # find outlier topics based on the boxplot
-        # this feature was currently discarded as running lda multiple times in a row would prune more and more.
-        """
-        outlier_values = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
-        outliers = [lens.index(x) for x in outlier_values]
-        """
-        # also prune topics with no documents
-        outliers.extend(top_zeros)
-        dt_matrix = slice_sparse_col(dt_matrix, outliers)
-        tw_matrix = sp.load_npz("../Generated Files/topic_word_matrix.npz")
-        tw_matrix = slice_sparse_row(tw_matrix, outliers)
-        sp.save_npz("../Generated Files/topic_word_matrix.npz", tw_matrix)
-    if show:
-        ax = sb.boxplot(x=lens)
-        plt.show()
-
-    # Doc-Topic distributions
-    lens = []
-    doc_zeros = []
-    for i in tqdm(range(0, dt_matrix.shape[0])):
-        doc = dt_matrix.getrow(i).nonzero()[0]
-        lens.append(len(doc))
-        if len(doc) == 0:
-            doc_zeros.append(i)
-    if tell:
-        print("Doc-Topic distributions.")
-        print("Minimum: " + str(min(lens)))
-        print("Maximum: " + str(max(lens)))
-        print("Average: " + str(np.mean(lens)))
-        print("Entropy: " + str(entropy(lens, base=len(lens))))
-        print("Zeros: " + str(len(doc_zeros)))
-    if prune:
-        # TODO needs to be tested more thoroughly
-        # TODO model cannot be accessed normally after this. Which may be a problem
-        if len(doc_zeros) > 0:
-            # Prune documents with no topic distributions
-            dt_matrix = sp.csr_matrix(dt_matrix)
-            dt_matrix = slice_sparse_row(dt_matrix, doc_zeros)
-            remove_from_rows_from_file("../Generated Files/count_vec_matrix.npz", doc_zeros)
-            remove_from_rows_from_file("../Generated Files/doc2vec.csv", doc_zeros)
-            remove_from_rows_from_file("../Generated Files/doc2word.csv", doc_zeros, separator="-")
-    if show:
-        ax = sb.boxplot(x=lens)
-        plt.show()
-
-    return dt_matrix
+        if show:
+            ax = sb.boxplot(x=zeros)
+            plt.show()
 
 
-def remove_from_rows_from_file (path, rows, separator=","):
+def stats_of_list(list, name: str = "List"):
+    print(f"{name} Statistics.")
+    print(f"Zeros in {name}: {len(list) - np.count_nonzero(list)} of {len(list)}")
+    print(f"Minimum {name}: {min(list)}")
+    print(f"Maximum {name}: {max(list)}")
+    print(f"Average {name}: {np.mean(list)}")
+    print(f"Median {name}: {np.median(list)}")
+    print(f"Entropy {name}: {1 if np.isnan(entropy(list, base=len(list))) else entropy(list, base=len(list))}")
+    print()
+
+
+def remove_from_rows_from_file(path, rows, separator=","):
     if path[-4:] == ".csv":
         doc = load_dict_file(path, separator=separator)
         doc = [x for x in doc.values() if x not in rows]
