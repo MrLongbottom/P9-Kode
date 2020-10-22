@@ -32,7 +32,7 @@ def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: flo
     :return: a lda model trained on the data and vocab
     """
     print('fitting lda...')
-    if (alpha, eta) is None:
+    if alpha is None or eta is None:
         return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
                             id2word=vocab,
                             num_topics=K)
