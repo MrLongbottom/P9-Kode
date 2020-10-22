@@ -138,31 +138,41 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             else:
                 # TODO check if this should always be transposed (i think its only for one of the two ab's)
                 entropies.append(entropy(vec.toarray().T[0], base=vec.shape[ab]))
+        return_stats = []
         if tell:
             if ab == 0:
                 print(f"{name1}-{name2} Distributions.")
             else:
                 print(f"{name2}-{name1} distributions.")
             print(f"{len(empties)} empty vectors")
-            stats = {"Number of zeros": zeros, "Minimums": mins, "Maximums": maxs, "Averages": avgs, "Medians": medians,
-                     "Entropies": entropies}
-            for name, stat in stats.items():
-                stats_of_list(stat, name=name)
+        stats = {"Number of zeros": zeros, "Minimums": mins, "Maximums": maxs, "Averages": avgs, "Medians": medians,
+                 "Entropies": entropies}
+        for name, stat in stats.items():
+            return_stats.extend(stats_of_list(stat, name=name, tell=tell))
 
-        if show:
-            ax = sb.boxplot(x=zeros)
-            plt.show()
+        #if show:
+        #    ax = sb.boxplot(x=zeros)
+        #    plt.show()
+        return return_stats
 
 
-def stats_of_list(list, name: str = "List"):
-    print(f"{name} Statistics.")
-    print(f"Zeros in {name}: {len(list) - np.count_nonzero(list)} of {len(list)}")
-    print(f"Minimum {name}: {min(list)}")
-    print(f"Maximum {name}: {max(list)}")
-    print(f"Average {name}: {np.mean(list)}")
-    print(f"Median {name}: {np.median(list)}")
-    print(f"Entropy {name}: {1 if np.isnan(entropy(list, base=len(list))) else entropy(list, base=len(list))}")
-    print()
+def stats_of_list(list, name: str = "List", tell: bool = True):
+    zeros = (len(list) - np.count_nonzero(list))/len(list)
+    mini = min(list)
+    maxi = max(list)
+    avg = np.mean(list)
+    medi = np.median(list)
+    entro = 1 if np.isnan(entropy(list, base=len(list))) else entropy(list, base=len(list))
+    if tell:
+        print(f"{name} Statistics.")
+        print(f"Zeros percentage in {name}: {zeros}")
+        print(f"Minimum {name}: {mini}")
+        print(f"Maximum {name}: {maxi}")
+        print(f"Average {name}: {avg}")
+        print(f"Median {name}: {medi}")
+        print(f"Entropy {name}: {entro}")
+        print()
+    return [zeros, mini, maxi, avg, medi, entro]
 
 
 def remove_from_rows_from_file(path, rows, separator=","):
@@ -266,3 +276,8 @@ if __name__ == '__main__':
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
     run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")
+    # Evaluate
+    td_matrix = sp.load_npz("../Generated Files/topic_doc_matrix.npz")
+    tw_matrix = sp.load_npz("../Generated Files/topic_word_matrix.npz")
+    evaluate_distribution_matrix(td_matrix, name1="Topic", name2="Document")
+    evaluate_distribution_matrix(tw_matrix, name1="Word", name2="Topic")
