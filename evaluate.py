@@ -1,6 +1,6 @@
 import seaborn as sb
 import numpy as np
-import tqdm
+from tqdm import tqdm
 from scipy.stats import entropy
 import scipy.sparse as sp
 
@@ -55,9 +55,9 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
         # Save stats
         if save_path is not None:
-            f = open(save_path, "w+")
-            for name, stat in zip(stats.keys(), return_stats):
-                f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
+            with open(save_path, "w+") as f:
+                for name, stat in zip(stats.keys(), return_stats):
+                    f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
 
         # TODO reimplement boxplots
         #if show:
