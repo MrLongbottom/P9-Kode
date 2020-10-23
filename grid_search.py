@@ -42,7 +42,13 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
                                                                          alphas=alphas,
                                                                          etas=etas)
 
+    # Default sorting is based on K
     test_combinations = list(itertools.product(Ks, alphas, etas))
+    # Sort on alpha values
+    test_combinations = sorted(test_combinations, key = lambda tup: tup[1])
+    # Sort on eta values
+    #test_combinations = sorted(test_combinations, key = lambda tup: tup[2])
+    
     plt.xticks(rotation=90, fontsize=5)
     plt.plot([str(x) for x in test_combinations], coherence_values)
     plt.xlabel("Combination")
@@ -51,7 +57,7 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
     plt.tight_layout()
     plt.grid(1, axis='x')
     fig = plt.gcf()
-    fig.savefig("GridSearch.png", dpi=300)
+    fig.savefig("GridSearchAlpha.png", dpi=300)
     plt.show()
 
 
