@@ -31,7 +31,7 @@ def grid_search_coherence():
     plt.show()
 
 
-def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas: List[float]):
+def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas: List[float], file_name: str = "GridSearch.png"):
     cv_matrix, words, texts = preprocess("documents.json")
     dictionary = Dictionary(texts)
     model_list, coherence_values = compute_coherence_values_k_and_priors(cv_matrix=cv_matrix,
@@ -44,20 +44,24 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
 
     # Default sorting is based on K
     test_combinations = list(itertools.product(Ks, alphas, etas))
+    test_coherence_combination = list(zip(test_combinations, coherence_values))
     # Sort on alpha values
-    test_combinations = sorted(test_combinations, key = lambda tup: tup[1])
+    #test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][1])
     # Sort on eta values
-    #test_combinations = sorted(test_combinations, key = lambda tup: tup[2])
+    test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][2])
+    
+    combinations_sorted = [x[0] for x in test_combinations]
+    coherences_sorted = [x[1] for x in test_combinations]
     
     plt.xticks(rotation=90, fontsize=5)
-    plt.plot([str(x) for x in test_combinations], coherence_values)
+    plt.plot([str(x) for x in combinations_sorted], coherences_sorted)
     plt.xlabel("Combination")
     plt.ylabel("Coherence score")
     plt.legend("coherence_values", loc='best')
     plt.tight_layout()
     plt.grid(1, axis='x')
     fig = plt.gcf()
-    fig.savefig("GridSearchAlpha.png", dpi=300)
+    fig.savefig(file_name, dpi=300)
     plt.show()
 
 
@@ -72,4 +76,4 @@ if __name__ == '__main__':
     #alphas = ['asymmetric']
     #etas = [0.0001]
     etas = [0.0001, 0.001, 0.005, 0.01]
-    grid_search_coherence_k_and_priors(Ks, alphas, etas)
+    grid_search_coherence_k_and_priors(Ks, alphas, etas, "GridSearchEta.png")
