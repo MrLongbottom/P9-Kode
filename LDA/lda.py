@@ -193,9 +193,11 @@ def coherence_score(lda: LdaModel, texts, id2word, measure: str = 'c_v'):
 
 
 if __name__ == '__main__':
-    # Evaluate
-    td_matrix = sp.load_npz("../Generated Files/topic_doc_matrix.npz")
-    tw_matrix = sp.load_npz("../Generated Files/topic_word_matrix.npz")
-    stats1 = evaluate_distribution_matrix(td_matrix, column_name="Topic", row_name="Document", save_path=f"../Generated Files/Evaluation/td_eval.csv")
-    stats2 = evaluate_distribution_matrix(tw_matrix, column_name="Word", row_name="Topic", save_path=f"../Generated Files/Evaluation/tw_eval.csv")
-    print()
+    # Loading data and preprocessing
+    model_path = 'model_test'
+    cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
+    words = load_dict_file("../Generated Files/word2vec.csv")
+    mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
+    mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
+    mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
+    run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")
