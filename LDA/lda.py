@@ -243,7 +243,7 @@ def compute_coherence_values(cv_matrix, words, dictionary, texts, limit, start=2
 
 
 def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
-                                          Ks: List[int], alphas: List[float], etas: List[float]):
+                                          Ks: List[int], alphas: List[float], etas: List[float], evaluation: bool = True):
     """
     Compute c_v coherence for various number of topics and priors
 
@@ -268,14 +268,15 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     for combination in tqdm(test_combinations):
         model = fit_lda(cv_matrix, words, combination[0], combination[1], combination[2])
         model_list.append(model)
-
+        
         # Evaluation
-        dtMatrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-        twMatrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
-        dtPath = "Generated Files/Evaluate/dt" + str(combination) + ".csv"
-        twPath = "Generated Files/Evaluate/tw" + str(combination) + ".csv"
-        evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=dtPath)
-        evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=twPath)
+        if evaluation:
+            dtMatrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+            twMatrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
+            dtPath = "Generated Files/Evaluate/dt" + str(combination) + ".csv"
+            twPath = "Generated Files/Evaluate/tw" + str(combination) + ".csv"
+            evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=dtPath)
+            evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=twPath)
 
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())
