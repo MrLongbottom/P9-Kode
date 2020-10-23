@@ -65,7 +65,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             box = df.boxplot()
             box.set_title(print_name)
             if save_path is not None:
-                plt.savefig(save_path+print_name+".png")
+                plt.savefig(save_path+"_"+print_name+".png")
             if show:
                 plt.show()
             else:
