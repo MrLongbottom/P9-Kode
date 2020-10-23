@@ -33,7 +33,6 @@ def grid_search_coherence():
 
 def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas: List[float]):
     cv_matrix, words, texts = preprocess("documents.json")
-    #limit = math.floor(math.sqrt(cv_matrix.shape[0]))
     dictionary = Dictionary(texts)
     model_list, coherence_values = compute_coherence_values_k_and_priors(cv_matrix=cv_matrix,
                                                                          dictionary=dictionary,
@@ -44,11 +43,15 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
                                                                          etas=etas)
 
     test_combinations = list(itertools.product(Ks, alphas, etas))
-    plt.xticks(rotation=90)
+    plt.xticks(rotation=90, fontsize=5)
     plt.plot([str(x) for x in test_combinations], coherence_values)
     plt.xlabel("Combination")
     plt.ylabel("Coherence score")
     plt.legend("coherence_values", loc='best')
+    plt.tight_layout()
+    plt.grid(1, axis='x')
+    fig = plt.gcf()
+    fig.savefig("GridSearch.png", dpi=300)
     plt.show()
 
 
@@ -56,8 +59,11 @@ if __name__ == '__main__':
     # grid_search_coherence()
 
     # 4*4*4 = 64 combinations
-    Ks = [10]
-    # Ks = [10, 40, 80, 160]
+    #Ks = [10]
+    Ks = [10, 40, 80, 160]
+    #alphas = [0.01]
     alphas = [0.01, 0.1, 0.3, 0.6]
+    #alphas = ['asymmetric']
+    #etas = [0.0001]
     etas = [0.0001, 0.001, 0.005, 0.01]
     grid_search_coherence_k_and_priors(Ks, alphas, etas)
