@@ -1,8 +1,10 @@
 import seaborn as sb
+from matplotlib import pyplot as plt
 import numpy as np
-import tqdm
+from tqdm import tqdm
 from scipy.stats import entropy
 import scipy.sparse as sp
+import pandas as pd
 
 
 def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tell: bool = True, save_path: str = None,
@@ -38,15 +40,14 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             medians.append(np.median(vec.toarray()))
             if len(non_vec) == 0:
                 empties.append(i)
-            else:
-                vec_array = vec.toarray().T[0] if ab == 0 else vec.toarray()[0]
-                entropies.append(entropy(vec_array, base=vec.shape[ab]))
+            vec_array = vec.toarray().T[0] if ab == 0 else vec.toarray()[0]
+            ent = 1 if np.isnan(entropy(vec_array, base=vec.shape[ab])) else entropy(vec_array, base=vec.shape[ab])
+            entropies.append(ent)
         # Print statistics
+        print_name = f"{column_name}-{row_name} Distribution" if ab == 0 \
+                     else f"{row_name}-{column_name} distribution"
         if tell:
-            if ab == 0:
-                print(f"{column_name}-{row_name} Distributions.")
-            else:
-                print(f"{row_name}-{column_name} distributions.")
+            print(print_name)
             print(f"{len(empties)} empty vectors")
         stats = {stat_names[0]: zeros, stat_names[1]: mins, stat_names[2]: maxs, stat_names[3]: avgs,
                  stat_names[4]: medians, stat_names[5]: entropies}
@@ -55,14 +56,21 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
         # Save stats
         if save_path is not None:
-            with open(save_path, "w+") as f:
+            with open(save_path+'.csv', "w+") as f:
                 for name, stat in zip(stats.keys(), return_stats):
                     f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
+        # Show stats
+        if show or save_path is not None:
+            df = pd.DataFrame(data=stats)
+            box = df.boxplot()
+            box.set_title(print_name)
+            if save_path is not None:
+                plt.savefig(save_path+print_name+".png")
+            if show:
+                plt.show()
+            else:
+                plt.clf()
 
-        # TODO reimplement boxplots
-        #if show:
-        #    ax = sb.boxplot(x=zeros)
-        #    plt.show()
     return return_stats
 
 
@@ -83,5 +91,11 @@ def stats_of_list(list, name: str = "List", tell: bool = True):
         print(f"Entropy {name}: {entro}\n")
     return [zeros, mini, maxi, avg, medi, entro]
 
+
 if __name__ == '__main__':
-    print()
+    td_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
+    stats1 = evaluate_distribution_matrix(td_matrix, column_name="Topic", row_name="Document",
+                                          save_path=f"Generated Files/Evaluation/td_eval", show=False)
+    stats2 = evaluate_distribution_matrix(tw_matrix, column_name="Word", row_name="Topic",
+                                          save_path=f"Generated Files/Evaluation/tw_eval", show=False)
