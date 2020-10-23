@@ -30,7 +30,7 @@ def fit_lda(data: csr_matrix, vocab: Dict):
     print('fitting lda...')
     return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
                         id2word=vocab,
-                        num_topics=math.floor(math.sqrt(data.shape[1]) / 2))
+                        num_topics=math.floor(math.sqrt(data.shape[1]) / 2), eta=1E-20, chunksize=10000)
 
 
 def save_lda(lda: LdaModel, path: str):
@@ -168,7 +168,10 @@ def run_lda(path: str, cv_matrix, words, corpus, save_path):
 
 
 def save_topic_word_matrix(lda: LdaModel, name: str):
-    matrix = sp.csc_matrix(lda.get_topics())
+    matrix = lda.get_topics()
+    threshold = 0.001
+    matrix = np.where(matrix < threshold, 0, matrix)
+    matrix = sp.csr_matrix(matrix)
     return sp.save_npz(name, matrix)
 
 

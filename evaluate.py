@@ -44,8 +44,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             ent = 1 if np.isnan(entropy(vec_array, base=vec.shape[ab])) else entropy(vec_array, base=vec.shape[ab])
             entropies.append(ent)
         # Print statistics
-        print_name = f"{column_name}-{row_name} Distribution" if ab == 0 \
-                     else f"{row_name}-{column_name} distribution"
+        print_name = f"{column_name}-{row_name} Distribution" if ab == 0 else f"{row_name}-{column_name} distribution"
         if tell:
             print(print_name)
             print(f"{len(empties)} empty vectors")
@@ -55,8 +54,9 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         for name, stat in stats.items():
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
         # Save stats
+        # TODO both files are the same, thats a problem.
         if save_path is not None:
-            with open(save_path+'.csv', "w+") as f:
+            with open(save_path+"_"+print_name+'.csv', "w+") as f:
                 for name, stat in zip(stats.keys(), return_stats):
                     f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
         # Show stats
@@ -95,6 +95,7 @@ def stats_of_list(list, name: str = "List", tell: bool = True):
 if __name__ == '__main__':
     td_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
     tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
+    n = (tw_matrix.shape[0]*tw_matrix.shape[1])-len(tw_matrix.nonzero()[1])
     stats1 = evaluate_distribution_matrix(td_matrix, column_name="Topic", row_name="Document",
                                           save_path=f"Generated Files/Evaluation/td_eval", show=False)
     stats2 = evaluate_distribution_matrix(tw_matrix, column_name="Word", row_name="Topic",
