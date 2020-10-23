@@ -3,6 +3,7 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
+import time
 import preprocessing
 import numpy as np
 import pandas as pd
@@ -99,32 +100,28 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
-# TODO accessing model will no longer provide the correct ids after pruning, avoid usage for now.
-def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tell: bool = True,
-                                 name1: str = "A", name2: str = "B"):
+def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tell: bool = True, save_path: str = None,
+                                 column_name: str = "A", row_name: str = "B"):
     """
     Evaluate document-topic distribution matrix, involving a combination of:
     * printing statistics
-    * showing boxplot
+    * showing boxplots
     * pruning empty docs and topics, and pruning topics that are too common
-    :param dis_matrix: document-topic distribution matrix
-    :param show: whether to show boxplot
+    :param dis_matrix: distribution matrix to be evaluated.
+    :param column_name: name of columns for printing
+    :param row_name: name of rows for printing
+    :param show: whether to show boxplots
     :param tell: whether to print statistics
-    :param prune: whether to prune
-    :param prune_treshhold: how much percentage of the doc set a topic can cover at max.
-    :return: potentially pruned matrix.
+    :param save_path: path of file to save, default is None, meaning no saving
+    :return: potentially pruned matrix
     """
     sb.set_theme(style="whitegrid")
     return_stats = []
+    stat_names = ["Zeros", "Minimums", "Maximums", "Averages", "Medians", "Entropies"]
     # loop over A-B distribution, then B-A distribution
     for ab in range(2):
-        zeros = []
-        empties = []
-        avgs = []
-        maxs = []
-        mins = []
-        medians = []
-        entropies = []
+        zeros, empties, avgs, maxs, mins, medians, entropies = [], [], [], [], [], [], []
+        # Fill out statistics for each row/column
         max_loop = 1 if ab == 0 else 0
         for i in tqdm(range(0, dis_matrix.shape[max_loop])):
             vec = dis_matrix.getcol(i) if ab == 0 else dis_matrix.getrow(i)
@@ -139,16 +136,25 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             else:
                 vec_array = vec.toarray().T[0] if ab == 0 else vec.toarray()[0]
                 entropies.append(entropy(vec_array, base=vec.shape[ab]))
+        # Print statistics
         if tell:
             if ab == 0:
-                print(f"{name1}-{name2} Distributions.")
+                print(f"{column_name}-{row_name} Distributions.")
             else:
-                print(f"{name2}-{name1} distributions.")
+                print(f"{row_name}-{column_name} distributions.")
             print(f"{len(empties)} empty vectors")
-        stats = {"Number of zeros": zeros, "Minimums": mins, "Maximums": maxs, "Averages": avgs, "Medians": medians,
-                 "Entropies": entropies}
+        stats = {stat_names[0]: zeros, stat_names[1]: mins, stat_names[2]: maxs, stat_names[3]: avgs,
+                 stat_names[4]: medians, stat_names[5]: entropies}
+        # Make stats ready for return
         for name, stat in stats.items():
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
+        # Save stats
+        if save_path is not None:
+            f = open(save_path, "w+")
+            for name, stat in zip(stats.keys(), return_stats):
+                f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
+
+        # TODO reimplement boxplots
         #if show:
         #    ax = sb.boxplot(x=zeros)
         #    plt.show()
@@ -277,6 +283,6 @@ if __name__ == '__main__':
     # Evaluate
     td_matrix = sp.load_npz("../Generated Files/topic_doc_matrix.npz")
     tw_matrix = sp.load_npz("../Generated Files/topic_word_matrix.npz")
-    stats1 = evaluate_distribution_matrix(td_matrix, name1="Topic", name2="Document")
-    stats2 = evaluate_distribution_matrix(tw_matrix, name1="Word", name2="Topic")
+    stats1 = evaluate_distribution_matrix(td_matrix, column_name="Topic", row_name="Document", save_path=f"../Generated Files/Evaluation/td_eval.csv")
+    stats2 = evaluate_distribution_matrix(tw_matrix, column_name="Word", row_name="Topic", save_path=f"../Generated Files/Evaluation/tw_eval.csv")
     print()
