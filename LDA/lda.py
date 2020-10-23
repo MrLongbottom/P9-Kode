@@ -115,8 +115,9 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
     :return: potentially pruned matrix.
     """
     sb.set_theme(style="whitegrid")
+    return_stats = []
     # loop over A-B distribution, then B-A distribution
-    for ab in range(0, 2):
+    for ab in range(2):
         zeros = []
         empties = []
         avgs = []
@@ -128,7 +129,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         for i in tqdm(range(0, dis_matrix.shape[max_loop])):
             vec = dis_matrix.getcol(i) if ab == 0 else dis_matrix.getrow(i)
             non_vec = vec.nonzero()[ab]
-            zeros.append(vec.shape[ab] - len(non_vec))
+            zeros.append((vec.shape[ab] - len(non_vec))/vec.shape[ab])
             avgs.append(vec.mean())
             maxs.append(vec.max())
             mins.append(vec.min())
@@ -136,9 +137,8 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             if len(non_vec) == 0:
                 empties.append(i)
             else:
-                # TODO check if this should always be transposed (i think its only for one of the two ab's)
-                entropies.append(entropy(vec.toarray().T[0], base=vec.shape[ab]))
-        return_stats = []
+                vec_array = vec.toarray().T[0] if ab == 0 else vec.toarray()[0]
+                entropies.append(entropy(vec_array, base=vec.shape[ab]))
         if tell:
             if ab == 0:
                 print(f"{name1}-{name2} Distributions.")
@@ -148,12 +148,11 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         stats = {"Number of zeros": zeros, "Minimums": mins, "Maximums": maxs, "Averages": avgs, "Medians": medians,
                  "Entropies": entropies}
         for name, stat in stats.items():
-            return_stats.extend(stats_of_list(stat, name=name, tell=tell))
-
+            return_stats.append(stats_of_list(stat, name=name, tell=tell))
         #if show:
         #    ax = sb.boxplot(x=zeros)
         #    plt.show()
-        return return_stats
+    return return_stats
 
 
 def stats_of_list(list, name: str = "List", tell: bool = True):
@@ -164,14 +163,13 @@ def stats_of_list(list, name: str = "List", tell: bool = True):
     medi = np.median(list)
     entro = 1 if np.isnan(entropy(list, base=len(list))) else entropy(list, base=len(list))
     if tell:
-        print(f"{name} Statistics.")
+        print(f"{name} Statistics (length: {len(list)}).")
         print(f"Zeros percentage in {name}: {zeros}")
         print(f"Minimum {name}: {mini}")
         print(f"Maximum {name}: {maxi}")
         print(f"Average {name}: {avg}")
         print(f"Median {name}: {medi}")
-        print(f"Entropy {name}: {entro}")
-        print()
+        print(f"Entropy {name}: {entro}\n")
     return [zeros, mini, maxi, avg, medi, entro]
 
 
@@ -279,5 +277,6 @@ if __name__ == '__main__':
     # Evaluate
     td_matrix = sp.load_npz("../Generated Files/topic_doc_matrix.npz")
     tw_matrix = sp.load_npz("../Generated Files/topic_word_matrix.npz")
-    evaluate_distribution_matrix(td_matrix, name1="Topic", name2="Document")
-    evaluate_distribution_matrix(tw_matrix, name1="Word", name2="Topic")
+    stats1 = evaluate_distribution_matrix(td_matrix, name1="Topic", name2="Document")
+    stats2 = evaluate_distribution_matrix(tw_matrix, name1="Word", name2="Topic")
+    print()
