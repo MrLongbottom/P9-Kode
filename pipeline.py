@@ -1,7 +1,7 @@
 import math
 from gensim.corpora import Dictionary
 
-from LDA.lda import run_lda
+from lda import run_lda
 from preprocessing import preprocess
 
 if __name__ == '__main__':
