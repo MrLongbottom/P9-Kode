@@ -180,11 +180,11 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_co
 
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path + str(param_combination + tw_threshold) + "topic_word_matrix.npz", threshold=tw_threshold)
+    tw_matrix = save_topic_word_matrix(lda, save_path + str(param_combination + (tw_threshold,)) + "topic_word_matrix.npz", threshold=tw_threshold)
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + str(param_combination + dt_threshold) + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
+    td_matrix = create_document_topics(corpus, lda, save_path + str(param_combination + (dt_threshold,)) + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
 
     return lda
 
@@ -306,8 +306,8 @@ def load_mini_corpus():
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'model_test'
-    cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
-    words = load_dict_file("../Generated Files/word2vec.csv")
+    cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    words = load_dict_file("Generated Files/word2vec.csv")
     mini_corpus = load_mini_corpus()
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
     run_lda('LDA/model/document_model',
@@ -315,7 +315,7 @@ if __name__ == '__main__':
             words,
             mini_corpus,
             Dictionary(mini_corpus),
-            "../Generated Files/",
+            "Generated Files/",
             (K,None,None),
             tw_threshold=0.001,
             dt_threshold=0.025)

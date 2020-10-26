@@ -24,18 +24,20 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
     """
     sb.set_theme(style="whitegrid")
     return_stats = []
-    stat_names = ["Zeros", "Minimums", "Maximums", "Averages", "Medians", "Entropies"]
+    stat_names = ["Non-Zero", "Zero", "Zeros%", "Minimums", "Maximums", "Averages", "Medians", "Entropies"]
     # loop over A-B distribution, then B-A distribution
     for ab in range(2):
         stats = {}
         return_stats = []
-        zeros, empties, avgs, maxs, mins, medians, entropies = [], [], [], [], [], [], []
+        non_zeros, num_zeros, per_zeros, empties, avgs, maxs, mins, medians, entropies = [], [], [], [], [], [], [], [], []
         # Fill out statistics for each row/column
         max_loop = 1 if ab == 0 else 0
         for i in tqdm(range(0, dis_matrix.shape[max_loop])):
             vec = dis_matrix.getcol(i) if ab == 0 else dis_matrix.getrow(i)
             non_vec = vec.nonzero()[ab]
-            zeros.append((vec.shape[ab] - len(non_vec))/vec.shape[ab])
+            non_zeros.append(len(non_vec))
+            num_zeros.append(vec.shape[ab] - len(non_vec))
+            per_zeros.append((vec.shape[ab] - len(non_vec))/vec.shape[ab])
             avgs.append(vec.mean())
             maxs.append(vec.max())
             mins.append(vec.min())
@@ -50,8 +52,8 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         if tell:
             print(print_name)
             print(f"{len(empties)} empty vectors")
-        stats = {stat_names[0]: zeros, stat_names[1]: mins, stat_names[2]: maxs, stat_names[3]: avgs,
-                 stat_names[4]: medians, stat_names[5]: entropies}
+        stats = {stat_names[0]: non_zeros, stat_names[1]: num_zeros, stat_names[2]: per_zeros, stat_names[3]: mins,
+                 stat_names[4]: maxs, stat_names[5]: avgs, stat_names[6]: medians, stat_names[7]: entropies}
         # Make stats ready for return
         for name, stat in stats.items():
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
@@ -76,7 +78,9 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
 
 
 def stats_of_list(list, name: str = "List", tell: bool = True):
-    zeros = (len(list) - np.count_nonzero(list))/len(list)
+    non_zeros = np.count_nonzero(list)
+    num_zeros = len(list) - np.count_nonzero(list)
+    per_zeros = (len(list) - np.count_nonzero(list))/len(list)
     mini = min(list)
     maxi = max(list)
     avg = np.mean(list)
@@ -84,13 +88,15 @@ def stats_of_list(list, name: str = "List", tell: bool = True):
     entro = 1 if np.isnan(entropy(list, base=len(list))) else entropy(list, base=len(list))
     if tell:
         print(f"{name} Statistics (length: {len(list)}).")
-        print(f"Zeros percentage in {name}: {zeros}")
+        print(f"Non-Zeros {name}: {non_zeros}")
+        print(f"Zeros {name}: {num_zeros}")
+        print(f"Zeros% {name}: {per_zeros}")
         print(f"Minimum {name}: {mini}")
         print(f"Maximum {name}: {maxi}")
         print(f"Average {name}: {avg}")
         print(f"Median {name}: {medi}")
         print(f"Entropy {name}: {entro}\n")
-    return [zeros, mini, maxi, avg, medi, entro]
+    return [non_zeros, num_zeros, per_zeros, mini, maxi, avg, medi, entro]
 
 
 if __name__ == '__main__':
