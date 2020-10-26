@@ -190,7 +190,10 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, K: int):
 
 
 def save_topic_word_matrix(lda: LdaModel, name: str):
-    matrix = sp.csc_matrix(lda.get_topics())
+    matrix = lda.get_topics()
+    threshold = 0.001
+    matrix = np.where(matrix < threshold, 0, matrix)
+    matrix = sp.csr_matrix(matrix)
     return sp.save_npz(name, matrix)
 
 
