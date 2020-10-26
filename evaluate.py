@@ -48,7 +48,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             ent = 1 if np.isnan(entropy(vec_array, base=vec.shape[ab])) else entropy(vec_array, base=vec.shape[ab])
             entropies.append(ent)
         # Print statistics
-        print_name = f"{column_name}-{row_name} Distribution" if ab == 0 else f"{row_name}-{column_name} distribution"
+        print_name = f"{column_name}-{row_name}" if ab == 0 else f"{row_name}-{column_name}"
         if tell:
             print(print_name)
             print(f"{len(empties)} empty vectors")
