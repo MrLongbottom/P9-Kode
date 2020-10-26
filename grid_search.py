@@ -35,13 +35,15 @@ def grid_search_coherence():
     plt.show()
 
 
-def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas: List[float], plot_file_name: str = "GridSearch.png", evaluation: bool = False):
+def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas: List[float], thresholds: List[float],
+                                       plot_file_name: str = "GridSearch.png", evaluation: bool = False):
     """
     For given lists of Ks, alpha, and etas, calculate the coherence value for each combination of these.
     Plots the coherence values of each combination.
     :param Ks: List of the amount of topics
     :param alphas: List of alpha prior weights
     :param etas: List of eta prior weights
+    :param thresholds: List of TW thresholds 
     :param plot_file_name: The file name of the saved figure. Should include a filetype (e.g. '.png')
     :param evaluation: Bool for whether the entropy evaluation is to be run
     """
@@ -54,10 +56,11 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
                                                                          Ks=Ks,
                                                                          alphas=alphas,
                                                                          etas=etas,
+                                                                         thresholds=thresholds,
                                                                          evaluation=evaluation)
 
     # Default sorting is based on K
-    test_combinations = list(itertools.product(Ks, alphas, etas))
+    test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
     test_coherence_combination = list(zip(test_combinations, coherence_values))
     # Sort on alpha values
     #test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][1])
@@ -70,10 +73,10 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
     coherences_sorted = [x[1] for x in test_combinations]
     
     plt.xticks(rotation=90, fontsize=5)
-    plt.plot([str(x) for x in combinations_sorted], coherences_sorted)
+    plt.plot([str(x) for x in combinations_sorted], coherences_sorted, label="Coherence score")
     plt.xlabel("Combination")
     plt.ylabel("Coherence score")
-    plt.legend("coherence_values", loc='best')
+    plt.legend()
     plt.tight_layout()
     plt.grid(1, axis='x')
     fig = plt.gcf()
@@ -85,11 +88,12 @@ if __name__ == '__main__':
     # grid_search_coherence()
 
     # 4*4*4 = 64 combinations
-    #Ks = [10]
-    Ks = [10, 40, 80, 160]
-    #alphas = [0.01]
-    alphas = [0.01, 0.1, 0.3, 0.6]
+    Ks = [80]
+    #Ks = [10, 40, 80, 160]
+    alphas = [0.1]
+    #alphas = [0.01, 0.1, 0.3, 0.6] # 0.1 default from wiki
     #alphas = ['asymmetric']
     #etas = [0.0001]
-    etas = [0.0001, 0.001, 0.005, 0.01]
-    grid_search_coherence_k_and_priors(Ks, alphas, etas, "GridSearchCoherence.png", evaluation=False)
+    etas = [0.0001, 0.001, 0.005, 0.01] # 0.001 default from wiki
+    thresholds = [0.0001, 0.001, 0.005, 0.01] # 0.001 default like the default eta
+    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchTH.png", evaluation=False)
