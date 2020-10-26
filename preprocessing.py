@@ -91,6 +91,8 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
         save_vector_file(doc_save_filename, documents.keys())
         save_vector_file(doc_word_save_filename, corpus, seperator='-')
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
+        with open("Generated Files/corpus", 'w', encoding='utf8') as json_file:
+            json.dump(corpus, json_file, ensure_ascii=False)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus
 
