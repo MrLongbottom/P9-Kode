@@ -64,9 +64,12 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
                     f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
         # Show stats
         if show or save_path is not None:
+            stats.pop(stat_names[0])
+            stats.pop(stat_names[1])
             df = pd.DataFrame(data=stats)
             box = df.boxplot()
             box.set_title(print_name)
+            plt.xticks(rotation=45, fontsize=8)
             if save_path is not None:
                 plt.savefig(save_path+"_"+print_name+".png")
             if show:
