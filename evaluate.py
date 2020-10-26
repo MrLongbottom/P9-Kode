@@ -58,6 +58,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         # Make stats ready for return
         for name, stat in stats.items():
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
+        return_stats.append(len(empties))
         # Save stats
         if save_path is not None:
             with open(save_path+"_"+print_name+'.csv', "w+") as f:
