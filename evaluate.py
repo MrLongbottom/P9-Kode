@@ -27,6 +27,8 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
     stat_names = ["Zeros", "Minimums", "Maximums", "Averages", "Medians", "Entropies"]
     # loop over A-B distribution, then B-A distribution
     for ab in range(2):
+        stats = {}
+        return_stats = []
         zeros, empties, avgs, maxs, mins, medians, entropies = [], [], [], [], [], [], []
         # Fill out statistics for each row/column
         max_loop = 1 if ab == 0 else 0
@@ -54,7 +56,6 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         for name, stat in stats.items():
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
         # Save stats
-        # TODO both files are the same, thats a problem.
         if save_path is not None:
             with open(save_path+"_"+print_name+'.csv', "w+") as f:
                 for name, stat in zip(stats.keys(), return_stats):
