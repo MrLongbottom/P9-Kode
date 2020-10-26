@@ -283,10 +283,10 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
         
         # Evaluation
         if evaluation:
-            dtMatrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-            twMatrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
-            dtPath = "Generated Files/Evaluate/dt" + str(combination) + ".csv"
-            twPath = "Generated Files/Evaluate/tw" + str(combination) + ".csv"
+            dtMatrix = sp.load_npz("Generated Files/" + str(combination[0:3] + (0.025,)) + "topic_doc_matrix.npz")
+            twMatrix = sp.load_npz("Generated Files/" + str(combination) + "topic_word_matrix.npz")
+            dtPath = "Generated Files/Evaluate/dt" + str(combination[0:3] + (0.025,))
+            twPath = "Generated Files/Evaluate/tw" + str(combination)
             evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=dtPath)
             evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=twPath)
 

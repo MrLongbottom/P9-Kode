@@ -96,4 +96,4 @@ if __name__ == '__main__':
     #etas = [0.0001]
     etas = [0.0001, 0.001, 0.005, 0.01] # 0.001 default from wiki
     thresholds = [0.0001, 0.001, 0.01, 0.1] # 0.001 default like the default eta
-    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchTH.png", evaluation=False)
+    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchTH.png", evaluation=True)
