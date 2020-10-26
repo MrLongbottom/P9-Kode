@@ -180,11 +180,11 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_co
 
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path + str(combination + tw_threshold) + "topic_word_matrix.npz", threshold=tw_threshold)
+    tw_matrix = save_topic_word_matrix(lda, save_path + str(param_combination + tw_threshold) + "topic_word_matrix.npz", threshold=tw_threshold)
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + str(combination + dt_threshold) + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
+    td_matrix = create_document_topics(corpus, lda, save_path + str(param_combination + dt_threshold) + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
 
     return lda
 
@@ -266,7 +266,7 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     """
     coherence_values = []
     model_list = []
-    mini_corpus = load_mini_corpus
+    mini_corpus = load_mini_corpus()
 
     test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
     for combination in tqdm(test_combinations):
@@ -275,7 +275,7 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
                 words,
                 mini_corpus,
                 Dictionary(mini_corpus),
-                "../Generated Files/",
+                "Generated Files/",
                 combination[0:3],
                 tw_threshold=combination[3],
                 dt_threshold=0.025)
@@ -297,7 +297,7 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
 
 
 def load_mini_corpus():
-    mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
+    mini_corpus = load_dict_file("Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
     return mini_corpus
@@ -308,7 +308,7 @@ if __name__ == '__main__':
     model_path = 'model_test'
     cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
     words = load_dict_file("../Generated Files/word2vec.csv")
-    mini_corpus = load_mini_corpus
+    mini_corpus = load_mini_corpus()
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
     run_lda('LDA/model/document_model',
             cv,
