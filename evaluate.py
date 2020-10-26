@@ -48,7 +48,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             ent = 1 if np.isnan(entropy(vec_array, base=vec.shape[ab])) else entropy(vec_array, base=vec.shape[ab])
             entropies.append(ent)
         # Print statistics
-        print_name = f"{column_name}-{row_name} Distribution" if ab == 0 else f"{row_name}-{column_name} distribution"
+        print_name = f"{column_name}-{row_name}" if ab == 0 else f"{row_name}-{column_name}"
         if tell:
             print(print_name)
             print(f"{len(empties)} empty vectors")
@@ -64,6 +64,8 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
                     f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
         # Show stats
         if show or save_path is not None:
+            stats.pop(stat_names[0])
+            stats.pop(stat_names[1])
             df = pd.DataFrame(data=stats)
             box = df.boxplot()
             box.set_title(print_name)
