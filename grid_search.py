@@ -10,6 +10,10 @@ from preprocessing import preprocess
 
 
 def grid_search_coherence():
+    """
+    Runs a grid search on the coherence value, given a start and step size of K, up to a limit.
+    Plots the coherence value of each K evaluated.
+    """
     start = 2
     step = 3
     cv_matrix, words, texts = preprocess("documents.json")
@@ -31,7 +35,16 @@ def grid_search_coherence():
     plt.show()
 
 
-def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas: List[float], file_name: str = "GridSearch.png", evaluation: bool = False):
+def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas: List[float], plot_file_name: str = "GridSearch.png", evaluation: bool = False):
+    """
+    For given lists of Ks, alpha, and etas, calculate the coherence value for each combination of these.
+    Plots the coherence values of each combination.
+    :param Ks: List of the amount of topics
+    :param alphas: List of alpha prior weights
+    :param etas: List of eta prior weights
+    :param plot_file_name: The file name of the saved figure. Should include a filetype (e.g. '.png')
+    :param evaluation: Bool for whether the entropy evaluation is to be run
+    """
     cv_matrix, words, texts = preprocess("documents.json")
     dictionary = Dictionary(texts)
     model_list, coherence_values = compute_coherence_values_k_and_priors(cv_matrix=cv_matrix,
@@ -64,7 +77,7 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
     plt.tight_layout()
     plt.grid(1, axis='x')
     fig = plt.gcf()
-    fig.savefig(file_name, dpi=300)
+    fig.savefig(plot_file_name, dpi=300)
     plt.show()
 
 
