@@ -8,7 +8,7 @@ import pandas as pd
 
 
 def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tell: bool = True, save_path: str = None,
-                                 column_name: str = "A", row_name: str = "B"):
+                                 row_name: str = "column", column_name: str = "row"):
     """
     Evaluate document-topic distribution matrix, involving a combination of:
     * printing statistics
@@ -45,6 +45,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             if len(non_vec) == 0:
                 empties.append(i)
             vec_array = vec.toarray().T[0] if ab == 0 else vec.toarray()[0]
+            # entropy is set to 1 if distribution is all zeros (which returns NaN).
             ent = 1 if np.isnan(entropy(vec_array, base=vec.shape[ab])) else entropy(vec_array, base=vec.shape[ab])
             entropies.append(ent)
         # Print statistics
@@ -57,6 +58,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         # Make stats ready for return
         for name, stat in stats.items():
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
+        return_stats.append(len(empties))
         # Save stats
         if save_path is not None:
             with open(save_path+"_"+print_name+'.csv', "w+") as f:
@@ -64,6 +66,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
                     f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
         # Show stats
         if show or save_path is not None:
+            # remove absolute number zero statistics, as they are not in range [0,1]
             stats.pop(stat_names[0])
             stats.pop(stat_names[1])
             df = pd.DataFrame(data=stats)
