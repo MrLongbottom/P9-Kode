@@ -42,21 +42,21 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, threshold) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
     :return: a topic_document matrix
     """
     document_topics = []
-    par = partial(get_document_topics_from_model, lda=lda)
+    par = partial(get_document_topics_from_model, lda=lda, threshold=threshold)
     with Pool(8) as p:
         document_topics.append(p.map(par, corpus))
     matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
     return matrix
 
 
-def get_document_topics_from_model(text: str, lda: LdaModel) -> Dict[int, float]:
+def get_document_topics_from_model(text: str, lda: LdaModel, threshold) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
@@ -65,7 +65,7 @@ def get_document_topics_from_model(text: str, lda: LdaModel) -> Dict[int, float]
     """
     dictionary = Dictionary([text])
     corpus = [dictionary.doc2bow(t) for t in [text]]
-    query = lda.get_document_topics(corpus, minimum_probability=0.025)
+    query = lda.get_document_topics(corpus, minimum_probability=threshold)
     return dict([x for x in query][0])
 
 
@@ -151,25 +151,24 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, save_path):
+def run_lda(path: str, cv_matrix, words, corpus, save_path, tw_threshold, dt_threshold):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words)
     save_lda(lda, path)
 
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz")
+    tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz", threshold=tw_threshold)
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz")
+    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", threshold=dt_threshold)
 
     return lda
 
 
-def save_topic_word_matrix(lda: LdaModel, name: str):
+def save_topic_word_matrix(lda: LdaModel, name: str, threshold: float):
     matrix = lda.get_topics()
-    threshold = 0.001
     matrix = np.where(matrix < threshold, 0, matrix)
     matrix = sp.csr_matrix(matrix)
     return sp.save_npz(name, matrix)
@@ -203,4 +202,5 @@ if __name__ == '__main__':
     mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/")
+    run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/",
+            tw_threshold=0.001, dt_threshold=0.025)
