@@ -44,12 +44,12 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
     :param alphas: List of alpha prior weights
     :param etas: List of eta prior weights
     :param thresholds: List of TW thresholds 
-    :param plot_file_name: The file name of the saved figure. Should include a filetype (e.g. '.png')
+    :param plot_file_name: The file name of the saved figure.
     :param evaluation: Bool for whether the entropy evaluation is to be run
     """
     cv_matrix, words, texts = preprocess("documents.json")
     dictionary = Dictionary(texts)
-    model_list, coherence_values = compute_coherence_values_k_and_priors(cv_matrix=cv_matrix,
+    _, coherence_values, _, tw_eval_results = compute_coherence_values_k_and_priors(cv_matrix=cv_matrix,
                                                                          dictionary=dictionary,
                                                                          texts=texts,
                                                                          words=words,
@@ -59,30 +59,44 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
                                                                          thresholds=thresholds,
                                                                          evaluation=evaluation)
 
-    # Default sorting is based on K
-    test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
-    test_coherence_combination = list(zip(test_combinations, coherence_values))
-    # Sort on alpha values
-    #test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][1])
-    # Sort on eta values
-    #test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][2])
-    # Sort on coherence value
-    test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[1], reverse = True)
-    
-    combinations_sorted = [x[0] for x in test_combinations]
-    coherences_sorted = [x[1] for x in test_combinations]
-    
     plt.xticks(rotation=90, fontsize=5)
-    plt.plot([str(x) for x in combinations_sorted], coherences_sorted, label="Coherence score")
     plt.xlabel("Combination")
-    plt.ylabel("Coherence score")
     plt.legend()
     plt.tight_layout()
     plt.grid(1, axis='x')
+    
+    test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
+    
+    if not evaluation:
+        # Default sorting is based on K
+        test_coherence_combination = list(zip(test_combinations, coherence_values))
+        # Sort on alpha values
+        #test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][1])
+        # Sort on eta values
+        #test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][2])
+        # Sort on coherence value
+        test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[1], reverse = True)
+
+        combinations_sorted = [x[0] for x in test_combinations]
+        coherences_sorted = [x[1] for x in test_combinations]
+
+        plt.plot([str(x) for x in combinations_sorted], coherences_sorted, label="Coherence score")
+        plt.ylabel("Coherence score")
+        save_fig(plot_file_name + ".png")
+    else:
+        plt.ylabel("Words without topics")
+        plt.plot([str(x) for x in test_combinations], [x[-1] for x in tw_eval_results]) #Debug to test if correct
+        save_fig(plot_file_name + "zero_topic_words" + ".png")
+        
+        plt.ylabel("Average words per topic")
+        plt.plot() #Debug to figure out what to get from lists
+        save_fig(plot_file_name + "avg_words_per_topic" + ".png")
+
+    
+def save_fig(plot_file_name: str):
     fig = plt.gcf()
     fig.savefig(plot_file_name, dpi=300)
     plt.show()
-
 
 if __name__ == '__main__':
     # grid_search_coherence()
@@ -96,4 +110,4 @@ if __name__ == '__main__':
     #etas = [0.0001]
     etas = [0.0001, 0.001, 0.005, 0.01] # 0.001 default from wiki
     thresholds = [0.0001, 0.001, 0.01, 0.1] # 0.001 default like the default eta
-    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchTH.png", evaluation=True)
+    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchTH", evaluation=True)

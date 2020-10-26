@@ -6,6 +6,7 @@ from scipy.stats import entropy
 import scipy.sparse as sp
 import pandas as pd
 
+np.seterr(divide='ignore', invalid='ignore') # There might be an underlying problem for needing this
 
 def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tell: bool = True, save_path: str = None,
                                  row_name: str = "column", column_name: str = "row"):

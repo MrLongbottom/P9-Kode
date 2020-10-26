@@ -266,6 +266,8 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     """
     coherence_values = []
     model_list = []
+    dt_eval_results = []
+    tw_eval_results = []
     mini_corpus = load_mini_corpus()
 
     test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
@@ -287,13 +289,13 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
             twMatrix = sp.load_npz("Generated Files/" + str(combination) + "topic_word_matrix.npz")
             dtPath = "Generated Files/Evaluate/dt" + str(combination[0:3] + (0.025,))
             twPath = "Generated Files/Evaluate/tw" + str(combination)
-            evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=dtPath)
-            evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=twPath)
+            dt_eval_results.append(evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=dtPath))
+            tw_eval_results.append(evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=twPath))
 
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())
 
-    return model_list, coherence_values
+    return model_list, coherence_values, dt_eval_results, tw_eval_results
 
 
 def load_mini_corpus():
