@@ -58,7 +58,6 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
         # cut off words that are not used in danish word databases or are wrong word type
         step += 1
         print(f"Step {step}: word databases and POS-tagging.")
-        # TODO possibly replace with real POS tagging, rather than database checks.
         words = word_checker(words)
 
     # Stemming to combine word declensions
