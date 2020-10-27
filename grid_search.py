@@ -85,11 +85,11 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
         save_fig(plot_file_name + ".png")
     else:
         plt.ylabel("Words without topics")
-        plt.plot([str(x) for x in test_combinations], [x[-1] for x in tw_eval_results]) #Debug to test if correct
+        plt.plot([str(x) for x in test_combinations], [x[0][8] for x in tw_eval_results], label="Words without topics")
         save_fig(plot_file_name + "zero_topic_words" + ".png")
         
         plt.ylabel("Average words per topic")
-        plt.plot() #Debug to figure out what to get from lists
+        plt.plot([str(x) for x in test_combinations], [x[1][0][5] for x in tw_eval_results], label="Average words per topic")
         save_fig(plot_file_name + "avg_words_per_topic" + ".png")
 
     
@@ -98,6 +98,7 @@ def save_fig(plot_file_name: str):
     fig.savefig(plot_file_name, dpi=300)
     plt.show()
 
+
 if __name__ == '__main__':
     # grid_search_coherence()
 
@@ -105,9 +106,9 @@ if __name__ == '__main__':
     Ks = [80]
     #Ks = [10, 40, 80, 160]
     alphas = [0.1]
-    #alphas = [0.01, 0.1, 0.3, 0.6] # 0.1 default from wiki
+    #alphas = [0.01, 0.1, 0.3, 0.6]  # 0.1 default from wiki
     #alphas = ['asymmetric']
-    #etas = [0.0001]
-    etas = [0.0001, 0.001, 0.005, 0.01] # 0.001 default from wiki
-    thresholds = [0.0001, 0.001, 0.01, 0.1] # 0.001 default like the default eta
-    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchTH", evaluation=True)
+    #etas = [0.001]
+    etas = [0.0001, 0.001, 0.005, 0.01]  # 0.001 default from wiki
+    thresholds = [0.00001, 0.0001, 0.001, 0.01, 0.1]  # 0.001 default like the default eta
+    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchEval", evaluation=True)

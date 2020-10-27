@@ -6,7 +6,7 @@ from scipy.stats import entropy
 import scipy.sparse as sp
 import pandas as pd
 
-np.seterr(divide='ignore', invalid='ignore') # There might be an underlying problem for needing this
+np.seterr(divide='ignore', invalid='ignore')  # There might be an underlying problem for needing this
 
 def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tell: bool = True, save_path: str = None,
                                  row_name: str = "column", column_name: str = "row"):
@@ -25,6 +25,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
     """
     sb.set_theme(style="whitegrid")
     return_stats = []
+    return_stats_combined = ()
     stat_names = ["Non-Zero", "Zero", "Zeros%", "Minimums", "Maximums", "Averages", "Medians", "Entropies"]
     # loop over A-B distribution, then B-A distribution
     for ab in range(2):
@@ -60,6 +61,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         for name, stat in stats.items():
             return_stats.append(stats_of_list(stat, name=name, tell=tell))
         return_stats.append(len(empties))
+        return_stats_combined += (return_stats,)
         # Save stats
         if save_path is not None:
             with open(save_path+"_"+print_name+'.csv', "w+") as f:
@@ -80,7 +82,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             else:
                 plt.clf()
 
-    return return_stats
+    return return_stats_combined
 
 
 def stats_of_list(list, name: str = "List", tell: bool = True):
