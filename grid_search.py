@@ -1,12 +1,40 @@
 import itertools
 import math
 from typing import List
-
+from test import test
 import matplotlib.pyplot as plt
 from gensim.corpora import Dictionary
+from tqdm import tqdm
 
-from LDA.lda import compute_coherence_values, compute_coherence_values_k_and_priors
+from LDA.lda import compute_coherence_values, compute_coherence_values_k_and_priors, run_lda
 from preprocessing import preprocess
+
+
+def general_grid_search(function, fixed_params, hyper_params, plot=True, y_label="Evaluation Score", save_path=None):
+    # make all combinations of hyper-parameters
+    hyper_combs = list(itertools.product(*hyper_params.values()))
+    results = []
+    for comb in tqdm(hyper_combs):
+        # combine names of hyper-parameters with values from the combination
+        params = {list(hyper_params.keys())[i]: comb[i] for i in range(len(hyper_params.keys()))}
+        # add fixed parameters
+        params.update(fixed_params)
+        # call function using **kwargs and store result
+        results.append(function(**params))
+    # plot results
+    if plot:
+        plt.plot([str(x) for x in hyper_combs], results)
+        plt.xticks(rotation=90, fontsize=6)
+        plt.tight_layout()
+        plt.grid(1, axis='x')
+        plt.ylabel(y_label)
+        plt.xlabel(f"({str(list(hyper_params.keys()))[1:-1]})")
+        if save_path is not None:
+            fig = plt.gcf()
+            fig.savefig(save_path)
+        plt.show()
+
+    return {hyper_combs[i]: results[i] for i in range(len(results))}
 
 
 def grid_search_coherence():
@@ -73,11 +101,12 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
     plt.tight_layout()
     plt.grid(1, axis='x')
     fig = plt.gcf()
-    fig.savefig(plot_file_name, dpi=300)
+    fig.savefig(plot_file_name)
     plt.show()
 
 
 if __name__ == '__main__':
+    test = general_grid_search(test, {"param1": 234, "param3": 156}, {"param2": [1, 2, 3], "param4": ["absdasd", "safasfagf", 123135]}, save_path="Generated Files/test.png")
     # grid_search_coherence()
 
     # 4*4*4 = 64 combinations
