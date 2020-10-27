@@ -11,6 +11,16 @@ from preprocessing import preprocess
 
 
 def general_grid_search(function, fixed_params, hyper_params, plot=True, y_label="Evaluation Score", save_path=None):
+    """
+    General function to do a grid-search over another function.
+    :param function: function that is searched over. Should return a number if plot is True.
+    :param fixed_params: dictionary over the parameters of the function and their values.
+    :param hyper_params: dictionary over the hyper-parameters for the function and their list of values to be tested.
+    :param plot: boolean indicating whether to plot the results.
+    :param y_label: the name of the number returned by the function. Used for plotting.
+    :param save_path: the path to save the plot to. Only relevant if plot is True.
+    :return: dictionary mapping hyper-parameter combinations to resulting function values.
+    """
     # make all combinations of hyper-parameters
     hyper_combs = list(itertools.product(*hyper_params.values()))
     results = []
