@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from gensim.corpora import Dictionary
 from tqdm import tqdm
 
-from LDA.lda import compute_coherence_values, compute_coherence_values_k_and_priors, run_lda
+from LDA.lda import compute_coherence_values, compute_coherence_values_k_and_priors
 from preprocessing import preprocess
 
 
