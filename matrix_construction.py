@@ -121,7 +121,7 @@ def fill_half_matrix(matrix):
 
 def matrix_connection_check(adj_matrix) -> bool:
     """
-    Checks if a graph is fully connected repeatedly checking unvisited neighbors.
+    Checks if a graph is connected, repeatedly checking unvisited neighbors.
     :param adj_matrix: sparse adjacency matrix
     :return: bool indicating whether adj_matrix is connected
     """
