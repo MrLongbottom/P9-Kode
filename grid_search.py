@@ -3,6 +3,7 @@ import math
 from typing import List
 
 import matplotlib.pyplot as plt
+import numpy as np
 from gensim.corpora import Dictionary
 
 from lda import compute_coherence_values, compute_coherence_values_k_and_priors
@@ -58,12 +59,6 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
                                                                          etas=etas,
                                                                          thresholds=thresholds,
                                                                          evaluation=evaluation)
-
-    plt.xticks(rotation=90, fontsize=5)
-    plt.xlabel("Combination")
-    plt.legend()
-    plt.tight_layout()
-    plt.grid(1, axis='x')
     
     test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
     
@@ -81,17 +76,28 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
         coherences_sorted = [x[1] for x in test_combinations]
 
         plt.plot([str(x) for x in combinations_sorted], coherences_sorted, label="Coherence score")
+        plot_settings()
         plt.ylabel("Coherence score")
         save_fig(plot_file_name + ".png")
     else:
-        plt.ylabel("Words without topics")
         plt.plot([str(x) for x in test_combinations], [x[0][8] for x in tw_eval_results], label="Words without topics")
-        save_fig(plot_file_name + "zero_topic_words" + ".png")
+        plot_settings()
+        plt.ylabel("Words without topics")
+        save_fig(plot_file_name + "_zero_topic_words" + ".png")
         
-        plt.ylabel("Average words per topic")
         plt.plot([str(x) for x in test_combinations], [x[1][0][5] for x in tw_eval_results], label="Average words per topic")
-        save_fig(plot_file_name + "avg_words_per_topic" + ".png")
+        plot_settings()
+        plt.ylabel("Average words per topic")
+        save_fig(plot_file_name + "_avg_words_per_topic" + ".png")
 
+    
+def plot_settings():
+    plt.xticks(rotation=90, fontsize=5)
+    plt.xlabel("Combination")
+    plt.legend()
+    plt.tight_layout()
+    plt.grid(1, axis='x')
+    
     
 def save_fig(plot_file_name: str):
     fig = plt.gcf()
@@ -108,7 +114,8 @@ if __name__ == '__main__':
     alphas = [0.1]
     #alphas = [0.01, 0.1, 0.3, 0.6]  # 0.1 default from wiki
     #alphas = ['asymmetric']
-    #etas = [0.001]
-    etas = [0.0001, 0.001, 0.005, 0.01]  # 0.001 default from wiki
-    thresholds = [0.00001, 0.0001, 0.001, 0.01, 0.1]  # 0.001 default like the default eta
-    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchEval", evaluation=True)
+    etas = [0.001]
+    #etas = [0.0001, 0.001, 0.005, 0.01]  # 0.001 default from wiki
+    #thresholds = [0.00001, 0.0001, 0.001, 0.01, 0.1]  # 0.001 default like the default eta
+    thresholds = list(np.linspace(0.00001, 0.001, 40))
+    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchEval2", evaluation=True)

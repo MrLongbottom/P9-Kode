@@ -292,8 +292,8 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
             twPath = "Generated Files/Evaluate/tw" + str(combination)
             if combination[0:3] not in completed_dt_evals:
                 completed_dt_evals.append(combination[0:3])
-                dt_eval_results.append(evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=dtPath))
-            tw_eval_results.append(evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=twPath))
+                dt_eval_results.append(evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=None, show=False, tell=False))
+            tw_eval_results.append(evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=None, show=False, tell=False))
 
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())
