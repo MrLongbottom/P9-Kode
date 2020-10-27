@@ -1,4 +1,6 @@
+import json
 import math
+import itertools
 from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
@@ -11,26 +13,37 @@ import scipy.sparse as sp
 import seaborn as sb
 from gensim import matutils
 from gensim.corpora import Dictionary
+from gensim.models import CoherenceModel
 from gensim.models import LdaModel, LdaMulticore
 from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
 from scipy.stats import entropy
 from tqdm import tqdm
-from matplotlib.cbook import boxplot_stats
-from gensim.models import CoherenceModel
+
+import preprocessing
 
 
-def fit_lda(data: csr_matrix, vocab: Dict):
+def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: float = None):
     """
     Fit LDA from a scipy CSR matrix (data).
     :param data: a csr_matrix representing the vectorized words
     :param vocab: a dictionary over the words
+    :param K: number of topics
+    :param alpha: the alpha prior weight of topics in documents
+    :param eta: the eta prior weight of words in topics
     :return: a lda model trained on the data and vocab
     """
     print('fitting lda...')
-    return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
-                        id2word=vocab,
-                        num_topics=math.floor(math.sqrt(data.shape[1]) / 2), eta=1E-10)
+    if alpha is None or eta is None:
+        return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
+                            id2word=vocab,
+                            num_topics=K)
+    else:
+        return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
+                            id2word=vocab,
+                            num_topics=K,
+                            alpha=alpha,
+                            eta=eta)
 
 
 def save_lda(lda: LdaModel, path: str):
@@ -42,28 +55,34 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, threshold) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary, threshold) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
     :return: a topic_document matrix
     """
     document_topics = []
-    par = partial(get_document_topics_from_model, lda=lda, threshold=threshold)
+    par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary, threshold=threshold)
     with Pool(8) as p:
         document_topics.append(p.map(par, corpus))
     matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
     return matrix
 
 
-def get_document_topics_from_model(text: str, lda: LdaModel, threshold) -> Dict[int, float]:
+def load_corpus(name: str):
+    with open(name, 'r', encoding='utf8') as json_file:
+        corpus = json.loads(json_file.read())
+    return corpus
+
+
+def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Dictionary, threshold) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
     :param text: a document string
+    :param dictionary: the dictionary over the whole document
     :return: a dict with the topics in the given document based on the lda model
     """
-    dictionary = Dictionary([text])
     corpus = [dictionary.doc2bow(t) for t in [text]]
     query = lda.get_document_topics(corpus, minimum_probability=threshold)
     return dict([x for x in query][0])
@@ -151,9 +170,9 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, save_path, tw_threshold, dt_threshold):
+def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, K: int, tw_threshold, dt_threshold):
     # fitting the lda model and saving it
-    lda = fit_lda(cv_matrix, words)
+    lda = fit_lda(cv_matrix, words, K)
     save_lda(lda, path)
 
     # saving topic words to file
@@ -162,7 +181,7 @@ def run_lda(path: str, cv_matrix, words, corpus, save_path, tw_threshold, dt_thr
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", threshold=dt_threshold)
+    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
 
     return lda
 
@@ -194,6 +213,66 @@ def coherence_score(lda: LdaModel, texts, id2word, measure: str = 'c_v'):
     print('\nCoherence Score: ', coherence_lda)
 
 
+def compute_coherence_values(cv_matrix, words, dictionary, texts, limit, start=2, step=10):
+    """
+    Compute c_v coherence for various number of topics
+
+    Parameters:
+    ----------
+    dictionary : Gensim dictionary
+    corpus : Gensim corpus
+    texts : List of input texts
+    limit : Max num of topics
+
+    Returns:
+    -------
+    model_list : List of LDA topic models
+    coherence_values : Coherence values corresponding to the LDA model with respective number of topics
+    """
+    coherence_values = []
+    model_list = []
+
+    for num_topics in tqdm(range(start, limit, step)):
+        model = fit_lda(cv_matrix, words, num_topics)
+        model_list.append(model)
+        coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+        coherence_values.append(coherencemodel.get_coherence())
+
+    return model_list, coherence_values
+
+
+def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
+                                          Ks: List[int], alphas: List[float], etas: List[float]):
+    """
+    Compute c_v coherence for various number of topics and priors
+
+    Parameters:
+    ----------
+    dictionary : Gensim dictionary
+    corpus : Gensim corpus
+    texts : List of input texts
+    Ks : A list of K values to apply
+    alphas : A list of alpha values to apply
+    etas : A list of eta values to apply
+
+    Returns:
+    -------
+    model_list : List of LDA topic models
+    coherence_values : Coherence values corresponding to the LDA model with respective number of topics and priors
+    """
+    coherence_values = []
+    model_list = []
+
+    test_combinations = list(itertools.product(Ks, alphas, etas))
+    for combination in tqdm(test_combinations):
+        model = fit_lda(cv_matrix, words, combination[0], combination[1], combination[2])
+        model_list.append(model)
+        coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
+        coherence_values.append(coherencemodel.get_coherence())
+
+    return model_list, coherence_values
+
+
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'model_test'
@@ -202,5 +281,18 @@ if __name__ == '__main__':
     mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    run_lda('model/document_model', cv, words, mini_corpus, "../Generated Files/",
-            tw_threshold=0.001, dt_threshold=0.025)
+
+    K = math.floor(math.sqrt(cv.shape[0]) / 2)
+    run_lda('model/document_model',
+            cv,
+            words,
+            mini_corpus,
+            Dictionary(mini_corpus),
+            "../Generated Files/",
+            K,
+            tw_threshold=0.001,
+            dt_threshold=0.025)
+
+    # lda = load_lda("model/document_model")
+    # corpus = load_corpus("../Generated Files/corpus")
+    # coherence_score(lda, corpus, Dictionary(corpus))
