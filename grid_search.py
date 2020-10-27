@@ -111,7 +111,7 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
     plt.tight_layout()
     plt.grid(1, axis='x')
     fig = plt.gcf()
-    fig.savefig(plot_file_name)
+    fig.savefig(plot_file_name, dpi=300)
     plt.show()
 
 
