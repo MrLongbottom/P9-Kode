@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from gensim.corpora import Dictionary
 from tqdm import tqdm
 
-from LDA.lda import compute_coherence_values, compute_coherence_values_k_and_priors, run_lda
+from LDA.lda import compute_coherence_values, compute_coherence_values_k_and_priors
 from preprocessing import preprocess
 
 
@@ -111,7 +111,7 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
     plt.tight_layout()
     plt.grid(1, axis='x')
     fig = plt.gcf()
-    fig.savefig(plot_file_name)
+    fig.savefig(plot_file_name, dpi=300)
     plt.show()
 
 
