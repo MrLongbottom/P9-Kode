@@ -5,6 +5,8 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
+import time
+import preprocessing
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -53,14 +55,14 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary, threshold) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
     :return: a topic_document matrix
     """
     document_topics = []
-    par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary)
+    par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary, threshold=threshold)
     with Pool(8) as p:
         document_topics.append(p.map(par, corpus))
     matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
@@ -73,7 +75,7 @@ def load_corpus(name: str):
     return corpus
 
 
-def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Dictionary) -> Dict[int, float]:
+def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Dictionary, threshold) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
@@ -82,7 +84,7 @@ def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Diction
     :return: a dict with the topics in the given document based on the lda model
     """
     corpus = [dictionary.doc2bow(t) for t in [text]]
-    query = lda.get_document_topics(corpus, minimum_probability=0.025)
+    query = lda.get_document_topics(corpus, minimum_probability=threshold)
     return dict([x for x in query][0])
 
 
@@ -115,92 +117,6 @@ def word_cloud(corpus):
     wordcloud.generate(str(corpus))
     # Visualize the word cloud
     wordcloud.to_image().show()
-
-
-# TODO accessing model will no longer provide the correct ids after pruning, avoid usage for now.
-def evaluate_doc_topic_distributions(dt_matrix: sp.spmatrix, show: bool = True, tell: bool = True,
-                                     prune: bool = False, prune_treshhold=0.5):
-    """
-    Evaluate document-topic distribution matrix, involving a combination of:
-    * printing statistics
-    * showing boxplot
-    * pruning empty docs and topics, and pruning topics that are too common
-    :param dt_matrix: document-topic distribution matrix
-    :param show: whether to show boxplot
-    :param tell: whether to print statistics
-    :param prune: whether to prune
-    :param prune_treshhold: how much percentage of the doc set a topic can cover at max.
-    :return: potentially pruned matrix.
-    """
-    sb.set_theme(style="whitegrid")
-    # Topic-Doc distributions
-    lens = []
-    top_zeros = []
-    outliers = []
-    threshold = dt_matrix.shape[0] * prune_treshhold
-    for i in tqdm(range(0, dt_matrix.shape[1])):
-        topic = dt_matrix.getcol(i).nonzero()[0]
-        lens.append(len(topic))
-        if len(topic) > threshold:
-            outliers.append(i)
-        if len(topic) == 0:
-            top_zeros.append(i)
-    if tell:
-        print("Topic-Doc distributions.")
-        print("Minimum: " + str(min(lens)))
-        print("Maximum: " + str(max(lens)))
-        print("Average: " + str(np.mean(lens)))
-        print("Entropy: " + str(entropy(lens, base=len(lens))))
-        print("Zeros: " + str(len(top_zeros)))
-
-    if prune:
-        # TODO model cannot be accessed normally after this. Which may be a problem
-        # find outlier topics based on the boxplot
-        # this feature was currently discarded as running lda multiple times in a row would prune more and more.
-        """
-        outlier_values = [y for stat in boxplot_stats(lens) for y in stat['fliers']]
-        outliers = [lens.index(x) for x in outlier_values]
-        """
-        # also prune topics with no documents
-        outliers.extend(top_zeros)
-        dt_matrix = slice_sparse_col(dt_matrix, outliers)
-        tw_matrix = sp.load_npz("../Generated Files/topic_word_matrix.npz")
-        tw_matrix = slice_sparse_row(tw_matrix, outliers)
-        sp.save_npz("../Generated Files/topic_word_matrix.npz", tw_matrix)
-    if show:
-        ax = sb.boxplot(x=lens)
-        plt.show()
-
-    # Doc-Topic distributions
-    lens = []
-    doc_zeros = []
-    for i in tqdm(range(0, dt_matrix.shape[0])):
-        doc = dt_matrix.getrow(i).nonzero()[0]
-        lens.append(len(doc))
-        if len(doc) == 0:
-            doc_zeros.append(i)
-    if tell:
-        print("Doc-Topic distributions.")
-        print("Minimum: " + str(min(lens)))
-        print("Maximum: " + str(max(lens)))
-        print("Average: " + str(np.mean(lens)))
-        print("Entropy: " + str(entropy(lens, base=len(lens))))
-        print("Zeros: " + str(len(doc_zeros)))
-    if prune:
-        # TODO needs to be tested more thoroughly
-        # TODO model cannot be accessed normally after this. Which may be a problem
-        if len(doc_zeros) > 0:
-            # Prune documents with no topic distributions
-            dt_matrix = sp.csr_matrix(dt_matrix)
-            dt_matrix = slice_sparse_row(dt_matrix, doc_zeros)
-            remove_from_rows_from_file("../Generated Files/count_vec_matrix.npz", doc_zeros)
-            remove_from_rows_from_file("../Generated Files/doc2vec.csv", doc_zeros)
-            remove_from_rows_from_file("../Generated Files/doc2word.csv", doc_zeros, separator="-")
-    if show:
-        ax = sb.boxplot(x=lens)
-        plt.show()
-
-    return dt_matrix
 
 
 def remove_from_rows_from_file(path, rows, separator=","):
@@ -254,24 +170,26 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, K: int):
+def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, K: int, tw_threshold, dt_threshold):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words, K)
     save_lda(lda, path)
 
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz")
+    tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz", threshold=tw_threshold)
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", dictionary)
+    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
 
     return lda
 
 
-def save_topic_word_matrix(lda: LdaModel, name: str):
-    matrix = sp.csc_matrix(lda.get_topics())
+def save_topic_word_matrix(lda: LdaModel, name: str, threshold: float):
+    matrix = lda.get_topics()
+    matrix = np.where(matrix < threshold, 0, matrix)
+    matrix = sp.csr_matrix(matrix)
     return sp.save_npz(name, matrix)
 
 
@@ -363,14 +281,17 @@ if __name__ == '__main__':
     mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
     mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
     mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
+
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
-    run_lda('LDA/model/document_model',
+    run_lda('model/document_model',
             cv,
             words,
             mini_corpus,
             Dictionary(mini_corpus),
             "../Generated Files/",
-            K)
+            K,
+            tw_threshold=0.001,
+            dt_threshold=0.025)
 
     # lda = load_lda("model/document_model")
     # corpus = load_corpus("../Generated Files/corpus")
