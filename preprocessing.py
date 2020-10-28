@@ -343,6 +343,15 @@ def load_word_files(filenames):
     return files
 
 
+def load_vector_file(path, seperator=','):
+    with open(path, 'r') as file:
+        dictionary = {}
+        for line in file.readlines():
+            kv = line.split(seperator)
+            dictionary[int(kv[0])] = kv[1].replace('\n', '')
+    return dictionary
+
+
 def word_checker(words):
     files = load_word_files(['NLP/dannet_words.csv', 'NLP/wik_words.csv', 'NLP/wik_nonwords.csv'])
     dannet_words = files[0]

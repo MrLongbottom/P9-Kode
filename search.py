@@ -2,6 +2,7 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
+import sklearn
 from sklearn.preprocessing import normalize
 from fast_pagerank import pagerank
 import numpy as np
@@ -12,6 +13,8 @@ from gensim.models import LdaModel
 from scipy.spatial import distance
 from tqdm import tqdm
 
+import preprocessing
+import standard_random_walk
 from LDA.lda import load_lda, get_document_topics_from_model, load_corpus
 from preprocessing import generate_queries
 from standard_random_walk import random_walk_with_teleport
@@ -34,55 +37,53 @@ def make_personalization_vector(word: str, topic_doc_matrix, corpus: Dictionary,
     return vector
 
 
-def make_personalization_vector_word_based(word: str, topic_doc_matrix, lda):
+def make_personalization_vector_word_based(word: str, dt_matrix, tw_matrix):
     """
     Takes a query and transforms it into a vector based on each words topic distribution
     For each word we find its topic distribution and compare it against every other document
     using jensen shannon distance.
     :param word: a word
-    :param topic_doc_matrix: topic document matrix
+    :param dt_matrix: topic document matrix
     :param lda: the lda model
     :return: a personalization vector (np.ndarray)
     """
     # Initialization
-    p_vector = np.zeros(topic_doc_matrix.shape[0])
-    vector = np.zeros(topic_doc_matrix.shape[1])
-    df = pandas.read_csv("Generated Files/word2vec.csv", header=None)
-    words = dict(zip(df[0], df[1]))
-    topic_word_matrix = lda.get_topics()
+    p_vector = np.zeros(dt_matrix.shape[0])
+    vector = np.zeros(dt_matrix.shape[1])
 
     # Getting the word index and then getting the topic distribution for that given word
-    word_index = [key for key, value in words.items() if value == word][0]
-    vector += topic_word_matrix.T[word_index]
-
-    for index, doc in enumerate(topic_doc_matrix):
-        p_vector[index] = 1 - distance.jensenshannon(vector, doc.toarray()[0])
-    return p_vector
+    word_index = [key for key, value in word2vec.items() if value == word][0]
+    word_vector = tw_matrix.T[word_index]
+    word_vector = sklearn.preprocessing.normalize(word_vector, norm='l1', axis=1)
+    return word_vector
 
 
-def query_topics(query: List[str], model_path: str, topic_doc_path, corpus) -> np.ndarray:
+def query_topics(query: List[str], lda_model, dt_matrix, tw_matrix, word2vec) -> np.ndarray:
     """
     Takes a list of words and makes a personalization vector based on these
     :param query: list of words
     :param model_path: lda model path
-    :param topic_doc_path: topic document matrix path
+    :param dt_matrix: topic document matrix path
     :param indexes: used for comparison function
     :return: a personalization vector
     """
-
-    lda = load_lda(model_path)
-    topic_doc_matrix = sp.load_npz(topic_doc_path)[:2000]
-    p_vector = np.zeros(2000)
+    # combine topic distributions for each word in query
+    p_vector = np.zeros(83)
     for word in query:
-        if word in corpus.values():
-            p_vector += make_personalization_vector_word_based(word, topic_doc_matrix, lda)
+        if word in word2vec.values():
+            p_vector += make_personalization_vector_word_based(word, dt_matrix, tw_matrix)
         else:
             # Todo needs to be cut
-            p_vector += make_personalization_vector(word, topic_doc_matrix, corpus, lda)
-    return p_vector / np.linalg.norm(p_vector)
+            p_vector += make_personalization_vector(word, dt_matrix, tw_matrix, word2vec, lda_model)
+    p_vector = p_vector / len(query)
+    doc_sim = np.zeros(dt_matrix.shape[0])
+    for index, doc in enumerate(dt_matrix):
+        doc_sim[index] = 1 - distance.jensenshannon(p_vector, doc.toarray())
+    sklearn.preprocessing.minmax_scale(doc_sim)
+    return doc_sim
 
 
-def search(size_of_adj: int, lda_path: str, vectorizer_path, topic_doc_matrix_path: str, adj_matrix_path):
+def search(lda_model, count_vec, adj_matrix, dt_matrix, tw_matrix, word2vec):
     """
     Our search algorithm.
     Takes a size if you want to search a smaller part of the matrix.
@@ -95,19 +96,25 @@ def search(size_of_adj: int, lda_path: str, vectorizer_path, topic_doc_matrix_pa
     :param adj_matrix_path: adjacency matrix path
     :return: prints the index of the articles in the search algorithm
     """
-    adj_matrix = sp.load_npz(adj_matrix_path)[:size_of_adj, :size_of_adj]
-    df = pandas.read_csv("Generated Files/word2vec.csv", header=None)
-    words = dict(zip(df[0], df[1]))
-    queries = generate_queries(sp.load_npz(vectorizer_path)[:size_of_adj, :size_of_adj], words, 10, 4)
-    for query in queries.items():
-        p_vector = query_topics(query[1].split(' '), lda_path, topic_doc_matrix_path, words)
+    queries = generate_queries(count_vec, word2vec, 10, 4)
+    for doc, query in queries.items():
+        p_vector = query_topics(query.split(' '), lda_model, dt_matrix, tw_matrix, word2vec)
         doc_ranks = pagerank(adj_matrix, personalize=p_vector[:size_of_adj])
         print(
             f" Query: {query[1]} PageRank Hit: {list(doc_ranks.argsort()[:][::-1]).index(query[0])} P_vector Hit: {list(p_vector.argsort()[:][::-1]).index(query[0])}")
 
 
 if __name__ == '__main__':
-    search(2000, "test/document_model",
-           "Generated Files/tfidf_matrix.npz",
-           "test/topic_doc_matrix.npz",
-           "test/adj_matrix.npz")
+    adj_matrix = sp.load_npz("Generated Files/adj_matrix.npz")
+    size_of_adj = min(adj_matrix.shape[0], adj_matrix.shape[1])
+    adj_matrix = adj_matrix[:size_of_adj, :size_of_adj]
+    adj_matrix = standard_random_walk.construct_transition_probability_matrix(adj_matrix.toarray())
+    dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
+    # TODO make query generation in separate file
+    count_vec = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    count_vec = count_vec[:2000]
+    lda_model = load_lda("LDA/model/document_model")
+    word2vec = preprocessing.load_vector_file("Generated Files/word2vec.csv")
+
+    search(lda_model, count_vec, adj_matrix, dt_matrix, tw_matrix, word2vec)

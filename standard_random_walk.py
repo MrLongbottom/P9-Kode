@@ -3,6 +3,7 @@ from typing import Dict
 
 import numpy as np
 import scipy.sparse as sp
+import sklearn
 
 
 def construct_transition_probability_matrix(adj_matrix):
@@ -15,9 +16,8 @@ def construct_transition_probability_matrix(adj_matrix):
     """
     adj_matrix = adj_matrix + adj_matrix.T
     np.fill_diagonal(adj_matrix, 0)
-    row_normalized_matrix = adj_matrix / adj_matrix.sum(axis=0)
-
-    return row_normalized_matrix
+    adj_matrix = sklearn.preprocessing.normalize(adj_matrix, norm='l1', axis=1)
+    return adj_matrix
 
 
 def step_vector(adj_matrix) -> np.array:
