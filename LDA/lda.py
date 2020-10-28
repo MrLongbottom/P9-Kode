@@ -4,20 +4,16 @@ import itertools
 from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
-
 import time
-import preprocessing
+import sklearn
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-import seaborn as sb
 from gensim import matutils
 from gensim.corpora import Dictionary
 from gensim.models import CoherenceModel
 from gensim.models import LdaModel, LdaMulticore
-from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
-from scipy.stats import entropy
 from tqdm import tqdm
 
 import preprocessing
@@ -100,9 +96,7 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
-    # matrix = evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=True)
-    # print once again to show improvement
-    # evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=False)
+    matrix = sklearn.preprocessing.normalize(matrix, norm='l1', axis=1)
     sp.save_npz(filename, sp.csc_matrix(matrix))
     return matrix
 
@@ -181,7 +175,7 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, K: int, 
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
+    dt_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
 
     return lda
 
@@ -190,7 +184,9 @@ def save_topic_word_matrix(lda: LdaModel, name: str, threshold: float):
     matrix = lda.get_topics()
     matrix = np.where(matrix < threshold, 0, matrix)
     matrix = sp.csr_matrix(matrix)
-    return sp.save_npz(name, matrix)
+    matrix = sklearn.preprocessing.normalize(matrix, norm='l1', axis=1)
+    sp.save_npz(name, matrix)
+    return matrix
 
 
 def get_topic_word_matrix(lda: LdaModel) -> np.ndarray:
