@@ -315,7 +315,7 @@ if __name__ == '__main__':
     words = load_dict_file("Generated Files/word2vec.csv")
     mini_corpus = load_mini_corpus()
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
-    run_lda('LDA/model/document_model',
+    run_lda('model/document_model',
             cv,
             words,
             mini_corpus,
