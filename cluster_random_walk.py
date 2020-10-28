@@ -41,16 +41,16 @@ def construct_new_transition_matrix(adj_matrix, dmp_factor=0.85) -> np.array:
     :return: a transition matrix based on the cluster paper
     """
     # Document to Cluster
-    doc_clus_sim = np.array(sp.load_npz("Generated Files/topic_doc_matrix.npz")[:1000].todense())
+    doc_clus_sim = np.array(sp.load_npz("Generated Files/topic_doc_matrix.npz")[:500].todense())
 
     # Cluster to Document Set
     clus_doc_set_sim = np.array(similarity_between_cluster_and_document_set(doc_clus_sim))
 
     # Creating the new row normalized adjacency matrix
-    m_star = dmp_factor * np.dot(doc_clus_sim, clus_doc_set_sim) * np.array(adj_matrix) + (1 - dmp_factor)
+    adj_matrix = dmp_factor * np.dot(doc_clus_sim, clus_doc_set_sim).T * np.array(adj_matrix) + (1 - dmp_factor) / adj_matrix.shape[0]
 
     # Returning the normalized version
-    return m_star / m_star.sum(0)
+    return adj_matrix
 
 
 def similarity_between_cluster_and_document_set(td_matrix) -> np.array:
