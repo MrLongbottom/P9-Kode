@@ -10,6 +10,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
 from nltk.corpus import stopwords
 from nltk.stem.snowball import DanishStemmer
+from typing import Dict
 from wiktionaryparser import WiktionaryParser
 
 
@@ -83,10 +84,6 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     corpus = cv2.inverse_transform(cv_matrix)
     corpus = [list(x) for x in corpus]
 
-    tf = TfidfTransformer()
-    tf_matrix = tf.fit_transform(cv_matrix)
-    queries = generate_queries(tf_matrix, words, 1000, 4)
-
     if save:
         step += 1
         print(f'Step {step}: saving files.')
@@ -96,19 +93,29 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
         with open("Generated Files/corpus", 'w', encoding='utf8') as json_file:
             json.dump(corpus, json_file, ensure_ascii=False)
-        sparse.save_npz(tfidf_matrix_filename, tf_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus
 
 
-def generate_queries(matrix, words, count, max_length):
+def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1, max_length: int = 4):
+    """
+    Generates queries for random documents based on tfidf values
+    :param count_matrix: CountVectorization matrix
+    :param words: words dictionary
+    :param count: number of queries wanted
+    :param min_length: min words per query (exact length is random)
+    :param max_length: max words per query (exact length is random)
+    :return: dictionary mapping document ids to queries
+    """
+    tfidf = TfidfTransformer()
+    tfidf_matrix = tfidf.fit_transform(count_matrix)
     queries = {}
-    documents_count = matrix.shape[0]
+    documents_count = tfidf_matrix.shape[0]
     for i in tqdm(range(count)):
         doc_id = random.randrange(0, documents_count)
-        query_length = random.randrange(1, max_length+1)
+        query_length = random.randrange(min_length, max_length+1)
         query = []
-        doc_vec = matrix.getrow(doc_id)
+        doc_vec = tfidf_matrix.getrow(doc_id)
         word_ids = doc_vec.toarray()[0].argsort()[-query_length:][::-1]
         for word_id in word_ids:
             word = words[word_id]
@@ -361,4 +368,5 @@ def word_checker(words):
 
 
 if __name__ == '__main__':
-    preprocess()
+    cv_matrix, words, corpus = preprocess()
+    queries = generate_queries(cv_matrix, words, 1000)
