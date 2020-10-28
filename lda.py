@@ -19,8 +19,11 @@ from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
 from scipy.stats import entropy
 from tqdm import tqdm
+from matplotlib.cbook import boxplot_stats
+from gensim.models import CoherenceModel
 
 import preprocessing
+import evaluate
 
 
 def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: float = None):
@@ -170,18 +173,18 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, K: int, tw_threshold, dt_threshold):
+def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_combination: tuple, tw_threshold, dt_threshold):
     # fitting the lda model and saving it
-    lda = fit_lda(cv_matrix, words, K)
+    lda = fit_lda(cv_matrix, words, param_combination[0], param_combination[1], param_combination[2])
     save_lda(lda, path)
 
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path + "topic_word_matrix.npz", threshold=tw_threshold)
+    tw_matrix = save_topic_word_matrix(lda, save_path + str(param_combination + (tw_threshold,)) + "topic_word_matrix.npz", threshold=tw_threshold)
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
+    td_matrix = create_document_topics(corpus, lda, save_path + str(param_combination + (dt_threshold,)) + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
 
     return lda
 
@@ -242,7 +245,8 @@ def compute_coherence_values(cv_matrix, words, dictionary, texts, limit, start=2
 
 
 def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
-                                          Ks: List[int], alphas: List[float], etas: List[float]):
+                                          Ks: List[int], alphas: List[float], etas: List[float],
+                                          thresholds: List[float], evaluation: bool = True):
     """
     Compute c_v coherence for various number of topics and priors
 
@@ -262,34 +266,62 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     """
     coherence_values = []
     model_list = []
+    dt_eval_results = []
+    tw_eval_results = []
+    completed_dt_evals = []
+    mini_corpus = load_mini_corpus()
 
-    test_combinations = list(itertools.product(Ks, alphas, etas))
+    test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
     for combination in tqdm(test_combinations):
-        model = fit_lda(cv_matrix, words, combination[0], combination[1], combination[2])
+        model = run_lda('LDA/model/' + str(combination[0:3]) + 'document_model',
+                cv_matrix,
+                words,
+                mini_corpus,
+                Dictionary(mini_corpus),
+                "Generated Files/",
+                combination[0:3],
+                tw_threshold=combination[3],
+                dt_threshold=0.025)
         model_list.append(model)
+        
+        # Evaluation
+        if evaluation:
+            dtMatrix = sp.load_npz("Generated Files/" + str(combination[0:3] + (0.025,)) + "topic_doc_matrix.npz")
+            twMatrix = sp.load_npz("Generated Files/" + str(combination) + "topic_word_matrix.npz")
+            dtPath = "Generated Files/Evaluate/dt" + str(combination[0:3] + (0.025,))
+            twPath = "Generated Files/Evaluate/tw" + str(combination)
+            if combination[0:3] not in completed_dt_evals:
+                completed_dt_evals.append(combination[0:3])
+                dt_eval_results.append(evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=None, show=False, tell=False))
+            tw_eval_results.append(evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=None, show=False, tell=False))
+
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())
 
-    return model_list, coherence_values
+    return model_list, coherence_values, dt_eval_results, tw_eval_results
+
+
+def load_mini_corpus():
+    mini_corpus = load_dict_file("Generated Files/doc2word.csv", separator='-')
+    mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
+    mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
+    return mini_corpus
 
 
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'model_test'
-    cv = sp.load_npz("../Generated Files/count_vec_matrix.npz")
-    words = load_dict_file("../Generated Files/word2vec.csv")
-    mini_corpus = load_dict_file("../Generated Files/doc2word.csv", separator='-')
-    mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
-    mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-
+    cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    words = load_dict_file("Generated Files/word2vec.csv")
+    mini_corpus = load_mini_corpus()
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
     run_lda('model/document_model',
             cv,
             words,
             mini_corpus,
             Dictionary(mini_corpus),
-            "../Generated Files/",
-            K,
+            "Generated Files/",
+            (K,None,None),
             tw_threshold=0.001,
             dt_threshold=0.025)
 
