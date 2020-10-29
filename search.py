@@ -78,9 +78,8 @@ def query_topics(query: List[str], lda_model, dt_matrix, tw_matrix, word2vec) ->
     p_vector = p_vector / len(query)
     doc_sim = np.zeros(dt_matrix.shape[0])
     for index, doc in enumerate(dt_matrix):
-        doc_sim[index] = 1 - distance.jensenshannon(p_vector, doc.toarray())
-    sklearn.preprocessing.minmax_scale(doc_sim)
-    return doc_sim
+        doc_sim[index] = 1 - distance.jensenshannon(np.array(p_vector)[0], doc.toarray()[0])
+    return sklearn.preprocessing.minmax_scale(doc_sim)
 
 
 def search(lda_model, count_vec, adj_matrix, dt_matrix, tw_matrix, word2vec):
@@ -99,9 +98,10 @@ def search(lda_model, count_vec, adj_matrix, dt_matrix, tw_matrix, word2vec):
     queries = generate_queries(count_vec, word2vec, 10, 4)
     for doc, query in queries.items():
         p_vector = query_topics(query.split(' '), lda_model, dt_matrix, tw_matrix, word2vec)
-        doc_ranks = pagerank(adj_matrix, personalize=p_vector[:size_of_adj])
-        print(
-            f" Query: {query[1]} PageRank Hit: {list(doc_ranks.argsort()[:][::-1]).index(query[0])} P_vector Hit: {list(p_vector.argsort()[:][::-1]).index(query[0])}")
+        doc_ranks = pagerank(sp.csr_matrix(adj_matrix), personalize=p_vector[:size_of_adj])
+        print(f" Query: {query}")
+        print(f"PageRank Hit: {list(doc_ranks.argsort()[:][::-1]).index(doc)}")
+        print(f"P_vector Hit: {list(p_vector.argsort()[:][::-1]).index(doc)}")
 
 
 if __name__ == '__main__':
