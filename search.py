@@ -47,10 +47,6 @@ def make_personalization_vector_word_based(word: str, dt_matrix, tw_matrix):
     :param lda: the lda model
     :return: a personalization vector (np.ndarray)
     """
-    # Initialization
-    p_vector = np.zeros(dt_matrix.shape[0])
-    vector = np.zeros(dt_matrix.shape[1])
-
     # Getting the word index and then getting the topic distribution for that given word
     word_index = [key for key, value in word2vec.items() if value == word][0]
     word_vector = tw_matrix.T[word_index]
@@ -68,7 +64,7 @@ def query_topics(query: List[str], lda_model, dt_matrix, tw_matrix, word2vec) ->
     :return: a personalization vector
     """
     # combine topic distributions for each word in query
-    p_vector = np.zeros(83)
+    p_vector = np.zeros(tw_matrix.shape[0])
     for word in query:
         if word in word2vec.values():
             p_vector += make_personalization_vector_word_based(word, dt_matrix, tw_matrix)
@@ -98,7 +94,9 @@ def search(lda_model, count_vec, adj_matrix, dt_matrix, tw_matrix, word2vec):
     queries = generate_queries(count_vec, word2vec, 10, 4)
     for doc, query in queries.items():
         p_vector = query_topics(query.split(' '), lda_model, dt_matrix, tw_matrix, word2vec)
-        doc_ranks = pagerank(sp.csr_matrix(adj_matrix), personalize=p_vector[:size_of_adj])
+        # cut personalization vector down to relevant size
+        p_vector = p_vector[:size_of_adj]
+        doc_ranks = pagerank(sp.csr_matrix(adj_matrix), personalize=p_vector)
         print(f" Query: {query}")
         print(f"PageRank Hit: {list(doc_ranks.argsort()[:][::-1]).index(doc)}")
         print(f"P_vector Hit: {list(p_vector.argsort()[:][::-1]).index(doc)}")
@@ -113,7 +111,7 @@ if __name__ == '__main__':
     tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
     # TODO make query generation in separate file
     count_vec = sp.load_npz("Generated Files/count_vec_matrix.npz")
-    count_vec = count_vec[:2000]
+    count_vec = count_vec[:size_of_adj]
     lda_model = load_lda("LDA/model/document_model")
     word2vec = preprocessing.load_vector_file("Generated Files/word2vec.csv")
 
