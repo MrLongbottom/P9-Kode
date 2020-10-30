@@ -1,11 +1,13 @@
 import os
 import re
+from typing import Type
 from functools import partial
 from multiprocessing import Pool
 import numpy as np
 import scipy.sparse as sp
 from scipy.spatial import distance
 from tqdm import tqdm
+from typing import List
 
 
 def doc_sim_chunker(td_matrix: sp.spmatrix, chunk_size: int, pool: int):
@@ -102,6 +104,44 @@ def stack_matrices_in_folder(path: str):
     return doc
 
 
+def fill_half_matrix(matrix):
+    """
+    Fills out the other half of symmetric matrix, that has only been half filled out to optimize.
+    :param matrix: sparse matrix
+    :return: filled out sparse matrix
+    """
+    # if the matrix size is uneven, cut to the smallest even size.
+    size = min(matrix.shape[0], matrix.shape[1])
+    matrix = matrix[:size, :size]
+    # add transposed matrix and make diagonal 0
+    matrix = matrix.todense()
+    matrix = matrix + matrix.T
+    np.fill_diagonal(matrix, 0)
+    return sp.csr_matrix(matrix)
+
+
+def matrix_connection_check(adj_matrix) -> bool:
+    """
+    Checks if a graph is connected, repeatedly checking unvisited neighbors.
+    :param adj_matrix: sparse adjacency matrix
+    :return: bool indicating whether adj_matrix is connected
+    """
+    visited = [False for x in range(0, adj_matrix.shape[0])]
+    todo = []
+    n = 0
+    visited[n] = True
+    todo.extend([x for x in adj_matrix.getrow(n).nonzero()[1] if visited[x] is False and x not in todo])
+    while len(todo) > 0:
+        n = todo.pop()
+        visited[n] = True
+        todo.extend([x for x in adj_matrix.getrow(n).nonzero()[1] if visited[x] is False and x not in todo])
+    if False in visited:
+        print(f"Only found {len([x for x in visited if x is True])} connected nodes, out of {adj_matrix.shape[0]}.")
+        return False
+    else:
+        return True
+
+      
 def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
     """
     Create an adjacency matrix by using the topic-document matrix and it is parallelized
