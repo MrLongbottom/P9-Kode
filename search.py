@@ -4,7 +4,7 @@ import numpy as np
 import scipy.sparse as sp
 from gensim.corpora import Dictionary
 
-from LDA.lda import load_lda, get_document_topics_from_model, load_corpus
+from lda import load_lda, get_document_topics_from_model, load_corpus
 from cluster_random_walk import cluster_page_rank
 from preprocessing import preprocess_query
 
