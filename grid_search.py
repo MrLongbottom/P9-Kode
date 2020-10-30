@@ -116,11 +116,6 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
 
 
 if __name__ == '__main__':
-    fixed = {"param1": 234, "param3": 156}
-    hyper = {"param2": [1, 2, 3], "param4": ["absdasd", "safasfagf", 123135]}
-    result = general_grid_search(test, fixed_params=fixed, hyper_params=hyper, save_path="Generated Files/test.png")
-    # grid_search_coherence()
-
     # 4*4*4 = 64 combinations
     #Ks = [10]
     Ks = [10, 40, 80, 160]
