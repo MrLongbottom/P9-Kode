@@ -1,10 +1,13 @@
 import os
 import re
+from typing import Type
 from functools import partial
 from multiprocessing import Pool
-import  numpy as np
+import numpy as np
 import scipy.sparse as sp
+from scipy.spatial import distance
 from tqdm import tqdm
+from typing import List
 
 
 def doc_sim_chunker(td_matrix: sp.spmatrix, chunk_size: int, pool: int):
@@ -101,14 +104,88 @@ def stack_matrices_in_folder(path: str):
     return doc
 
 
+def fill_half_matrix(matrix):
+    """
+    Fills out the other half of symmetric matrix, that has only been half filled out to optimize.
+    :param matrix: sparse matrix
+    :return: filled out sparse matrix
+    """
+    # if the matrix size is uneven, cut to the smallest even size.
+    size = min(matrix.shape[0], matrix.shape[1])
+    matrix = matrix[:size, :size]
+    # add transposed matrix and make diagonal 0
+    matrix = matrix.todense()
+    matrix = matrix + matrix.T
+    np.fill_diagonal(matrix, 0)
+    return sp.csr_matrix(matrix)
+
+
+def matrix_connection_check(adj_matrix) -> bool:
+    """
+    Checks if a graph is connected, repeatedly checking unvisited neighbors.
+    :param adj_matrix: sparse adjacency matrix
+    :return: bool indicating whether adj_matrix is connected
+    """
+    visited = [False for x in range(0, adj_matrix.shape[0])]
+    todo = []
+    n = 0
+    visited[n] = True
+    todo.extend([x for x in adj_matrix.getrow(n).nonzero()[1] if visited[x] is False and x not in todo])
+    while len(todo) > 0:
+        n = todo.pop()
+        visited[n] = True
+        todo.extend([x for x in adj_matrix.getrow(n).nonzero()[1] if visited[x] is False and x not in todo])
+    if False in visited:
+        print(f"Only found {len([x for x in visited if x is True])} connected nodes, out of {adj_matrix.shape[0]}.")
+        return False
+    else:
+        return True
+
+      
+def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
+    """
+    Create an adjacency matrix by using the topic-document matrix and it is parallelized
+    It calculates the similarity with the calculate_js_on_matrix_row function
+    :param td_matrix: topic document matrix
+    :param poolsize: the number of cores you want to use
+    :return:
+    """
+    distances = []
+    with Pool(processes=poolsize) as p:
+        max_ = td_matrix.shape[0]
+        with tqdm(total=max_) as pbar:
+            for _, distance in enumerate(p.imap_unordered(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
+                distances.append(distance)
+                pbar.update()
+    adj_matrix = np.vstack(distances)
+    adj_matrix = sp.csr_matrix(adj_matrix)
+    return adj_matrix
+
+
+def calculate_js_on_matrix_row(td_matrix, i):
+    """
+    Calculates the Jensen Shannon distance for i elements in row i in td_matrix
+    :param td_matrix: topic document matrix
+    :param i: the row index and number of elements to calculate
+    :return: an array with similarities
+    """
+    doc1 = td_matrix.getrow(i).toarray()[0]
+    array = np.zeros(td_matrix.shape[0])
+    for j in range(i):
+        doc2 = td_matrix.getrow(j).toarray()[0]
+        # value is set to be similarity (1 - distance)
+        array[j] = 1 - distance.jensenshannon(doc1, doc2)
+    return array
+
+
 if __name__ == '__main__':
     # Loading topic-document distribution matrix and initialisation
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
-    matrix = sp.csr_matrix(sp.load_npz("Generated Files/topic_doc_matrix.npz"))
-    doc_sim_chunker(matrix, 500, 8)
+    matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    sp.save_npz("Generated Files/adj_matrix.npz", construct_adj_matrix_based_on_topic_document_matrix(matrix))
 
-    # Save full matrix
-    sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
-
-    # Load full matrix
-    adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
+    # # Save full matrix
+    # sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
+    #
+    # # Load full matrix
+    # adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")

@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
 
-from LDA.lda import load_lda
+from lda import load_lda
 from standard_random_walk import construct_transition_probability_matrix
 
 
