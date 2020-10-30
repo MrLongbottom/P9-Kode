@@ -1,6 +1,7 @@
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
+import pandas as pd
 import scipy.sparse as sp
 from gensim.corpora import Dictionary
 
@@ -29,6 +30,20 @@ def search(query: str, size_of_adj: int, lda_path: str, topic_doc_matrix_path: s
     search_vector = query_topics(query, lda_path, topic_doc_matrix_path)
     adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")[:size_of_adj, :size_of_adj]
     return cluster_page_rank(adj_matrix, search_vector[:size_of_adj])
+
+
+
+def query_expansion(document_id: int, query: List[str], window_size: int = 1) -> List[str]:
+    pd.read_csv("Generated Files/word2vec.csv")
+    expanded_query: List[str] = []
+    for word in query:
+
+
+    return expanded_query
+
+
+
+
 
 
 if __name__ == '__main__':
