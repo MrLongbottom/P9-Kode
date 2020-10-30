@@ -1,6 +1,7 @@
+import itertools
 from functools import partial
 from multiprocessing import Pool
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 from sklearn.preprocessing import normalize
 from fast_pagerank import pagerank
@@ -13,7 +14,7 @@ from gensim.models import LdaModel
 from scipy.spatial import distance
 from tqdm import tqdm
 
-from lda import load_lda, get_document_topics_from_model, load_corpus
+from lda import load_lda, get_document_topics_from_model, load_corpus, get_document_topics_from_model_from_texts
 from preprocessing import generate_queries, load_vector_file
 from standard_random_walk import random_walk_with_teleport
 
@@ -112,33 +113,49 @@ def load_doc_2_word(path, seperator=','):
         dictionary = {}
         for line in file.readlines():
             key = int(line.split(seperator)[0])
-            value = line.replace('[', '').replace('\'', '').replace(' ', '').split(seperator)[1:][0].split(',')
+            value = line.replace('[', '').replace(']', '').replace('\'', '').replace(' ', '').split(seperator)[1:][0].split(',')
             dictionary[key] = value
     return dictionary
 
 
-def query_expansion(queries: Dict[int, str], window_size: int = 1) -> Set[str]:
+def query_expansion(query, window_size: int = 1, n_top_word: int = 10):
     documents = load_doc_2_word("Generated Files/doc2word.csv", '-')
-    expanded_query: List[str] = []
-    for doc_id, words in queries.items():
-        for word in words.split(' '):
-            # append original word to query
-            expanded_query.append(word)
-            document_ids = [ids for ids, values in documents.items() if word in values]
-            for new_id_doc in document_ids:
-                # add window size neighboring words
-                document = documents[new_id_doc]
-                word_index = document.index(word)
-                if word_index != len(document):
-                    expanded_query.append(document[word_index - 1])
-                    expanded_query.append(document[word_index + 1])
-    return set(expanded_query)
+    doc_id = query[0]
+    result = []
+    words = query[1]
+    for word in words.split(' '):
+        expanded_query = {}
+        # append original word to query
+        document_ids = [ids for ids, values in documents.items() if word in values]
+        for new_id_doc in document_ids:
+            # add window size neighboring words
+            document = documents[new_id_doc]
+            word_index = document.index(word)
+            if word_index != len(document):
+                before_word = document[word_index - 1]
+                after_word = document[word_index + 1]
+                expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
+                expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
+        sorted_query_words = list(dict(sorted(expanded_query.items(), key=lambda x: x[1], reverse=True)).keys())
+        result.append(sorted_query_words[:n_top_word])
+    result.append(words.split(' '))
+    return list(set(itertools.chain.from_iterable(result)))
 
 
 if __name__ == '__main__':
     vectorizer = sp.load_npz("Generated Files/tfidf_matrix.npz")
     words = load_vector_file("Generated Files/word2vec.csv")
+    dictionary = Dictionary([words.values()])
     queries = generate_queries(vectorizer, words, 10, 4)
-    expanded_queries = query_expansion(queries, 1)
-    print(expanded_queries)
-    print(len(expanded_queries))
+    expanded_queries = []
+
+    for query in tqdm(list(queries.items())):
+        expanded_queries.append(query_expansion(query, 1, 2))
+
+    lda = load_lda("LDA/model/document_model")
+    topic_distributions = []
+    for exp_query in expanded_queries:
+        topic_distributions.append(get_document_topics_from_model_from_texts(expanded_queries, lda, dictionary, 0.025))
+
+    for query, topic_dis in zip(expanded_queries, topic_distributions):
+        print(f"Topic distribution: {topic_dis}")

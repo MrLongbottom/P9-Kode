@@ -91,6 +91,21 @@ def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Diction
     return dict([x for x in query][0])
 
 
+def get_document_topics_from_model_from_texts(texts: List[List[str]], lda: LdaModel, dictionary: Dictionary, threshold) -> Dict[int, float]:
+    """
+    A method used concurrently in create_document_topics
+    :param lda: the lda model
+    :param texts: a list of document strings
+    :param dictionary: the dictionary over the whole document
+    :return: a dict with the topics in the given document based on the lda model
+    """
+    corpus = [dictionary.doc2bow(t) for t in texts]
+    query = lda.get_document_topics(corpus, minimum_probability=threshold)
+    return dict([x for x in query][0])
+
+
+
+
 def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel, filename: str) -> sp.dok_matrix:
     """
     Saves the document topics (list of dicts) in a matrix
