@@ -16,7 +16,8 @@ from wiktionaryparser import WiktionaryParser
 
 def preprocess(filename_or_docs="documents.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
-               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
+               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20,
+               word_maximum_doc_percent=0.25,
                doc_minimum_length=20, save=True, word_check=True):
     """
     preprocesses a json file into a docword count vectorization matrix, removing unhelpful words and documents.
@@ -112,7 +113,7 @@ def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length
     documents_count = tfidf_matrix.shape[0]
     for i in tqdm(range(count)):
         doc_id = random.randrange(0, documents_count)
-        query_length = random.randrange(min_length, max_length+1)
+        query_length = random.randrange(min_length, max_length + 1)
         query = []
         doc_vec = tfidf_matrix.getrow(doc_id)
         word_ids = doc_vec.toarray()[0].argsort()[-query_length:][::-1]
@@ -242,7 +243,7 @@ def refilter_docs(words, corpus, doc_minimum_length, documents):
         if count < doc_minimum_length:
             empty_docs.append(doc)
     print("removed " + str(len(empty_docs)) + " docs, " + str(len(corpus) - len(empty_docs)) + " remaining.")
-    return [x for x in corpus if x not in empty_docs], {a: b for a,b in documents.items() if b not in empty_docs}
+    return [x for x in corpus if x not in empty_docs], {a: b for a, b in documents.items() if b not in empty_docs}
 
 
 def load_document_file(filename):
@@ -341,6 +342,15 @@ def load_word_files(filenames):
         csv_df = pd.read_csv(filename, header=None, encoding='unicode_escape')
         files.append(list(csv_df[1]))
     return files
+
+
+def load_vector_file(path, seperator=','):
+    with open(path, 'r') as file:
+        dictionary = {}
+        for line in file.readlines():
+            kv = line.split(seperator)
+            dictionary[int(kv[0])] = kv[1].replace('\n', '')
+    return dictionary
 
 
 def word_checker(words):
