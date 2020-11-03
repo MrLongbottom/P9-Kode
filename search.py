@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from lda import load_lda, get_document_topics_from_model, load_corpus
 from cluster_random_walk import cluster_page_rank
-from preprocessing import preprocess_query, generate_queries, load_vector_file
+from preprocessing import preprocess_query, generate_queries, load_vector_file, load_doc_2_word
 
 
 def make_personalization_vector(topics: Dict[int, float], topic_doc_matrix):
@@ -26,17 +26,6 @@ def query_topics(query: str, model_path: str, topic_doc_path) -> np.ndarray:
     corpus = Dictionary(load_corpus("Generated Files/corpus"))
     q_topics = get_document_topics_from_model(processed_query, lda, corpus)
     return make_personalization_vector(q_topics, topic_doc_matrix)
-
-
-def load_doc_2_word(path, seperator=','):
-    with open(path, 'r') as file:
-        dictionary = {}
-        for line in file.readlines():
-            key = int(line.split(seperator)[0])
-            value = line.replace('[', '').replace(']', '').replace('\'', '').replace(' ', '').split(seperator)[1:][
-                0].split(',')
-            dictionary[key] = value
-    return dictionary
 
 
 def search(query: str, size_of_adj: int, lda_path: str, topic_doc_matrix_path: str) -> np.ndarray:
@@ -64,8 +53,6 @@ def language_model(query: List[str], document_index: int):
 
 
 if __name__ == '__main__':
-
-    tf_idf_vec = sp.load_npz("Generated Files/tfidf_matrix.npz")
     count_vectorizer = sp.load_npz("Generated Files/count_vec_matrix.npz")
 
     doc2word = load_doc_2_word("Generated Files/doc2word.csv", '-')
@@ -73,7 +60,7 @@ if __name__ == '__main__':
     inverse_w2v = {v: k for k, v in word2vec.items()}
     dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 
-    queries = generate_queries(tf_idf_vec, word2vec, 10, 4)
+    queries = generate_queries(count_vectorizer, word2vec, 10, 4)
     query_words = list(queries.items())[0][1].split(' ')
     query_index = list(queries.items())[0][0]
 
