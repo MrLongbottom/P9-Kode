@@ -5,6 +5,7 @@ import nltk
 import pandas as pd
 import scipy.sparse as sparse
 import numpy as np
+import utility
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from tqdm import tqdm
@@ -86,42 +87,16 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     if save:
         step += 1
         print(f'Step {step}: saving files.')
-        save_vector_file(word_save_filename, words.values())
-        save_vector_file(doc_save_filename, documents.keys())
-        save_vector_file(doc_word_save_filename, corpus, seperator='-')
+        utility.save_vector_file(word_save_filename, words.values())
+        utility.save_vector_file(doc_save_filename, documents.keys())
+        corpus_save = corpus
+        corpus_save = [';'.join(x) for x in corpus]
+        utility.save_vector_file(doc_word_save_filename, corpus_save)
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
         with open("Generated Files/corpus", 'w', encoding='utf8') as json_file:
             json.dump(corpus, json_file, ensure_ascii=False)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, words, corpus
-
-
-def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1, max_length: int = 4):
-    """
-    Generates queries for random documents based on tfidf values
-    :param count_matrix: CountVectorization matrix
-    :param words: words dictionary
-    :param count: number of queries wanted
-    :param min_length: min words per query (exact length is random)
-    :param max_length: max words per query (exact length is random)
-    :return: dictionary mapping document ids to queries
-    """
-    tfidf = TfidfTransformer()
-    tfidf_matrix = tfidf.fit_transform(count_matrix)
-    queries = {}
-    documents_count = tfidf_matrix.shape[0]
-    for i in tqdm(range(count)):
-        doc_id = random.randrange(0, documents_count)
-        query_length = random.randrange(min_length, max_length+1)
-        query = []
-        doc_vec = tfidf_matrix.getrow(doc_id)
-        word_ids = doc_vec.toarray()[0].argsort()[-query_length:][::-1]
-        for word_id in word_ids:
-            word = words[word_id]
-            query.append(word)
-        query = ' '.join(query)
-        queries[doc_id] = query
-    return queries
 
 
 def preprocess_query(query: str, word_check=True):
@@ -279,20 +254,6 @@ def filter_documents(documents, doc_minimum_length):
         del documents[doc[0]]
     print('Filtered documents. ' + str(len(documents)) + ' remaining')
     return documents, corpus
-
-
-def save_vector_file(filename, content, seperator=','):
-    """
-    Saves content of list as a vector in a file, similar to a Word2Vec document.
-    :param filename: path of file to save.
-    :param content: list of content to save.
-    :return: None
-    """
-    print('Saving file "' + filename + '".')
-    with open(filename, "w") as file:
-        for i, c in enumerate(content):
-            file.write(str(i) + seperator + str(c) + '\n')
-    print('"' + filename + '" has been saved.')
 
 
 def csv_append(filename, content, index=0):
