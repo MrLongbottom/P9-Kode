@@ -98,29 +98,6 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     return cv_matrix, words, corpus
 
 
-def preprocess_query(query: str, word_check=True):
-    # cut off words that are used too often or too little (max/min document frequency) or are stop words
-    step = 1
-    print(f'Step {step}: stop words and word frequency.')
-    words = cut_off_words([query], 1.0, 1)
-
-    print(len(words))
-    if word_check:
-        # cut off words that are not used in danish word databases or are wrong word type
-        step += 1
-        print(f"Step {step}: word databases and POS-tagging.")
-        # TODO possibly replace with real POS tagging, rather than database checks.
-        words = word_checker(words)
-
-    # Stemming to combine word declensions
-    step += 1
-    print(f"Step {step}: Apply Stemming / Lemming")
-    corpus, words = stem_lem([query], words)
-
-    print('Finished Query Preprocessing.')
-    return words
-
-
 def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count):
     nltk.download('stopwords')
     stop_words = stopwords.words('danish')

@@ -1,6 +1,6 @@
 import random
 from typing import Dict
-
+import preprocessing
 import utility
 from sklearn.feature_extraction.text import TfidfTransformer
 from tqdm import tqdm
@@ -51,6 +51,29 @@ def check_valid_queries(queries):
         return fails
     else:
         return True
+
+
+def preprocess_query(query: str, word_check=True):
+    # cut off words that are used too often or too little (max/min document frequency) or are stop words
+    step = 1
+    print(f'Step {step}: stop words and word frequency.')
+    words = preprocessing.cut_off_words([query], 1.0, 1)
+
+    print(len(words))
+    if word_check:
+        # cut off words that are not used in danish word databases or are wrong word type
+        step += 1
+        print(f"Step {step}: word databases and POS-tagging.")
+        words = preprocessing.word_checker(words)
+
+    # Stemming to combine word declensions
+    step += 1
+    print(f"Step {step}: Apply Stemming / Lemming")
+    # TODO not sure if just leaving document empty is fine.
+    corpus, words, _ = preprocessing.stem_lem([query], words, [])
+
+    print('Finished Query Preprocessing.')
+    return words
 
 
 if __name__ == '__main__':
