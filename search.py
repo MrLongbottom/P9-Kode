@@ -48,13 +48,12 @@ def search(query: str, size_of_adj: int, lda_path: str, topic_doc_matrix_path: s
 def language_model(query: List[str], document_index: int):
     p_wd = []
     document = doc2word[document_index]
-    dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 
     for word in query:
         word_index = inverse_w2v[word]
         N_d = len(document)
         tf = count_vectorizer[document_index, word_index]
-        w_freq_in_D = sum(count_vectorizer[:, word_index])
+        w_freq_in_D = np.sum(count_vectorizer[:, word_index])
         number_of_word_tokens = len(word2vec)
         p_wd.append(
             (N_d / (N_d + dirichlet_prior)) *
@@ -72,6 +71,7 @@ if __name__ == '__main__':
     doc2word = load_doc_2_word("Generated Files/doc2word.csv", '-')
     word2vec = load_vector_file("Generated Files/word2vec.csv")
     inverse_w2v = {v: k for k, v in word2vec.items()}
+    dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 
     queries = generate_queries(tf_idf_vec, word2vec, 10, 4)
     query_words = list(queries.items())[0][1].split(' ')
@@ -86,3 +86,8 @@ if __name__ == '__main__':
                 pbar.update()
     sorted_list = list(dict(sorted(lst, key=lambda x: x[1], reverse=True)).keys())
     print(f"index of document: {sorted_list.index(query_index)}")
+    print(f"query: {query_words}")
+    print(f"number 1: {doc2word[sorted_list[0]]}\n")
+    print(f"number 2: {doc2word[sorted_list[1]]}\n")
+    print(f"number 3: {doc2word[sorted_list[2]]}\n")
+    print(f"real document: {doc2word[sorted_list[query_index]]}")
