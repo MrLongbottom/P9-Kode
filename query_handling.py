@@ -35,17 +35,28 @@ def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length
     return queries
 
 
-if __name__ == '__main__':
-    cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
-    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
-    queries = generate_queries(cv_matrix, word2vec, 100, min_length=4, max_length=4)
-    doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
-    print("test")
+def check_valid_queries(queries):
+    """
+    Checks to make sure that each word in the queries actually exists in the original document.
+    :param queries: dict of original documents pointing to generated queries.
+    :return: True if valid, otherwise returns data to identify the problem.
+    """
     fails = []
     for k, v in queries.items():
-        for word in v:
+        for word in v.split(' '):
             if word not in doc2word[k]:
                 print("Not in there!")
                 fails.append((k, v, word, doc2word[k]))
+    if len(fails) > 0:
+        return fails
+    else:
+        return True
 
-    print("done")
+
+if __name__ == '__main__':
+    cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+    queries = generate_queries(cv_matrix, word2vec, 1000, min_length=4, max_length=4)
+    doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
+    print(str(check_valid_queries(queries)))
+    utility.save_vector_file("Generated Files/queries.csv", queries)

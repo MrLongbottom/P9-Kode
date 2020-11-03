@@ -89,7 +89,6 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
         print(f'Step {step}: saving files.')
         utility.save_vector_file(word_save_filename, words.values())
         utility.save_vector_file(doc_save_filename, documents.keys())
-        corpus_save = corpus
         corpus_save = [';'.join(x) for x in corpus]
         utility.save_vector_file(doc_word_save_filename, corpus_save)
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
