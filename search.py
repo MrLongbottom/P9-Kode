@@ -60,10 +60,11 @@ if __name__ == '__main__':
     inverse_w2v = {v: k for k, v in word2vec.items()}
     dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 
-    queries = generate_queries(count_vectorizer, word2vec, 10, 4)
+    queries = generate_queries(count_vectorizer, word2vec, 10)
     query_words = list(queries.items())[0][1].split(' ')
     query_index = list(queries.items())[0][0]
 
+    print(f"query: {query_words}")
     lst = {}
     with Pool(processes=8) as p:
         max_ = count_vectorizer.shape[0]
@@ -71,10 +72,8 @@ if __name__ == '__main__':
             for i, score in enumerate(p.imap(partial(language_model, query_words), range(0, max_))):
                 lst[i] = score
                 pbar.update()
-    # for x in tqdm(range(count_vectorizer.shape[0])):
-    #     lst[x] = language_model(query_words, x)
 
-    sorted_list = list(dict(sorted(list(lst.items()), key=lambda x: x[1], reverse=True)).keys())
+    sorted_list = list(dict(sorted(lst.items(), key=lambda x: x[1], reverse=True)).keys())
     print(f"index of document: {sorted_list.index(query_index)}")
     print(f"query: {query_words}")
     print(f"number 1: {doc2word[sorted_list[0]]}\n")
