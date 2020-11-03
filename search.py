@@ -64,17 +64,20 @@ if __name__ == '__main__':
     query_words = list(queries.items())[0][1].split(' ')
     query_index = list(queries.items())[0][0]
 
-    lst = []
+    lst = {}
     with Pool(processes=8) as p:
         max_ = count_vectorizer.shape[0]
         with tqdm(total=max_) as pbar:
-            for i, score in enumerate(p.imap_unordered(partial(language_model, query_words), range(0, max_))):
-                lst.append((i, score))
+            for i, score in enumerate(p.imap(partial(language_model, query_words), range(0, max_))):
+                lst[i] = score
                 pbar.update()
-    sorted_list = list(dict(sorted(lst, key=lambda x: x[1], reverse=True)).keys())
+    # for x in tqdm(range(count_vectorizer.shape[0])):
+    #     lst[x] = language_model(query_words, x)
+
+    sorted_list = list(dict(sorted(list(lst.items()), key=lambda x: x[1], reverse=True)).keys())
     print(f"index of document: {sorted_list.index(query_index)}")
     print(f"query: {query_words}")
     print(f"number 1: {doc2word[sorted_list[0]]}\n")
     print(f"number 2: {doc2word[sorted_list[1]]}\n")
     print(f"number 3: {doc2word[sorted_list[2]]}\n")
-    print(f"real document: {doc2word[sorted_list[query_index]]}")
+    print(f"real document: {doc2word[query_index]}")
