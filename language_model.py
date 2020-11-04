@@ -9,8 +9,15 @@ from tqdm import tqdm
 import utility
 import query_handling
 
+count_vectorizer = sp.load_npz("Generated Files/count_vec_matrix.npz")
 
-def language_model(query: List[str], doc2word, inverse_w2v, dirichlet_prior, count_vectorizer, word2vec, document_index: int):
+doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
+word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+inverse_w2v = {v: k for k, v in word2vec.items()}
+dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
+
+
+def language_model(query: List[str], document_index: int):
     p_wd = []
     document = doc2word[document_index]
 
@@ -29,23 +36,16 @@ def language_model(query: List[str], doc2word, inverse_w2v, dirichlet_prior, cou
 
 
 if __name__ == '__main__':
-    count_vectorizer = sp.load_npz("Generated Files/count_vec_matrix.npz")
-
-    doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
-    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
-    inverse_w2v = {v: k for k, v in word2vec.items()}
-    dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
-
     queries = query_handling.generate_queries(count_vectorizer, word2vec, 10)
     query_words = list(queries.items())[0][1].split(' ')
     query_index = list(queries.items())[0][0]
 
     print(f"query: {query_words}")
     lst = {}
-    with Pool(processes=4) as p:
+    with Pool(processes=8) as p:
         max_ = count_vectorizer.shape[0]
         with tqdm(total=max_) as pbar:
-            for i, score in enumerate(p.imap(partial(language_model, query_words, doc2word, inverse_w2v, dirichlet_prior, count_vectorizer, word2vec), range(0, max_))):
+            for i, score in enumerate(p.imap(partial(language_model, query_words), range(0, max_))):
                 lst[i] = score
                 pbar.update()
 
