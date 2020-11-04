@@ -10,7 +10,7 @@ import utility
 import query_handling
 
 
-def language_model(query: List[str], document_index: int):
+def language_model(query: List[str], doc2word, inverse_w2v, dirichlet_prior, count_vectorizer, word2vec, document_index: int):
     p_wd = []
     document = doc2word[document_index]
 
@@ -42,10 +42,10 @@ if __name__ == '__main__':
 
     print(f"query: {query_words}")
     lst = {}
-    with Pool(processes=8) as p:
+    with Pool(processes=4) as p:
         max_ = count_vectorizer.shape[0]
         with tqdm(total=max_) as pbar:
-            for i, score in enumerate(p.imap(partial(language_model, query_words), range(0, max_))):
+            for i, score in enumerate(p.imap(partial(language_model, query_words, doc2word, inverse_w2v, dirichlet_prior, count_vectorizer, word2vec), range(0, max_))):
                 lst[i] = score
                 pbar.update()
 
