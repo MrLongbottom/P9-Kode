@@ -27,11 +27,10 @@ def language_model(query: List[str], document_index: int):
         tf = count_vectorizer[document_index, word_index]
         w_freq_in_D = np.sum(count_vectorizer[:, word_index])
         number_of_word_tokens = len(word2vec)
-        p_wd.append(
-            (N_d / (N_d + dirichlet_prior)) *
-            (tf / N_d) +
-            (1 - (N_d / (N_d + dirichlet_prior))) *
-            (w_freq_in_D / number_of_word_tokens))
+        p_wd.append(np.prod(
+            [(N_d / (N_d + dirichlet_prior)),
+             (tf / N_d) + (1 - (N_d / (N_d + dirichlet_prior))),
+             (w_freq_in_D / number_of_word_tokens)]))
     return np.prod(p_wd)
 
 
