@@ -326,4 +326,3 @@ def word_checker(words):
 
 if __name__ == '__main__':
     cv_matrix, words, corpus = preprocess()
-    queries = generate_queries(cv_matrix, words, 1000)

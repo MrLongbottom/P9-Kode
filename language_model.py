@@ -6,7 +6,8 @@ import numpy as np
 import scipy.sparse as sp
 from tqdm import tqdm
 
-from preprocessing import generate_queries, load_vector_file, load_doc_2_word
+import utility
+import query_handling
 
 
 def language_model(query: List[str], document_index: int):
@@ -30,12 +31,12 @@ def language_model(query: List[str], document_index: int):
 if __name__ == '__main__':
     count_vectorizer = sp.load_npz("Generated Files/count_vec_matrix.npz")
 
-    doc2word = load_doc_2_word("Generated Files/doc2word.csv", '-')
-    word2vec = load_vector_file("Generated Files/word2vec.csv")
+    doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
+    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
     inverse_w2v = {v: k for k, v in word2vec.items()}
     dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 
-    queries = generate_queries(count_vectorizer, word2vec, 10)
+    queries = query_handling.generate_queries(count_vectorizer, word2vec, 10)
     query_words = list(queries.items())[0][1].split(' ')
     query_index = list(queries.items())[0][0]
 
