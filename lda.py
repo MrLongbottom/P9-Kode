@@ -58,14 +58,14 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary, threshold) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary, K) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
     :return: a topic_document matrix
     """
     document_topics = []
-    par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary, threshold=threshold)
+    par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary, K=K)
     with Pool(8) as p:
         document_topics.append(p.map(par, corpus))
     matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
@@ -78,7 +78,7 @@ def load_corpus(name: str):
     return corpus
 
 
-def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Dictionary, threshold) -> Dict[int, float]:
+def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Dictionary, K) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
@@ -87,7 +87,7 @@ def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Diction
     :return: a dict with the topics in the given document based on the lda model
     """
     corpus = [dictionary.doc2bow(t) for t in [text]]
-    query = lda.get_document_topics(corpus, minimum_probability=threshold)
+    query = lda.get_document_topics(corpus, minimum_probability=1/K)
     return dict([x for x in query][0])
 
 
@@ -173,24 +173,25 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_combination: tuple, tw_threshold, dt_threshold):
+def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_combination: tuple):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words, param_combination[0], param_combination[1], param_combination[2])
     save_lda(lda, path)
 
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path + str(param_combination + (tw_threshold,)) + "topic_word_matrix.npz", threshold=tw_threshold)
+    tw_matrix = save_topic_word_matrix(lda, save_path + str(param_combination) + "topic_word_matrix.npz")
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + str(param_combination + (dt_threshold,)) + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
+    dt_matrix = create_document_topics(corpus, lda, save_path + str(param_combination) + "topic_doc_matrix.npz", dictionary, param_combination[0])
 
     return lda
 
 
-def save_topic_word_matrix(lda: LdaModel, name: str, threshold: float):
+def save_topic_word_matrix(lda: LdaModel, name: str):
     matrix = lda.get_topics()
+    threshold = 1/matrix.shape[1]
     matrix = np.where(matrix < threshold, 0, matrix)
     matrix = sp.csr_matrix(matrix)
     return sp.save_npz(name, matrix)
@@ -310,20 +311,18 @@ def load_mini_corpus():
 
 if __name__ == '__main__':
     # Loading data and preprocessing
-    model_path = 'model_test'
+    model_path = 'LDA/model/document_model'
     cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
     words = load_dict_file("Generated Files/word2vec.csv")
     mini_corpus = load_mini_corpus()
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
-    run_lda('model/document_model',
+    run_lda(model_path,
             cv,
             words,
             mini_corpus,
             Dictionary(mini_corpus),
             "Generated Files/",
-            (K,None,None),
-            tw_threshold=0.001,
-            dt_threshold=0.025)
+            (K,None,None))
 
     # lda = load_lda("model/document_model")
     # corpus = load_corpus("../Generated Files/corpus")
