@@ -1,10 +1,63 @@
 import random
-from typing import Dict
+from functools import partial
+from multiprocessing import Pool
+from typing import Dict, List
 import preprocessing
 import utility
 from sklearn.feature_extraction.text import TfidfTransformer
 from tqdm import tqdm
 import scipy.sparse as sp
+import language_model
+import numpy as np
+
+count_vectorizer = sp.load_npz("Generated Files/count_vec_matrix.npz")
+
+doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
+word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+inverse_w2v = {v: k for k, v in word2vec.items()}
+dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
+
+dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
+
+
+def lda_evaluate_word_doc(word, document_index):
+    word_index = inverse_w2v[word]
+    word_topics = tw_matrix.getcol(word_index)
+    doc_topics = dt_matrix[document_index].T
+    score = word_topics.multiply(doc_topics).sum()
+    return score
+
+
+def lda_evaluate_query_doc(query: List[str], document_index: int):
+    p_wd = []
+    for word in query:
+        p_wd.append(lda_evaluate_word_doc(word, document_index))
+    return np.prod(p_wd)
+
+
+def lda_evaluate_query(query_index, query_words, tell=False):
+    lst = {}
+    """
+    with Pool(processes=8) as p:
+        max_ = count_vectorizer.shape[0]
+        with tqdm(total=max_) as pbar:
+            for i, score in enumerate(p.imap(partial(lda_evaluate_query_doc, query_words), range(0, max_))):
+                lst[i] = score
+                pbar.update()
+    """
+    for doc_id in tqdm(range(count_vectorizer.shape[0])):
+        lst[doc_id] = lda_evaluate_query_doc(query_words, doc_id)
+
+    sorted_list = list(dict(sorted(lst.items(), key=lambda x: x[1], reverse=True)).keys())
+    if tell:
+        print(f"query: {query_words}")
+        print(f"index of document: {sorted_list.index(query_index)}")
+        print(f"number 1: {doc2word[sorted_list[0]]}\n")
+        print(f"number 2: {doc2word[sorted_list[1]]}\n")
+        print(f"number 3: {doc2word[sorted_list[2]]}\n")
+        print(f"real document: {doc2word[query_index]}")
+    return sorted_list.index(query_index)
 
 
 def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1, max_length: int = 4):
@@ -79,7 +132,8 @@ def preprocess_query(query: str, word_check=True):
 if __name__ == '__main__':
     cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
     word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
-    queries = generate_queries(cv_matrix, word2vec, 1000, min_length=4, max_length=4)
+    queries = generate_queries(cv_matrix, word2vec, 100, min_length=4, max_length=4)
     doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
     print(str(check_valid_queries(queries)))
     utility.save_vector_file("Generated Files/queries.csv", queries)
+    lda_evaluate_query(list(queries.keys())[0], list(queries.values())[0].split(' '), tell=True)

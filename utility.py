@@ -18,6 +18,16 @@ def load_vector_file(filepath, separator=','):
     return dictionary
 
 
+# TODO hasn't been tested.
+def rankify (dictionary):
+    """
+    convert dictionary of id:score to a ranked list of id's.
+    :param dictionary:
+    :return:
+    """
+    return list(dict(sorted(dictionary.items(), key=lambda x: x[1], reverse=True)).keys())
+
+
 def save_vector_file(filepath, content, separator=','):
     """
     Saves content of list as a vector in a file, similar to a Word2Vec document.
