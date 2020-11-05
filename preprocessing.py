@@ -165,7 +165,6 @@ def value_dictionizer(values):
     return {x: y for x, y in enumerate(values)}
 
 
-# TODO make faster? (how fast? sonic fast!)
 def cut_corpus(corpus, words):
     cut = []
     words_dict = {x: 0 for x in words}
@@ -206,17 +205,6 @@ def load_document_file(filename):
             documents[data['id']] = data['headline'] + ' ' + data['body']
     print('Loaded ' + str(len(documents)) + ' documents.')
     return documents
-
-
-def load_doc_2_word(path, seperator=','):
-    with open(path, 'r') as file:
-        dictionary = {}
-        for line in file.readlines():
-            key = int(line.split(seperator)[0])
-            value = line.replace('[', '').replace(']', '').replace('\'', '').replace(' ', '').replace('\n', '').split(seperator)[1:][
-                0].split(',')
-            dictionary[key] = value
-    return dictionary
 
 
 def filter_documents(documents, doc_minimum_length):
