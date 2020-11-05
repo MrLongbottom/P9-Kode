@@ -260,15 +260,6 @@ def csv_append(filename, content, index=0):
     print('"' + filename + '" has been saved.')
 
 
-def load_vector_file(path, seperator=','):
-    with open(path, 'r') as file:
-        dictionary = {}
-        for line in file.readlines():
-            kv = line.split(seperator)
-            dictionary[int(kv[0])] = kv[1].replace('\n', '')
-    return dictionary
-
-
 def new_word_db_fetch(words, wik_word_index=0, wik_nonword_index=0):
     # setup Wiktionary Parser
 
