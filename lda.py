@@ -24,6 +24,7 @@ from gensim.models import CoherenceModel
 
 import preprocessing
 import evaluate
+import utility
 
 
 def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: float = None):
@@ -280,9 +281,7 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
                 mini_corpus,
                 Dictionary(mini_corpus),
                 "Generated Files/",
-                combination[0:3],
-                tw_threshold=combination[3],
-                dt_threshold=0.025)
+                combination[0:3])
         model_list.append(model)
         
         # Evaluation
@@ -314,7 +313,7 @@ if __name__ == '__main__':
     model_path = 'LDA/model/document_model'
     cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
     words = load_dict_file("Generated Files/word2vec.csv")
-    mini_corpus = load_mini_corpus()
+    mini_corpus = utility.load_vector_file("Generated Files/doc2word.csv").values()
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
     run_lda(model_path,
             cv,
@@ -322,7 +321,7 @@ if __name__ == '__main__':
             mini_corpus,
             Dictionary(mini_corpus),
             "Generated Files/",
-            (K,None,None))
+            (K, None, None))
 
     # lda = load_lda("model/document_model")
     # corpus = load_corpus("../Generated Files/corpus")
