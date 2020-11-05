@@ -24,6 +24,7 @@ from gensim.models import CoherenceModel
 
 import preprocessing
 import evaluate
+import utility
 
 
 def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: float = None):
@@ -58,7 +59,8 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary, threshold) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary,
+                           threshold) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
@@ -67,7 +69,7 @@ def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dict
     document_topics = []
     par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary, threshold=threshold)
     with Pool(8) as p:
-        document_topics.append(p.map(par, corpus))
+        document_topics.append(p.map(par, corpus.values()))
     matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
     return matrix
 
@@ -173,18 +175,23 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_combination: tuple, tw_threshold, dt_threshold):
+def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_combination: tuple, tw_threshold,
+            dt_threshold):
     # fitting the lda model and saving it
     lda = fit_lda(cv_matrix, words, param_combination[0], param_combination[1], param_combination[2])
     save_lda(lda, path)
 
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path + str(param_combination + (tw_threshold,)) + "topic_word_matrix.npz", threshold=tw_threshold)
+    tw_matrix = save_topic_word_matrix(lda,
+                                       save_path + str(param_combination + (tw_threshold,)) + "topic_word_matrix.npz",
+                                       threshold=tw_threshold)
 
     # saving document topics to file
     print("creating document topics file")
-    td_matrix = create_document_topics(corpus, lda, save_path + str(param_combination + (dt_threshold,)) + "topic_doc_matrix.npz", dictionary, threshold=dt_threshold)
+    td_matrix = create_document_topics(corpus, lda,
+                                       save_path + str(param_combination + (dt_threshold,)) + "topic_doc_matrix.npz",
+                                       dictionary, threshold=dt_threshold)
 
     return lda
 
@@ -274,16 +281,16 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
     for combination in tqdm(test_combinations):
         model = run_lda('LDA/model/' + str(combination[0:3]) + 'document_model',
-                cv_matrix,
-                words,
-                mini_corpus,
-                Dictionary(mini_corpus),
-                "Generated Files/",
-                combination[0:3],
-                tw_threshold=combination[3],
-                dt_threshold=0.025)
+                        cv_matrix,
+                        words,
+                        mini_corpus,
+                        Dictionary(mini_corpus),
+                        "Generated Files/",
+                        combination[0:3],
+                        tw_threshold=combination[3],
+                        dt_threshold=0.025)
         model_list.append(model)
-        
+
         # Evaluation
         if evaluation:
             dtMatrix = sp.load_npz("Generated Files/" + str(combination[0:3] + (0.025,)) + "topic_doc_matrix.npz")
@@ -292,8 +299,12 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
             twPath = "Generated Files/Evaluate/tw" + str(combination)
             if combination[0:3] not in completed_dt_evals:
                 completed_dt_evals.append(combination[0:3])
-                dt_eval_results.append(evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=None, show=False, tell=False))
-            tw_eval_results.append(evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=None, show=False, tell=False))
+                dt_eval_results.append(
+                    evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document",
+                                                          save_path=None, show=False, tell=False))
+            tw_eval_results.append(
+                evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=None,
+                                                      show=False, tell=False))
 
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())
@@ -313,15 +324,15 @@ if __name__ == '__main__':
     model_path = 'model_test'
     cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
     words = load_dict_file("Generated Files/word2vec.csv")
-    mini_corpus = load_mini_corpus()
+    mini_corpus = utility.load_vector_file("Generated Files/doc2word.csv")
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
-    run_lda('model/document_model',
+    run_lda('LDA/model/document_model',
             cv,
             words,
             mini_corpus,
-            Dictionary(mini_corpus),
+            Dictionary(mini_corpus.values()),
             "Generated Files/",
-            (K,None,None),
+            (K, None, None),
             tw_threshold=0.001,
             dt_threshold=0.025)
 
