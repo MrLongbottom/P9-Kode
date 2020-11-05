@@ -52,13 +52,14 @@ def lm_evaluate_query(query_index, query_words, tell=False):
         print(f"number 2: {doc2word[sorted_list[1]]}\n")
         print(f"number 3: {doc2word[sorted_list[2]]}\n")
         print(f"real document: {doc2word[query_index]}")
-    return sorted_list.index(query_index)
+    return sorted_list.index(query_index), lst
 
 
 if __name__ == '__main__':
-    queries = query_handling.generate_queries(count_vectorizer, word2vec, 10, min_length=1, max_length=4)
+    #queries = query_handling.generate_queries(count_vectorizer, word2vec, 10, min_length=1, max_length=1)
+    queries = utility.load_vector_file("Generated Files/queries.csv")
     query_words = list(queries.items())[0][1].split(' ')
     query_index = list(queries.items())[0][0]
 
     print(f"query: {query_words}")
-    res = lm_evaluate_query(query_index, query_words, tell=True)
+    res, p_vec = lm_evaluate_query(query_index, query_words, tell=True)

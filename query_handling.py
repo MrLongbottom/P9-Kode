@@ -57,7 +57,7 @@ def lda_evaluate_query(query_index, query_words, tell=False):
         print(f"number 2: {doc2word[sorted_list[1]]}\n")
         print(f"number 3: {doc2word[sorted_list[2]]}\n")
         print(f"real document: {doc2word[query_index]}")
-    return sorted_list.index(query_index)
+    return sorted_list.index(query_index), lst
 
 
 def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1, max_length: int = 4):
@@ -130,10 +130,10 @@ def preprocess_query(query: str, word_check=True):
 
 
 if __name__ == '__main__':
-    cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
-    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+    """
     queries = generate_queries(cv_matrix, word2vec, 100, min_length=4, max_length=4)
-    doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
     print(str(check_valid_queries(queries)))
     utility.save_vector_file("Generated Files/queries.csv", queries)
-    lda_evaluate_query(list(queries.keys())[0], list(queries.values())[0].split(' '), tell=True)
+    """
+    queries = utility.load_vector_file("Generated Files/queries.csv")
+    res, p_vec = lda_evaluate_query(list(queries.keys())[0], list(queries.values())[0].split(' '), tell=True)
