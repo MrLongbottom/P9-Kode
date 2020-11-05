@@ -14,19 +14,17 @@ count_vectorizer = sp.load_npz("Generated Files/count_vec_matrix.npz")
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 inverse_w2v = {v: k for k, v in word2vec.items()}
-dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
+dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 
 
-def lm_evaluate_word_doc(word:str, doc, doc_id):
+def lm_evaluate_word_doc(word: str, doc, doc_id):
     word_index = inverse_w2v[word]
     N_d = len(doc)
     tf = count_vectorizer[doc_id, word_index]
     w_freq_in_D = np.sum(count_vectorizer[:, word_index])
     number_of_word_tokens = len(word2vec)
-    return np.prod(
-        [(N_d / (N_d + dirichlet_prior)),
-         (tf / N_d) + (1 - (N_d / (N_d + dirichlet_prior))),
-         (w_freq_in_D / number_of_word_tokens)])
+    return np.prod([(N_d / (N_d + dirichlet_smoothing)), (tf / N_d)]) + \
+           np.prod([(1 - (N_d / (N_d + dirichlet_smoothing))), (w_freq_in_D / number_of_word_tokens)])
 
 
 def lm_evaluate_query_doc(query: List[str], document_index: int):
@@ -64,6 +62,3 @@ if __name__ == '__main__':
 
     print(f"query: {query_words}")
     res = lm_evaluate_query(query_index, query_words, tell=True)
-
-
-
