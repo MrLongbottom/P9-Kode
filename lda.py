@@ -187,7 +187,7 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_co
     print("creating document topics file")
     dt_matrix = create_document_topics(corpus, lda, save_path + str(param_combination) + "topic_doc_matrix.npz", dictionary, param_combination[0])
 
-    return lda
+    return lda, dt_matrix, tw_matrix
 
 
 def save_topic_word_matrix(lda: LdaModel, name: str):

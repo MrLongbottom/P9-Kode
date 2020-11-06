@@ -1,14 +1,15 @@
 import itertools
 import math
 from typing import List
-from test import test
 import matplotlib.pyplot as plt
 import numpy as np
 from gensim.corpora import Dictionary
 from tqdm import tqdm
-
+import utility
+import scipy.sparse as sp
 from lda import compute_coherence_values, compute_coherence_values_k_and_priors
 from preprocessing import preprocess
+import query_handling
 
 
 def general_grid_search(function, fixed_params, hyper_params, plot=True, y_label="Evaluation Score", save_path=None):
@@ -144,14 +145,17 @@ def save_fig(plot_file_name: str):
 
 
 if __name__ == '__main__':
+    cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+    mini_corpus = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
+    queries = utility.load_vector_file("Generated Files/queries.csv")
+
     # 4*4*4 = 64 combinations
-    Ks = [80]
-    #Ks = [10, 40, 80, 160]
-    alphas = [0.1]
-    #alphas = [0.01, 0.1, 0.3, 0.6]  # 0.1 default from wiki
-    #alphas = ['asymmetric']
-    etas = [0.001]
-    #etas = [0.0001, 0.001, 0.005, 0.01]  # 0.001 default from wiki
-    #thresholds = [0.00001, 0.0001, 0.001, 0.01, 0.1]  # 0.001 default like the default eta
-    thresholds = list(np.linspace(0.00001, 0.001, 40))
-    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchEval2", evaluation=True)
+    Ks = [10, 50, 100, 300]
+    alphas = [0.01, 0.1, 0.5]  # 0.1 default from wiki
+    etas = [0.0001, 0.001, 0.01]  # 0.001 default from wiki
+
+    fixed_params = {"queries": queries, "model_path": "LDA/model/test_model", "cv": cv, "words": word2vec, "mini_corpus": mini_corpus}
+    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas}
+    general_grid_search(query_handling.lda_runthrough_query, fixed_params=fixed_params, hyper_params=hyper_params,
+                        plot=True, save_path="Generated Files/Evaluation/lda_test.png")
