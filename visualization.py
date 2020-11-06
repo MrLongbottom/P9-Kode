@@ -2,8 +2,16 @@ import re, numpy as np, pandas as pd
 import scipy.sparse as sp
 import gensim.corpora as corpora
 from tqdm import tqdm
+from IPython.display import display
+import os.path
+from os import path
+import seaborn as sb
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+from collections import Counter
 
 from lda import load_lda, load_corpus
+from grid_search import save_fig
 
 
 def format_topics_sentences(ldamodel, corpus, term_doc_freq):
@@ -36,20 +44,72 @@ def format_topics_sentences(ldamodel, corpus, term_doc_freq):
     return sent_topics_df
 
 
+def word_count_for_topic_words(lda_model, corpus, topic_start):
+    print("Getting word counts per topic and visualizing")
+    topics = lda_model.show_topics(num_topics=0, formatted=False)
+    data_flat = [w for w_list in corpus for w in w_list]
+    counter = Counter(data_flat)
+
+    out = []
+    for i, topic in topics:
+        for word, weight in topic:
+            out.append([word, i , weight, counter[word]])
+            
+    print("Word counts calculated")
+    df = pd.DataFrame(out, columns=['word', 'topic_id', 'importance', 'word_count'])        
+    
+    max_y = 0
+    for topic in range(topic_start, topic_start+4):
+        max_y = max(df.loc[df.topic_id==topic, "importance"].max(), max_y)
+
+    # Plot Word Count and Weights of Topic Keywords
+    fig, axes = plt.subplots(2, 2, figsize=(16,10), sharey=True)
+    cols = [color for name, color in mcolors.TABLEAU_COLORS.items()]
+    for i, ax in enumerate(axes.flatten()):
+        ax.bar(x='word', height="word_count", data=df.loc[df.topic_id==i + topic_start, :], color=cols[i], width=0.5, alpha=0.3, label='Word Count')
+        ax_twin = ax.twinx()
+        ax_twin.bar(x='word', height="importance", data=df.loc[df.topic_id==i + topic_start, :], color=cols[i], width=0.2, label='Weights')
+        ax.set_ylabel('Word Count', color=cols[i])
+        ax_twin.set_ylim(0, max_y)
+        ax.set_title('Topic: ' + str(i + topic_start), color=cols[i], fontsize=16)
+        ax.tick_params(axis='y', left=False)
+        ax.set_xticklabels(df.loc[df.topic_id==i + topic_start, 'word'], rotation=30, horizontalalignment= 'right')
+        ax.legend(loc='upper left')
+        ax_twin.legend(loc='upper right')
+
+    fig.tight_layout(w_pad=2)
+    fig.subplots_adjust(top=0.9)
+    fig.suptitle('Word Count and Importance of Topic Keywords', fontsize=22)    
+    save_fig("Word count and importance_topic " + str(topic_start) + "-" + str(topic_start+3) + ".png")
+
+
 if __name__ == '__main__':
-    lda_model = load_lda("LDA/model/document_model")
-    corpus = load_corpus("Generated Files/corpus")
-    cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    lda_path = "LDA/model/document_model"
+    lda_model = load_lda(lda_path)
+    corpus_path = "Generated Files/corpus2017"
+    corpus = load_corpus(corpus_path)
 
     # Create Dictionary
     id2word = corpora.Dictionary(corpus)
     # Create Corpus: Term Document Frequency
     tdf = [id2word.doc2bow(text) for text in corpus]
 
-
-    df_topic_sents_keywords = format_topics_sentences(ldamodel=lda_model, corpus=corpus, term_doc_freq=tdf)
-
+    lda_model_name = lda_path.split("/")[-1]
+    corpus_name = corpus_path.split("/")[-1]
+    df_save_path = "Generated Files/df_" + lda_model_name + "_" + corpus_name + ".pkl"
+    
+    if path.exists(df_save_path):
+        print("Dataframe file exists")
+        df_topic_sents_keywords = pd.read_pickle(df_save_path)
+    else:
+        print("Creating dataframe file...")
+        df_topic_sents_keywords = format_topics_sentences(ldamodel=lda_model, corpus=corpus, term_doc_freq=tdf)
+        df_topic_sents_keywords.to_pickle(df_save_path)
+        print("Dataframe file created")
+    
     # Format
     df_dominant_topic = df_topic_sents_keywords.reset_index()
     df_dominant_topic.columns = ['Document_No', 'Dominant_Topic', 'Topic_Perc_Contrib', 'Keywords', 'Text']
-    df_dominant_topic.head(10)
+    display(df_dominant_topic.head(10))
+    
+    word_count_for_topic_words(lda_model, corpus, topic_start=8)

@@ -1,7 +1,6 @@
 import itertools
 import math
 from typing import List
-from test import test
 import matplotlib.pyplot as plt
 import numpy as np
 from gensim.corpora import Dictionary
