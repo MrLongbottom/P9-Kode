@@ -17,7 +17,8 @@ from wiktionaryparser import WiktionaryParser
 
 def preprocess(filename_or_docs="documents.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
-               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20, word_maximum_doc_percent=0.25,
+               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20,
+               word_maximum_doc_percent=0.25,
                doc_minimum_length=20, save=True, word_check=True):
     """
     preprocesses a json file into a docword count vectorization matrix, removing unhelpful words and documents.
@@ -164,7 +165,6 @@ def value_dictionizer(values):
     return {x: y for x, y in enumerate(values)}
 
 
-# TODO make faster? (how fast? sonic fast!)
 def cut_corpus(corpus, words):
     cut = []
     words_dict = {x: 0 for x in words}
@@ -193,7 +193,7 @@ def refilter_docs(words, corpus, doc_minimum_length, documents):
         if count < doc_minimum_length:
             empty_docs.append(doc)
     print("removed " + str(len(empty_docs)) + " docs, " + str(len(corpus) - len(empty_docs)) + " remaining.")
-    return [x for x in corpus if x not in empty_docs], {a: b for a,b in documents.items() if b not in empty_docs}
+    return [x for x in corpus if x not in empty_docs], {a: b for a, b in documents.items() if b not in empty_docs}
 
 
 def load_document_file(filename):
@@ -305,4 +305,3 @@ def word_checker(words):
 
 if __name__ == '__main__':
     cv_matrix, words, corpus = preprocess()
-    queries = generate_queries(cv_matrix, words, 1000)

@@ -24,6 +24,7 @@ from gensim.models import CoherenceModel
 
 import preprocessing
 import evaluate
+import utility
 
 
 def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: float = None):
@@ -58,7 +59,8 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary, K) -> sp.dok_matrix:
+def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary,
+                           K) -> sp.dok_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
@@ -180,11 +182,14 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_co
 
     # saving topic words to file
     print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda, save_path + str(param_combination) + "topic_word_matrix.npz")
+    tw_matrix = save_topic_word_matrix(lda,
+                                       save_path + str(param_combination ) + "topic_word_matrix.npz")
 
     # saving document topics to file
     print("creating document topics file")
-    dt_matrix = create_document_topics(corpus, lda, save_path + str(param_combination) + "topic_doc_matrix.npz", dictionary, param_combination[0])
+    dt_matrix = create_document_topics(corpus, lda,
+                                       save_path + str(param_combination) + "topic_doc_matrix.npz",
+                                       dictionary, param_combination[0])
 
     return lda
 
@@ -275,16 +280,14 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
     for combination in tqdm(test_combinations):
         model = run_lda('LDA/model/' + str(combination[0:3]) + 'document_model',
-                cv_matrix,
-                words,
-                mini_corpus,
-                Dictionary(mini_corpus),
-                "Generated Files/",
-                combination[0:3],
-                tw_threshold=combination[3],
-                dt_threshold=0.025)
+                        cv_matrix,
+                        words,
+                        mini_corpus,
+                        Dictionary(mini_corpus),
+                        "Generated Files/",
+                        combination[0:3])
         model_list.append(model)
-        
+
         # Evaluation
         if evaluation:
             dtMatrix = sp.load_npz("Generated Files/" + str(combination[0:3] + (0.025,)) + "topic_doc_matrix.npz")
@@ -293,8 +296,12 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
             twPath = "Generated Files/Evaluate/tw" + str(combination)
             if combination[0:3] not in completed_dt_evals:
                 completed_dt_evals.append(combination[0:3])
-                dt_eval_results.append(evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document", save_path=None, show=False, tell=False))
-            tw_eval_results.append(evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=None, show=False, tell=False))
+                dt_eval_results.append(
+                    evaluate.evaluate_distribution_matrix(dtMatrix, column_name="topic", row_name="document",
+                                                          save_path=None, show=False, tell=False))
+            tw_eval_results.append(
+                evaluate.evaluate_distribution_matrix(twMatrix, column_name="word", row_name="topic", save_path=None,
+                                                      show=False, tell=False))
 
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())
@@ -314,7 +321,7 @@ if __name__ == '__main__':
     model_path = 'LDA/model/document_model'
     cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
     words = load_dict_file("Generated Files/word2vec.csv")
-    mini_corpus = load_mini_corpus()
+    mini_corpus = utility.load_vector_file("Generated Files/doc2word.csv").values()
     K = math.floor(math.sqrt(cv.shape[0]) / 2)
     run_lda(model_path,
             cv,
@@ -322,7 +329,7 @@ if __name__ == '__main__':
             mini_corpus,
             Dictionary(mini_corpus),
             "Generated Files/",
-            (K,None,None))
+            (K, None, None))
 
     # lda = load_lda("model/document_model")
     # corpus = load_corpus("../Generated Files/corpus")
