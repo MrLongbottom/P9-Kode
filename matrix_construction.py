@@ -154,7 +154,7 @@ def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
     with Pool(processes=poolsize) as p:
         max_ = td_matrix.shape[0]
         with tqdm(total=max_) as pbar:
-            for _, distance in enumerate(p.imap_unordered(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
+            for _, distance in enumerate(p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
                 distances.append(distance)
                 pbar.update()
     adj_matrix = np.vstack(distances)
