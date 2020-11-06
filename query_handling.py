@@ -14,7 +14,7 @@ from tqdm import tqdm
 import scipy.sparse as sp
 import numpy as np
 
-from lda import get_document_topics_from_model, load_lda, get_document_topics_from_model_with_list_of_texts
+from lda import get_document_topics_from_model, load_lda
 
 
 def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1, max_length: int = 4):
@@ -151,7 +151,15 @@ def query_topics(query: List[str], model_path: str, topic_doc_path, corpus) -> n
     return p_vector / np.linalg.norm(p_vector)
 
 
-def query_expansion(query, window_size: int = 1, n_top_word: int = 10):
+def query_expansion(query: List[str], n_top_word: int = 10) -> List[str]:
+    """
+    Expands a given query based on the word in the query
+    Specifically for each word we find the frequency of word before and after
+    and add n_top_word most frequent word to the query.
+    :param query: List of words
+    :param n_top_word: number of frequent word you want to add.
+    :return: expanded query
+    """
     documents = utility.load_vector_file("Generated Files/doc2word.csv")
     doc_id = query[0]
     result = []
@@ -164,18 +172,27 @@ def query_expansion(query, window_size: int = 1, n_top_word: int = 10):
             # add window size neighboring words
             document = documents[new_id_doc]
             word_index = document.index(word)
-            if word_index != len(document):
+            if word_index == 0:
+                before_word = document[word_index]
+            elif word_index == len(document) - 1:
+                after_word = document[word_index]
+            else:
                 before_word = document[word_index - 1]
                 after_word = document[word_index + 1]
-                expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
-                expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
+        expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
+        expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
         sorted_query_words = list(dict(sorted(expanded_query.items(), key=lambda x: x[1], reverse=True)).keys())
         result.append(sorted_query_words[:n_top_word])
     result.append(words.split(' '))
     return list(set(itertools.chain.from_iterable(result)))
 
 
-def q_expansion():
+def query_run_with_expansion():
+    """
+    A running example of the expanded query and yield the topic distribution
+    for each query generated.
+    :return: 
+    """
     vectorizer = sp.load_npz("Generated Files/tfidf_matrix.npz")
     words = utility.load_vector_file("Generated Files/word2vec.csv")
     dictionary = Dictionary([words.values()])
@@ -183,13 +200,13 @@ def q_expansion():
     expanded_queries = []
 
     for query in tqdm(list(queries.items())):
-        expanded_queries.append(query_expansion(query, 1, 2))
+        expanded_queries.append(query_expansion(query, 5))
 
-    lda = load_lda("LDA/model/document_model")
+    lda = load_lda("LDA/model/document_model(83, None, 0.001)")
     topic_distributions = []
     for exp_query in expanded_queries:
         topic_distributions.append(
-            get_document_topics_from_model_with_list_of_texts(expanded_queries, lda, dictionary, 0.025))
+            get_document_topics_from_model(exp_query, lda, dictionary, lda.num_topics))
 
     for query, topic_dis in zip(expanded_queries, topic_distributions):
         print(f"Topic distribution: {topic_dis}")
@@ -202,4 +219,4 @@ if __name__ == '__main__':
     # doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
     # print(str(check_valid_queries(queries)))
     # utility.save_vector_file("Generated Files/queries.csv", queries)
-    q_expansion()
+    query_run_with_expansion()
