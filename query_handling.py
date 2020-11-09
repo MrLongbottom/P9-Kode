@@ -42,10 +42,11 @@ def lda_evaluate_query_doc(query: List[str], dt_matrix, tw_matrix, document_inde
 
 def lda_evaluate_query(query_index, query_words, dt_matrix, tw_matrix, tell=False):
     lst = {}
-    with Pool(processes=4) as p:
+    with Pool(processes=8) as p:
         max_ = cv_matrix.shape[0]
         with tqdm(total=max_) as pbar:
-            for i, score in enumerate(p.imap(partial(lda_evaluate_query_doc, query_words, dt_matrix, tw_matrix), range(0, max_))):
+            for i, score in enumerate(
+                    p.imap(partial(lda_evaluate_query_doc, query_words, dt_matrix, tw_matrix), range(0, max_))):
                 lst[i] = score
                 pbar.update()
 
@@ -62,13 +63,13 @@ def lda_evaluate_query(query_index, query_words, dt_matrix, tw_matrix, tell=Fals
 
 def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, eta):
     _, dt_matrix, tw_matrix = lda.run_lda(
-            model_path,
-            cv,
-            words,
-            mini_corpus,
-            Dictionary(mini_corpus),
-            "Generated Files/",
-            (K, alpha, eta))
+        model_path,
+        cv,
+        words,
+        mini_corpus,
+        Dictionary(mini_corpus),
+        "Generated Files/",
+        (K, alpha, eta))
     results = []
     for query in queries.items():
         res, p_vec = lda_evaluate_query(query[0], query[1].split(' '), dt_matrix, tw_matrix, tell=False)
@@ -93,7 +94,7 @@ def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length
     documents_count = tfidf_matrix.shape[0]
     for i in tqdm(range(count)):
         doc_id = random.randrange(0, documents_count)
-        query_length = random.randrange(min_length, max_length+1)
+        query_length = random.randrange(min_length, max_length + 1)
         query = []
         doc_vec = tfidf_matrix.getrow(doc_id)
         word_ids = doc_vec.toarray()[0].argsort()[-query_length:][::-1]
@@ -147,9 +148,9 @@ def preprocess_query(query: str, word_check=True):
 
 
 if __name__ == '__main__':
-    queries = generate_queries(cv_matrix, word2vec, 3, min_length=4, max_length=4)
+    queries = generate_queries(cv_matrix, word2vec, 10, min_length=1, max_length=4)
     print(str(check_valid_queries(queries)))
     utility.save_vector_file("Generated Files/queries.csv", queries)
 
-    #queries = utility.load_vector_file("Generated Files/queries.csv")
-    #res, p_vec = lda_evaluate_query(list(queries.keys())[0], list(queries.values())[0].split(' '), tell=True)
+    # queries = utility.load_vector_file("Generated Files/queries.csv")
+    # res, p_vec = lda_evaluate_query(list(queries.keys())[0], list(queries.values())[0].split(' '), tell=True)
