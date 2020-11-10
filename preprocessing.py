@@ -7,7 +7,10 @@ import scipy.sparse as sparse
 import numpy as np
 import utility
 
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from matplotlib import pyplot
+import seaborn as sb
+from sklearn.preprocessing import normalize
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 from tqdm import tqdm
 from nltk.corpus import stopwords
 from nltk.stem.snowball import DanishStemmer
@@ -102,6 +105,7 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
 def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count):
     nltk.download('stopwords')
     stop_words = stopwords.words('danish')
+    stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
     cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
     cv.fit(corpus)
     words = key_dictionizer(cv.get_feature_names())
