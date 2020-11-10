@@ -122,6 +122,7 @@ def stem_lem(corpus, words, documents):
     # Stemming
     stemmer = DanishStemmer()
     stop_words = stopwords.words('danish')
+    stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
     # Update word list to use stemmed words
     translator = {}
     add = []
