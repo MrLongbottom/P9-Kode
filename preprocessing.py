@@ -70,10 +70,10 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     print(f"Step {step}: Apply Stemming / Lemming")
     corpus, words, documents = stem_lem(corpus, words, documents)
 
-    # filter documents to remove docs that now contain too few words (after all the word filtering)
+    # filter documents to remove docs that now contain no words (after all the word filtering)
     step += 1
     print(f"Step {step}: re-filter documents.")
-    corpus, documents = refilter_docs(words, corpus, doc_minimum_length, documents)
+    corpus, documents = refilter_docs(words, corpus, 1, documents)
 
     # transform documents into a matrix containing counts for each word in each document
     step += 1
