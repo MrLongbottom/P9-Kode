@@ -40,6 +40,13 @@ def lm_evaluate_word_doc(document_index, word_index):
 
 
 def evaluate_query_doc(function, query: List[str], document_index: int):
+    """
+    Evaluate a query based on a function and document index
+    :param function:
+    :param query:
+    :param document_index:
+    :return:
+    """
     p_wd = []
     for word in query:
         word_index = inverse_w2v[word]
