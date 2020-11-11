@@ -7,6 +7,7 @@ import scipy.sparse as sparse
 import numpy as np
 import utility
 
+import lemmy
 from matplotlib import pyplot
 import seaborn as sb
 from sklearn.preprocessing import normalize
@@ -56,7 +57,7 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
     step += 1
     print(f'Step {step}: stop words and word frequency.')
-    words = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count)
+    words, cv_matrix = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count)
 
     print(len(words))
     if word_check:
@@ -68,7 +69,9 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     # Stemming to combine word declensions
     step += 1
     print(f"Step {step}: Apply Stemming / Lemming")
-    corpus, words, documents = stem_lem(corpus, words, documents)
+    w_len = len(words)
+    corpus, words, documents = stem_lem(corpus, words, documents, stem_or_lem=False)
+    print(f"Removed {w_len-len(words)} words.")
 
     # filter documents to remove docs that now contain no words (after all the word filtering)
     step += 1
@@ -107,37 +110,58 @@ def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count):
     stop_words = stopwords.words('danish')
     stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
     cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
-    cv.fit(corpus)
+    cv_matrix = cv.fit_transform(corpus)
     words = key_dictionizer(cv.get_feature_names())
-    return words
+    return words, cv_matrix
 
 
-def stem_lem(corpus, words, documents):
+def stem_lem(corpus, words, documents, stem_or_lem: bool):
     """
     Updates a word list and a corpus to use stemmed words.
+    :param stem_or_lem: bool indicating whether to apply stemming or lemmatizer. True is stem, False is lem.
     :param corpus: a list of sentences (strings of words separated by spaces)
     :param words: a list of words
-    :return: new corpus and words list
+    :return: new corpus and words list, were all words have been replaced by stemmed/lemmetized versions.
     """
-    # Stemming
-    stemmer = DanishStemmer()
     stop_words = stopwords.words('danish')
     stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
-    # Update word list to use stemmed words
-    translator = {}
-    add = []
-    remove = []
-    for word in tqdm(words):
-        stem = stemmer.stem(word)
-        if stem != word:
-            if word not in remove:
-                remove.append(word)
-            if stem not in add and stem not in stop_words:
-                add.append(stem)
-            if word not in translator and stem not in stop_words:
-                translator[word] = stem
-    words = [x for x in words if x not in remove]
-    words.extend([x for x in add if x not in words])
+    if stem_or_lem:
+        # Stemming
+        stemmer = DanishStemmer()
+        # Update word list to use stemmed words
+        translator = {}
+        add = []
+        remove = []
+        for word in tqdm(words):
+            stem = stemmer.stem(word)
+            if stem != word:
+                if word not in remove:
+                    remove.append(word)
+                if stem not in add and stem not in stop_words:
+                    add.append(stem)
+                if word not in translator and stem not in stop_words:
+                    translator[word] = stem
+        words = [x for x in words if x not in remove]
+        words.extend([x for x in add if x not in words])
+    else:
+        lemmer = lemmy.load("da")
+        # build up dictionary that translates old words into their new versions
+        translator = {}
+        add = []
+        remove = []
+        for word in tqdm(words):
+            lem = lemmer.lemmatize("", word)
+            other = [x for x in lem if x != word]
+            if len(other) > 0:
+                if word not in lem and word not in remove:
+                    remove.append(word)
+                # add all lem options if they are not stopwords
+                add.extend([x for x in lem if x not in stop_words and x not in add])
+                if word not in translator and lem not in stop_words:
+                    lem = " ".join(lem)
+                    translator[word] = lem
+        words = [x for x in words if x not in remove]
+        words.extend([x for x in add if x not in words])
 
     # update corpus to use stemmed words
     for x in tqdm(range(len(corpus))):
