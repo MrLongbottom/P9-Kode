@@ -3,50 +3,66 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
+import numpy as np
+import scipy.sparse as sp
 from gensim.corpora import Dictionary
-
-import preprocessing
-import utility
 from sklearn.feature_extraction.text import TfidfTransformer
 from tqdm import tqdm
-import scipy.sparse as sp
-import language_model
-import numpy as np
+
 import lda
+import preprocessing
+import utility
 
 cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
-
+dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 inverse_w2v = {v: k for k, v in word2vec.items()}
-dirichlet_prior = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
-
-dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
+dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 
 
-def lda_evaluate_word_doc(word, document_index):
-    word_index = inverse_w2v[word]
+def lda_evaluate_word_doc(document_index, word_index):
     word_topics = tw_matrix.getcol(word_index)
     doc_topics = dt_matrix[document_index].T
     score = word_topics.multiply(doc_topics).sum()
     return score
 
 
-def lda_evaluate_query_doc(query: List[str], document_index: int):
+def lm_evaluate_word_doc(document_index, word_index):
+    N_d = len(doc2word[document_index])
+    tf = cv_matrix[document_index, word_index]
+    w_freq_in_D = np.sum(cv_matrix[:, word_index])
+    number_of_word_tokens = len(word2vec)
+    result = np.prod([(N_d / (N_d + dirichlet_smoothing)), (tf / N_d)]) + \
+           np.prod([(1 - (N_d / (N_d + dirichlet_smoothing))), (w_freq_in_D / number_of_word_tokens)])
+    return result
+
+
+def evaluate_query_doc(function, query: List[str], document_index: int):
     p_wd = []
     for word in query:
-        p_wd.append(lda_evaluate_word_doc(word, document_index))
+        word_index = inverse_w2v[word]
+        p_wd.append(function(document_index, word_index))
     return np.prod(p_wd)
 
 
-def lda_evaluate_query(query_index, query_words, tell=False):
+def evaluate_query(function, query_index, query_words, tell=False):
+    """
+    Evaluating a query based on a function given and the query
+    which consists of query index and words
+    :param function: the evaluation function you want to use
+    :param query_index: the query's document index
+    :param query_words: the words in the query
+    :param tell: do you want to print top 3 and the words after it has finished
+    :return: the index of the query in the ranked list and the list it self.
+    """
     lst = {}
     with Pool(processes=8) as p:
         max_ = cv_matrix.shape[0]
         with tqdm(total=max_) as pbar:
             for i, score in enumerate(
-                    p.imap(partial(lda_evaluate_query_doc, query_words), range(0, max_))):
+                    p.imap(partial(evaluate_query_doc, function, query_words), range(0, max_))):
                 lst[i] = score
                 pbar.update()
 
@@ -72,7 +88,7 @@ def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, 
         (K, alpha, eta))
     results = []
     for query in queries.items():
-        res, p_vec = lda_evaluate_query(query[0], query[1].split(' '), tell=False)
+        res, p_vec = evaluate_query(query[0], query[1].split(' '), tell=False)
         results.append(res)
         print("query done")
     return np.mean(results)
