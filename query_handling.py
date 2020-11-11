@@ -23,6 +23,12 @@ dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2w
 
 
 def lda_evaluate_word_doc(document_index, word_index):
+    """
+    The LDA evaluates a document against a word and returns the score
+    :param document_index: document
+    :param word_index: word
+    :return: a score
+    """
     word_topics = tw_matrix.getcol(word_index)
     doc_topics = dt_matrix[document_index].T
     score = word_topics.multiply(doc_topics).sum()
@@ -30,22 +36,28 @@ def lda_evaluate_word_doc(document_index, word_index):
 
 
 def lm_evaluate_word_doc(document_index, word_index):
+    """
+    The language model evaluates a document against a word and returns the score
+    :param document_index: document
+    :param word_index: word
+    :return: a score
+    """
     N_d = len(doc2word[document_index])
     tf = cv_matrix[document_index, word_index]
     w_freq_in_D = np.sum(cv_matrix[:, word_index])
     number_of_word_tokens = len(word2vec)
-    result = np.prod([(N_d / (N_d + dirichlet_smoothing)), (tf / N_d)]) + \
+    score = np.prod([(N_d / (N_d + dirichlet_smoothing)), (tf / N_d)]) + \
            np.prod([(1 - (N_d / (N_d + dirichlet_smoothing))), (w_freq_in_D / number_of_word_tokens)])
-    return result
+    return score
 
 
 def evaluate_query_doc(function, query: List[str], document_index: int):
     """
     Evaluate a query based on a function and document index
-    :param function:
-    :param query:
-    :param document_index:
-    :return:
+    :param function: the evaluation function
+    :param query: the list of query words
+    :param document_index: the index of the document
+    :return: the product of the evaluate function
     """
     p_wd = []
     for word in query:
