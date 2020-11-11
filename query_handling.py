@@ -132,10 +132,10 @@ def make_personalization_vector_word_based(word: str, topic_doc_matrix, lda):
 def query_topics(query: List[str], model_path: str, topic_doc_path, corpus) -> np.ndarray:
     """
     Takes a list of words and makes a personalization vector based on these
+    :param corpus: the corpus of the whole document set
     :param query: list of words
     :param model_path: lda model path
     :param topic_doc_path: topic document matrix path
-    :param indexes: used for comparison function
     :return: a personalization vector
     """
 
