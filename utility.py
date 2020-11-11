@@ -18,8 +18,7 @@ def load_vector_file(filepath, separator=','):
     return dictionary
 
 
-# TODO hasn't been tested.
-def rankify (dictionary):
+def rankify(dictionary):
     """
     convert dictionary of id:score to a ranked list of id's.
     :param dictionary:

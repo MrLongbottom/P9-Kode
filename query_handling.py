@@ -52,7 +52,7 @@ def evaluate_query(function, query_index, query_words, tell=False):
                 lst[i] = score
                 pbar.update()
 
-    sorted_list = list(dict(sorted(lst.items(), key=lambda x: x[1], reverse=True)).keys())
+    sorted_list = utility.rankify(lst)
     if tell:
         print(f"query: {query_words}")
         print(f"index of document: {sorted_list.index(query_index)}")
