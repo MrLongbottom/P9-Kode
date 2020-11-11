@@ -60,7 +60,13 @@ def get_main_topics_df(ldamodel, term_doc_freq):
     return doc_topics_df
 
 
-def visualization_word_count_for_topic_words(lda_model, corpus, topic_start):
+def visualization_word_count_for_topic_words(lda_model, corpus, topic_start: int):
+    """
+    Visualize the word counts and weights for 4 topics from the starting topic number.
+    :param lda_model: The LDA model
+    :param corpus: The corpus
+    :param topic_start: The topic number to start visualizing from
+    """
     print("Getting word counts per topic and visualizing")
     topics = lda_model.show_topics(num_topics=0, formatted=False)
     data_flat = [w for w_list in corpus for w in w_list]  # each word in each document
@@ -69,36 +75,50 @@ def visualization_word_count_for_topic_words(lda_model, corpus, topic_start):
     out = []
     for i, topic in topics:
         for word, weight in topic:
-            out.append([word, i , weight, counter[word]])
-            
+            out.append([word, i, weight, counter[word]])
+
     print("Word counts calculated")
-    df = pd.DataFrame(out, columns=['word', 'topic_id', 'importance', 'word_count'])        
-    
+    df = pd.DataFrame(out, columns=['word', 'topic_id', 'importance', 'word_count'])
+
+    # Get max y-axis value for the weight values
     max_y = 0
-    for topic in range(topic_start, topic_start+4):
-        max_y = max(df.loc[df.topic_id==topic, "importance"].max(), max_y)
+    for topic in range(topic_start, topic_start + 4):
+        max_y = max(df.loc[df.topic_id == topic, "importance"].max(), max_y)
 
     # Plot Word Count and Weights of Topic Keywords
-    fig, axes = plt.subplots(2, 2, figsize=(16,10), sharey=True)
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10), sharey=True)
+    plot_word_counts_and_weights(axes, df, max_y, topic_start)
+
+    fig.tight_layout(w_pad=2)
+    fig.subplots_adjust(top=0.9)
+    fig.suptitle('Word Count and Importance of Topic Keywords', fontsize=22)
+    save_fig("Word count and importance_topic " + str(topic_start) + "-" + str(topic_start + 3) + ".png")
+
+
+def plot_word_counts_and_weights(axes, df, max_y, topic_start: int):
+    """
+    Plots the data from a dataframe intro each topic subplot
+    :param axes: The axes/subplots in the plot
+    :param df: The dataframe with word count and weight data
+    :param max_y: The max y-axis value for the weights
+    :param topic_start: The topic number to start visualizing from
+    """
     cols = [color for name, color in mcolors.TABLEAU_COLORS.items()]
     for i, ax in enumerate(axes.flatten()):
-        ax.bar(x='word', height="word_count", data=df.loc[df.topic_id==i + topic_start, :], color=cols[i], width=0.5, alpha=0.3, label='Word Count')
+        ax.bar(x='word', height="word_count", data=df.loc[df.topic_id == i + topic_start, :], color=cols[i], width=0.5,
+               alpha=0.3, label='Word Count')
         ax_twin = ax.twinx()
-        ax_twin.bar(x='word', height="importance", data=df.loc[df.topic_id==i + topic_start, :], color=cols[i], width=0.2, label='Weights')
+        ax_twin.bar(x='word', height="importance", data=df.loc[df.topic_id == i + topic_start, :], color=cols[i],
+                    width=0.2, label='Weights')
         ax.set_ylabel('Word Count', color=cols[i])
         ax_twin.set_ylim(0, max_y)
         ax.set_title('Topic: ' + str(i + topic_start), color=cols[i], fontsize=16)
         ax.tick_params(axis='y', left=False)
-        ax.set_xticklabels(df.loc[df.topic_id==i + topic_start, 'word'], rotation=30, horizontalalignment= 'right')
+        ax.set_xticklabels(df.loc[df.topic_id == i + topic_start, 'word'], rotation=30, horizontalalignment='right')
         ax.legend(loc='upper left')
         ax_twin.legend(loc='upper right')
 
-    fig.tight_layout(w_pad=2)
-    fig.subplots_adjust(top=0.9)
-    fig.suptitle('Word Count and Importance of Topic Keywords', fontsize=22)    
-    save_fig("Word count and importance_topic " + str(topic_start) + "-" + str(topic_start+3) + ".png")
 
-    
 def get_save_path_df_as_pickle(model_path: str, corpus_path: str):
     lda_model_name = model_path.split("/")[-1]
     corpus_name = corpus_path.split("/")[-1]
@@ -131,7 +151,7 @@ if __name__ == '__main__':
     # Create of get main dataframe file
     df_save_path = get_save_path_df_as_pickle(lda_path, corpus_path)
     df_topic_docs_keywords = create_or_load_dataframe(df_save_path, lda_model, corpus, tdf)
-    
+
     # Format
     df_dominant_doc_topic = df_topic_docs_keywords.reset_index()
     df_dominant_doc_topic.columns = ['Document_No', 'Dominant_Topic', 'Topic_Perc_Contrib', 'Keywords', 'Text']
