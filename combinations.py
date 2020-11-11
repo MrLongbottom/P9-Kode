@@ -30,8 +30,7 @@ def lm_lda_combo():
         # Evaluate the queries
         res, p_vec = evaluate_query(lm_lda_combo_evaluate_word_doc, query_key, query_content.split(' '), tell=False)
         # List the results
-        print(f"LDA*LM index:{res}")
-        print(f"LDA index value: {p_vec[query_key]}")
+        print(f"LDA*LM index:{res} query: {query_content}")
 
 
 if __name__ == '__main__':
