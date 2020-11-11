@@ -25,7 +25,7 @@ dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
 tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
 
 
-def lda_evaluate_word_doc(word, document_index, dt_matrix, tw_matrix):
+def lda_evaluate_word_doc(word, document_index):
     word_index = inverse_w2v[word]
     word_topics = tw_matrix.getcol(word_index)
     doc_topics = dt_matrix[document_index].T
@@ -33,20 +33,20 @@ def lda_evaluate_word_doc(word, document_index, dt_matrix, tw_matrix):
     return score
 
 
-def lda_evaluate_query_doc(query: List[str], dt_matrix, tw_matrix, document_index: int):
+def lda_evaluate_query_doc(query: List[str], document_index: int):
     p_wd = []
     for word in query:
-        p_wd.append(lda_evaluate_word_doc(word, document_index, dt_matrix, tw_matrix))
+        p_wd.append(lda_evaluate_word_doc(word, document_index))
     return np.prod(p_wd)
 
 
-def lda_evaluate_query(query_index, query_words, dt_matrix, tw_matrix, tell=False):
+def lda_evaluate_query(query_index, query_words, tell=False):
     lst = {}
     with Pool(processes=8) as p:
         max_ = cv_matrix.shape[0]
         with tqdm(total=max_) as pbar:
             for i, score in enumerate(
-                    p.imap(partial(lda_evaluate_query_doc, query_words, dt_matrix, tw_matrix), range(0, max_))):
+                    p.imap(partial(lda_evaluate_query_doc, query_words), range(0, max_))):
                 lst[i] = score
                 pbar.update()
 
@@ -54,9 +54,9 @@ def lda_evaluate_query(query_index, query_words, dt_matrix, tw_matrix, tell=Fals
     if tell:
         print(f"query: {query_words}")
         print(f"index of document: {sorted_list.index(query_index)}")
-        print(f"number 1: {doc2word[sorted_list[0]]}\n")
-        print(f"number 2: {doc2word[sorted_list[1]]}\n")
-        print(f"number 3: {doc2word[sorted_list[2]]}\n")
+        print(f"number 1 index: {sorted_list[0]} number 1: words {doc2word[sorted_list[0]]}\n")
+        print(f"number 2 index: {sorted_list[1]} number 2: words {doc2word[sorted_list[1]]}\n")
+        print(f"number 3 index: {sorted_list[2]} number 3: words {doc2word[sorted_list[2]]}\n")
         print(f"real document: {doc2word[query_index]}")
     return sorted_list.index(query_index), lst
 
@@ -72,7 +72,7 @@ def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, 
         (K, alpha, eta))
     results = []
     for query in queries.items():
-        res, p_vec = lda_evaluate_query(query[0], query[1].split(' '), dt_matrix, tw_matrix, tell=False)
+        res, p_vec = lda_evaluate_query(query[0], query[1].split(' '), tell=False)
         results.append(res)
         print("query done")
     return np.mean(results)
