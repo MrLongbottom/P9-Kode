@@ -82,6 +82,12 @@ def word_count_for_topic_words(lda_model, corpus, topic_start):
     fig.suptitle('Word Count and Importance of Topic Keywords', fontsize=22)    
     save_fig("Word count and importance_topic " + str(topic_start) + "-" + str(topic_start+3) + ".png")
 
+    
+def get_save_path_df_as_pickle(model_path: str, corpus_path: str):
+    lda_model_name = model_path.split("/")[-1]
+    corpus_name = corpus_path.split("/")[-1]
+    return "Generated Files/df_" + lda_model_name + "_" + corpus_name + ".pkl"
+    
 
 if __name__ == '__main__':
     lda_path = "LDA/model/document_model"
@@ -94,9 +100,7 @@ if __name__ == '__main__':
     # Create Corpus: Term Document Frequency
     tdf = [id2word.doc2bow(text) for text in corpus]
 
-    lda_model_name = lda_path.split("/")[-1]
-    corpus_name = corpus_path.split("/")[-1]
-    df_save_path = "Generated Files/df_" + lda_model_name + "_" + corpus_name + ".pkl"
+    df_save_path = get_save_path_df_as_pickle(lda_path, corpus_path)
     
     if path.exists(df_save_path):
         print("Dataframe file exists")
