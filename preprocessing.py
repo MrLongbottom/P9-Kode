@@ -256,11 +256,15 @@ def cal_tf_idf(cv):
 
 def filter_tfidf(cv, words):
     tf_idf = cal_tf_idf(cv)
-    threshold = 10
-    tf_idf.data = np.where(tf_idf.data < threshold, 0, tf_idf.data)
-    tf_idf.eliminate_zeros()
-    good_indices = tf_idf.sum(axis=0).nonzero()[1]
-    words = [words[i] for i in good_indices]
+    rare_thresh = 0.0015
+    common_thresh = 1.5
+    total_mean = tf_idf.mean(axis=0)
+    total_mean = np.where(total_mean < rare_thresh, 0, total_mean)
+    indices1 = total_mean.nonzero()[1]
+    data_mean = np.array([tf_idf.getcol(i).data.mean() for i in range(tf_idf.shape[1])])
+    data_mean = np.where(data_mean < common_thresh, 0, data_mean)
+    indices2 = np.array(np.nonzero(data_mean)[0])
+    words = [words[i] for i in np.intersect1d(indices1, indices2)]
     words = {words[i]: i for i in range(len(words))}
     return words
 
