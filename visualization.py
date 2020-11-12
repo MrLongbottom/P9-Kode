@@ -143,7 +143,7 @@ def plot_word_counts_and_weights(axes, df, max_y, topic_start: int):
         ax_twin.legend(loc='upper right')
 
 
-def visualization_distribution_doc_word_count(df_dominant_topics, corpus_path: str = ""):
+def visualization_distribution_doc_word_count(df_dominant_topics, corpus_path: str = "", topic_start: int = 0):
     """
     Visualizes a distribution of the amount of documents over word counts. Statistics of this is included.
     :param df_dominant_topics: The document dominant topic dataframe
@@ -165,10 +165,28 @@ def visualization_distribution_doc_word_count(df_dominant_topics, corpus_path: s
 
     plt.gca().set(xlim=(0, max_word_count), ylabel='Number of Documents', xlabel='Document Word Count')
     plt.tick_params(size=16)
-    plt.xticks(np.linspace(0, max_word_count, 15))
+    plt.xticks(np.linspace(0, max_word_count, 15).astype(int))
     plt.title('Distribution of Document Word Counts', fontdict=dict(size=22))
     plt.savefig("Document_word distribution - " + corpus_path.split("/")[-1] + ".png", dpi=300)
     plt.show()
+
+    cols = [color for name, color in mcolors.TABLEAU_COLORS.items()]  # more colors: 'mcolors.XKCD_COLORS'
+    fig, axes = plt.subplots(2, 2, figsize=(16, 14), sharex=True, sharey=True)
+    for i, ax in enumerate(axes.flatten()):
+        df_dominant_topic_sub = df_dominant_topics.loc[df_dominant_topics.Dominant_Topic == i + topic_start, :]
+        doc_lens = [len(d) for d in df_dominant_topic_sub.Text]
+        ax.hist(doc_lens, bins=max_word_count, color=cols[i])
+        ax.tick_params(axis='y', labelcolor=cols[i], color=cols[i])
+        sb.kdeplot(doc_lens, color="black", fill=False, ax=ax.twinx())
+        ax.set(xlim=(0, max_word_count), xlabel='Document Word Count')
+        ax.set_ylabel('Number of Documents', color=cols[i])
+        ax.set_title('Topic: ' + str(i + topic_start), fontdict=dict(size=16, color=cols[i]))
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.90)
+    plt.xticks(np.linspace(0, max_word_count, 15).astype(int))
+    fig.suptitle('Distribution of Document Word Counts by Dominant Topic', fontsize=22)
+    save_fig("Word count distribution per topic_" + str(topic_start) + "-" + str(topic_start + 3) + ".png")
 
 
 def get_save_path_df_as_pickle(model_path: str, corpus_path: str):
@@ -218,4 +236,4 @@ if __name__ == '__main__':
     visualization_word_count_for_topic_words(lda_model, corpus, topic_start=0)
 
     # Visualize the distribution of amount of words over documents
-    visualization_distribution_doc_word_count(df_dominant_topics, corpus_path)
+    visualization_distribution_doc_word_count(df_dominant_topics, corpus_path, topic_start=4)
