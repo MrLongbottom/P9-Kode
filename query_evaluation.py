@@ -37,9 +37,6 @@ def lm_evaluate_word_doc(document_index, word_index, matrices=None):
     :param word_index: word
     :return: a score
     """
-    if matrices:
-        dt_matrix = matrices[0]
-        tw_matrix = matrices[1]
     N_d = len(doc2word[document_index])
     tf = cv_matrix[document_index, word_index]
     w_freq_in_D = np.array(wordfreq.T[word_index])[0][0]
