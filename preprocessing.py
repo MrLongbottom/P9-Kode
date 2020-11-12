@@ -57,7 +57,7 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
     step += 1
     print(f'Step {step}: stop words and word frequency.')
-    words, cv_matrix = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count)
+    words = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfidf=False)
 
     print(len(words))
     if word_check:
@@ -105,14 +105,23 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     return cv_matrix, words, corpus
 
 
-def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count):
+def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfidf: bool = False):
     nltk.download('stopwords')
     stop_words = stopwords.words('danish')
     stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
-    cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
-    cv_matrix = cv.fit_transform(corpus)
-    words = key_dictionizer(cv.get_feature_names())
-    return words, cv_matrix
+    if not use_tfidf:
+        cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
+        cv_matrix = cv.fit_transform(corpus)
+        words = key_dictionizer(cv.get_feature_names())
+        return words
+    else:
+        cv = CountVectorizer(stop_words=stop_words)
+        cv_matrix = cv.fit_transform(corpus)
+        words = key_dictionizer(cv.get_feature_names())
+        words = {v: k for k,v in words.items()}
+        words = filter_tfidf(cv_matrix, words)
+
+        return words
 
 
 def stem_lem(corpus, words, documents, stem_or_lem: bool):
@@ -234,6 +243,26 @@ def load_document_file(filename):
             documents[data['id']] = data['headline'] + ' ' + data['body']
     print('Loaded ' + str(len(documents)) + ' documents.')
     return documents
+
+
+def cal_tf_idf(cv):
+    n_vec = np.bincount(cv.indices, minlength=cv.shape[1])
+    idf_vec = np.log10(cv.shape[0] / n_vec)
+    #cv.data = np.log10(1+cv.data)
+
+    tf_idf_matrix = cv.multiply(idf_vec)
+    return sparse.csc_matrix(tf_idf_matrix)
+
+
+def filter_tfidf(cv, words):
+    tf_idf = cal_tf_idf(cv)
+    threshold = 10
+    tf_idf.data = np.where(tf_idf.data < threshold, 0, tf_idf.data)
+    tf_idf.eliminate_zeros()
+    good_indices = tf_idf.sum(axis=0).nonzero()[1]
+    words = [words[i] for i in good_indices]
+    words = {words[i]: i for i in range(len(words))}
+    return words
 
 
 def filter_documents(documents, doc_minimum_length):
