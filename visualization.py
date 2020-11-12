@@ -23,7 +23,7 @@ def create_doc_main_topic_df(ldamodel, corpus, term_doc_freq):
     :return: Dataframe of document main topics, with document text
     """
     doc_topics_df = get_main_topics_df(ldamodel, term_doc_freq)
-    doc_topics_df.columns = ['Dominant_Topic', 'Perc_Contribution', 'Topic_Keywords']
+    doc_topics_df.columns = ['Dominant_Topic', 'Topic_Perc_Contribution', 'Topic_Keywords']
 
     # Add original text to the end of the output
     contents = pd.Series(corpus)
@@ -58,6 +58,30 @@ def get_main_topics_df(ldamodel, term_doc_freq):
             pbar.update()
     print("Finished getting main topics")
     return doc_topics_df
+
+
+def get_topic_representative_text_dataframe(df_dominant_topics):
+    """
+    Gets a representative text for each topic from the document with the highest topic contribution.
+    :param df_dominant_topics: The dataframe with documents and representative topics
+    :return: Dataframe with each topic and representative text from a document
+    """
+    # Display setting to show more characters in column
+    pd.options.display.max_colwidth = 100
+
+    df_docs_topics_sorted = pd.DataFrame()
+    # Group by topic and sort by topic contribution to documents to get representative document
+    df_docs_topics_grouped = df_dominant_topics.groupby('Dominant_Topic')
+    for i, grp in df_docs_topics_grouped:
+        df_docs_topics_sorted = pd.concat([df_docs_topics_sorted,
+                                                 grp.sort_values(['Topic_Perc_Contribution'], ascending=False).head(1)],
+                                                axis=0)
+    # Reset Index
+    df_docs_topics_sorted.reset_index(drop=True, inplace=True)
+
+    # Format
+    df_docs_topics_sorted.columns = ['Document_No', 'Topic_No', "Topic_Perc_Contribution", "Keywords", "Representative Text"]
+    return df_docs_topics_sorted
 
 
 def visualization_word_count_for_topic_words(lda_model, corpus, topic_start: int):
@@ -125,16 +149,22 @@ def get_save_path_df_as_pickle(model_path: str, corpus_path: str):
     return "Generated Files/df_" + lda_model_name + "_" + corpus_name + ".pkl"
 
 
-def create_or_load_dataframe(df_save_path, lda_model, corpus, tdf):
+def create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_path):
+    df_save_path = get_save_path_df_as_pickle(lda_path, corpus_path)
+
     if path.exists(df_save_path):
         print("Dataframe file exists")
-        df_topic_sents_keywords = pd.read_pickle(df_save_path)
+        df_topic_docs_keywords = pd.read_pickle(df_save_path)
     else:
         print("Creating dataframe file...")
-        df_topic_sents_keywords = create_doc_main_topic_df(ldamodel=lda_model, corpus=corpus, term_doc_freq=tdf)
-        df_topic_sents_keywords.to_pickle(df_save_path)
+        df_topic_docs_keywords = create_doc_main_topic_df(ldamodel=lda_model, corpus=corpus, term_doc_freq=tdf)
+        df_topic_docs_keywords.to_pickle(df_save_path)
         print("Dataframe file created")
-    return df_topic_sents_keywords
+
+    # Format
+    df_dominant_topics = df_topic_docs_keywords.reset_index()
+    df_dominant_topics.columns = ['Document_No', 'Dominant_Topic', 'Topic_Perc_Contribution', 'Keywords', 'Text']
+    return df_dominant_topics
 
 
 if __name__ == '__main__':
@@ -148,14 +178,14 @@ if __name__ == '__main__':
     # Create Corpus: Term Document Frequency
     tdf = [id2word.doc2bow(text) for text in corpus]
 
-    # Create of get main dataframe file
-    df_save_path = get_save_path_df_as_pickle(lda_path, corpus_path)
-    df_topic_docs_keywords = create_or_load_dataframe(df_save_path, lda_model, corpus, tdf)
+    # Create or load main dataframe file
+    df_dominant_topics = create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_path)
+    display(df_dominant_topics.head(10))
 
-    # Format
-    df_dominant_doc_topic = df_topic_docs_keywords.reset_index()
-    df_dominant_doc_topic.columns = ['Document_No', 'Dominant_Topic', 'Topic_Perc_Contrib', 'Keywords', 'Text']
-    display(df_dominant_doc_topic.head(10))
+    # Get a representative text for each topic from the document with the highest topic contribution
+    df_topic_representative_text = get_topic_representative_text_dataframe(df_dominant_topics)
+    display(df_topic_representative_text.head(10))
 
     # Visualize word count and word weights per topic
-    visualization_word_count_for_topic_words(lda_model, corpus, topic_start=8)
+    visualization_word_count_for_topic_words(lda_model, corpus, topic_start=0)
+
