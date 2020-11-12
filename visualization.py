@@ -143,6 +143,34 @@ def plot_word_counts_and_weights(axes, df, max_y, topic_start: int):
         ax_twin.legend(loc='upper right')
 
 
+def visualization_distribution_doc_word_count(df_dominant_topics, corpus_path: str = ""):
+    """
+    Visualizes a distribution of the amount of documents over word counts. Statistics of this is included.
+    :param df_dominant_topics: The document dominant topic dataframe
+    :param corpus_path: The path to the corpus
+    """
+    # Get the length of each document
+    doc_lens = [len(d) for d in df_dominant_topics.Text]
+    max_word_count = max(doc_lens)  # The maximum word count
+
+    # Plotting
+    plt.figure(figsize=(16, 7))
+    plt.hist(doc_lens, bins=max_word_count, color='navy')
+    # Statistics
+    plt.text(max_word_count - 100, 135, "Mean   : " + str(round(np.mean(doc_lens))))
+    plt.text(max_word_count - 100, 120, "Median : " + str(round(np.median(doc_lens))))
+    plt.text(max_word_count - 100, 105, "Stdev   : " + str(round(np.std(doc_lens))))
+    plt.text(max_word_count - 100, 90, "1%ile    : " + str(round(np.quantile(doc_lens, q=0.01))))
+    plt.text(max_word_count - 100, 75, "99%ile  : " + str(round(np.quantile(doc_lens, q=0.99))))
+
+    plt.gca().set(xlim=(0, max_word_count), ylabel='Number of Documents', xlabel='Document Word Count')
+    plt.tick_params(size=16)
+    plt.xticks(np.linspace(0, max_word_count, 15))
+    plt.title('Distribution of Document Word Counts', fontdict=dict(size=22))
+    plt.savefig("Document_word distribution - " + corpus_path.split("/")[-1] + ".png", dpi=300)
+    plt.show()
+
+
 def get_save_path_df_as_pickle(model_path: str, corpus_path: str):
     lda_model_name = model_path.split("/")[-1]
     corpus_name = corpus_path.split("/")[-1]
@@ -189,3 +217,5 @@ if __name__ == '__main__':
     # Visualize word count and word weights per topic
     visualization_word_count_for_topic_words(lda_model, corpus, topic_start=0)
 
+    # Visualize the distribution of amount of words over documents
+    visualization_distribution_doc_word_count(df_dominant_topics, corpus_path)
