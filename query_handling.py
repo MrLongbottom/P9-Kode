@@ -1,7 +1,9 @@
+import itertools
 import random
 from functools import partial
+from itertools import product
 from multiprocessing import Pool
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import scipy.sparse as sp
@@ -12,31 +14,35 @@ from tqdm import tqdm
 import lda
 import preprocessing
 import utility
+from query_evaluation import lda_evaluate_word_doc
 
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 inverse_w2v = {v: k for k, v in word2vec.items()}
 
 
-def evaluate_query_doc(function, query: List[str], document_index: int):
+def evaluate_query_doc(function, query: List[str],
+                       document_index: int, matrices: Tuple[sp.csc_matrix, sp.csc_matrix]):
     """
     Evaluate a query based on a function and document index
+    :param matrices: document topic and topic word matrices
+    :param document_index: the document index
     :param function: the evaluation function
     :param query: the list of query words
-    :param document_index: the index of the document
     :return: the product of the evaluate function
     """
     p_wd = []
     for word in query:
         word_index = inverse_w2v[word]
-        p_wd.append(function(document_index, word_index))
+        p_wd.append(function(document_index, word_index, matrices))
     return np.prod(p_wd)
 
 
-def evaluate_query(function, query_index, query_words, tell=False):
+def evaluate_query(function, query_index, query_words, matrices, tell=False):
     """
     Evaluating a query based on a function given and the query
     which consists of query index and words
+    :param matrices: docment-topic and topic word matrices
     :param function: the evaluation function you want to use
     :param query_index: the query's document index
     :param query_words: the words in the query
@@ -48,7 +54,8 @@ def evaluate_query(function, query_index, query_words, tell=False):
         max_ = len(doc2word)
         with tqdm(total=max_) as pbar:
             for i, score in enumerate(
-                    p.imap(partial(evaluate_query_doc, function, query_words), range(0, max_))):
+                    p.starmap(partial(evaluate_query_doc, function, query_words),
+                              list(enumerate(itertools.repeat(matrices, times=max_))))):
                 lst[i] = score
                 pbar.update()
 
@@ -63,7 +70,7 @@ def evaluate_query(function, query_index, query_words, tell=False):
     return sorted_list.index(query_index), lst
 
 
-def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, eta):
+def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, eta, evaluation_function):
     _, dt_matrix, tw_matrix = lda.run_lda(
         model_path,
         cv,
@@ -74,9 +81,14 @@ def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, 
         (K, alpha, eta))
     results = []
     for query in queries.items():
-        res, p_vec = evaluate_query(query[0], query[1].split(' '), tell=False)
+        res, p_vec = evaluate_query(evaluation_function,
+                                    query[0],
+                                    query[1].split(' '),
+                                    (dt_matrix, tw_matrix),
+                                    tell=False)
         results.append(res)
         print("query done")
+
     return np.mean(results)
 
 

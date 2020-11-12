@@ -10,6 +10,7 @@ import scipy.sparse as sp
 from lda import compute_coherence_values, compute_coherence_values_k_and_priors
 from preprocessing import preprocess
 import query_handling
+from query_evaluation import lda_evaluate_word_doc, lm_evaluate_word_doc, lm_lda_combo_evaluate_word_doc
 
 
 def general_grid_search(function, fixed_params, hyper_params, plot=True, y_label="Evaluation Score", save_path=None):
@@ -161,6 +162,6 @@ if __name__ == '__main__':
 
     fixed_params = {"queries": queries, "model_path": "LDA/model/test_model", "cv": cv, "words": word2vec,
                     "mini_corpus": mini_corpus}
-    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas}
+    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas, "evaluation_function": [lda_evaluate_word_doc]}
     general_grid_search(query_handling.lda_runthrough_query, fixed_params=fixed_params, hyper_params=hyper_params,
                         plot=True, save_path="Generated Files/Evaluation/lda_test.png")

@@ -89,7 +89,7 @@ def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Diction
     :return: a dict with the topics in the given document based on the lda model
     """
     corpus = [dictionary.doc2bow(t) for t in [text]]
-    query = lda.get_document_topics(corpus, minimum_probability=1/K)
+    query = lda.get_document_topics(corpus, minimum_probability=0.0)
     return dict([x for x in query][0])
 
 
@@ -101,7 +101,7 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel
     :param file_name: path of file to save
     :return: a matrix (scipy)
     """
-    matrix = sp.dok_matrix((len(document_topics), lda.num_topics))
+    matrix = sp.lil_matrix((len(document_topics), lda.num_topics))
     for index, dictionary in tqdm(enumerate(document_topics)):
         for dict_key, dict_value in dictionary.items():
             matrix[index, dict_key] = dict_value
@@ -183,7 +183,7 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_co
     # saving topic words to file
     print("creating topic words file")
     tw_matrix = save_topic_word_matrix(lda,
-                                       save_path + str(param_combination ) + "topic_word_matrix.npz")
+                                       save_path + str(param_combination) + "topic_word_matrix.npz")
 
     # saving document topics to file
     print("creating document topics file")
@@ -196,8 +196,8 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_co
 
 def save_topic_word_matrix(lda: LdaModel, name: str):
     matrix = lda.get_topics()
-    threshold = 1/matrix.shape[1]
-    matrix = np.where(matrix < threshold, 0, matrix)
+    # threshold = 1/matrix.shape[1]
+    # matrix = np.where(matrix < threshold, 0, matrix)
     matrix = sp.csr_matrix(matrix)
     sp.save_npz(name, matrix)
     return matrix
