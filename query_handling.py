@@ -78,7 +78,7 @@ def generate_topic_queries(count_matrix,
         document_ids_in_topic = topic_vec.nonzero()[0]
         normalized_topic_vector = normalize(topic_vec[document_ids_in_topic].toarray(), norm="l1", axis=0)
         sampled_doc_ids = [np.random.choice(document_ids_in_topic, p=normalized_topic_vector[:, 0]) for x in
-                           range(0, max_length)]
+                           range(0, query_length)]
         for document in sampled_doc_ids:
             index = 0
             tf_idf_list = tfidf_matrix.getrow(document).toarray()[0].argsort()[-max_length:][::-1]
