@@ -54,7 +54,10 @@ def generate_topic_queries(count_matrix,
                            min_length: int = 1,
                            max_length: int = 4):
     """
-    Generates queries for random documents based on tfidf values
+    Generates queries for random topics based and samples from 1-4 documents from that topic
+    based on the topic distribution values.
+    It then adds the highest tfidf word to the query.
+    If that word is already in the query it takes the next one in the tf-idf list.
     :param count_matrix: CountVectorization matrix
     :param document_topic_matrix: dt matrix
     :param words: words dictionary
@@ -78,7 +81,7 @@ def generate_topic_queries(count_matrix,
                            range(0, max_length)]
         for document in sampled_doc_ids:
             index = 0
-            tf_idf_list = tfidf_matrix.getrow(document).toarray()[0].argsort()[-query_length:][::-1]
+            tf_idf_list = tfidf_matrix.getrow(document).toarray()[0].argsort()[-max_length:][::-1]
             tf_idf_word = words[tf_idf_list[index]]
             while tf_idf_word in query:
                 index += 1
@@ -260,7 +263,7 @@ if __name__ == '__main__':
     cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
     dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
     word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
-    queries = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 100, min_length=4, max_length=4)
+    queries = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 100, min_length=1, max_length=4)
     print(queries)
     # doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
     # print(str(check_valid_queries(queries)))
