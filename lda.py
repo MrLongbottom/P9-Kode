@@ -80,7 +80,7 @@ def load_corpus(name: str):
     return corpus
 
 
-def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Dictionary, K) -> Dict[int, float]:
+def get_document_topics_from_model(text: List[str], lda: LdaModel, dictionary: Dictionary, K) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
@@ -88,9 +88,10 @@ def get_document_topics_from_model(text: str, lda: LdaModel, dictionary: Diction
     :param dictionary: the dictionary over the whole document
     :return: a dict with the topics in the given document based on the lda model
     """
-    corpus = [dictionary.doc2bow(t) for t in [text]]
-    query = lda.get_document_topics(corpus, minimum_probability=1/K)
-    return dict([x for x in query][0])
+    document_bow = dictionary.doc2bow(text)
+    query = lda.get_document_topics(document_bow, minimum_probability=0.0)
+    # 1/K is alternative threshold
+    return dict(query)
 
 
 def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel, filename: str) -> sp.dok_matrix:
