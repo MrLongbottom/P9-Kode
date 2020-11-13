@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 import numpy as np
 import scipy.sparse as sp
 
@@ -10,6 +12,7 @@ wordfreq = cv_matrix.sum(axis=0)
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
+inverse_w2v = {v: k for k, v in word2vec.items()}
 
 
 def lda_evaluate_word_doc(document_index, word_index, matrices=None):
@@ -27,6 +30,18 @@ def lda_evaluate_word_doc(document_index, word_index, matrices=None):
     doc_topics = dt_matrix[document_index].T
     score = word_topics.multiply(doc_topics).sum()
     return score
+
+
+def grid_lda_evaluate(query: Tuple[int, str], result_matrix: np.ndarray):
+    document_index = query[0]
+    word_indexes = [inverse_w2v[x] for x in query[1].split(' ')]
+
+    value = []
+    for word_index in word_indexes:
+        value.append(result_matrix[:, word_index])
+    p_vec = np.multiply.reduce(value)
+    res = utility.rankify(dict(enumerate(p_vec))).index(document_index)
+    return res, p_vec
 
 
 def lm_evaluate_word_doc(document_index, word_index, matrices=None):

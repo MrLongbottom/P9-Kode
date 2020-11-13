@@ -14,7 +14,7 @@ from tqdm import tqdm
 import lda
 import preprocessing
 import utility
-from query_evaluation import lda_evaluate_word_doc
+from query_evaluation import lda_evaluate_word_doc, grid_lda_evaluate
 
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
@@ -80,15 +80,10 @@ def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, 
         "Generated Files/",
         (K, alpha, eta))
     results = []
-    for query in queries.items():
-        res, p_vec = evaluate_query(evaluation_function,
-                                    query[0],
-                                    query[1].split(' '),
-                                    (dt_matrix, tw_matrix),
-                                    tell=False)
+    result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
+    for query in tqdm(queries.items()):
+        res, p_vec = grid_lda_evaluate(query, result_matrix)
         results.append(res)
-        print("query done")
-
     return np.mean(results)
 
 
