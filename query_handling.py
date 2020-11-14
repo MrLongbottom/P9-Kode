@@ -81,7 +81,7 @@ def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, 
         (K, alpha, eta))
     results = []
     result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
-    for query in tqdm(queries.items()):
+    for query in tqdm(queries):
         res, p_vec = grid_lda_evaluate(query, result_matrix)
         results.append(res)
     return np.mean(results)
