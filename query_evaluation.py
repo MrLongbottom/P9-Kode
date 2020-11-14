@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 import numpy as np
 import scipy.sparse as sp
+from tqdm import tqdm
 
 import utility
 
@@ -42,6 +43,19 @@ def grid_lda_evaluate(query: Tuple[int, str], result_matrix: np.ndarray):
     p_vec = np.multiply.reduce(value)
     res = utility.rankify(dict(enumerate(p_vec))).index(document_index)
     return res, p_vec
+
+
+def grid_lda_evaluate_topic(query: Tuple[int, str], result_matrix: np.ndarray, dt_vector):
+    word_indexes = [inverse_w2v[x] for x in query[1].split(' ')]
+    score = 0.0
+    value = []
+    for word_index in word_indexes:
+        value.append(result_matrix[:, word_index])
+    p_vec = np.multiply.reduce(value)
+    ranks = utility.rankify(dict(enumerate(p_vec)))
+    for index, document_value in tqdm(enumerate(dt_vector.toarray())):
+        score += document_value[0] / (ranks.index(index) + 1)
+    return score, p_vec
 
 
 def lm_evaluate_word_doc(document_index, word_index, matrices=None):
