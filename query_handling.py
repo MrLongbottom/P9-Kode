@@ -68,7 +68,7 @@ def generate_topic_queries(count_matrix,
     """
     tfidf = TfidfTransformer()
     tfidf_matrix = tfidf.fit_transform(count_matrix)
-    queries = {}
+    queries = []
     topic_count = document_topic_matrix.shape[1]
     for i in tqdm(range(count)):
         topic_id = random.randrange(0, topic_count)
@@ -88,7 +88,7 @@ def generate_topic_queries(count_matrix,
                 tf_idf_word = words[tf_idf_list[index]]
             query.append(tf_idf_word)
         query = ' '.join(query)
-        queries[topic_id] = query
+        queries.append((topic_id, query))
     return queries
 
 
