@@ -51,11 +51,10 @@ def grid_lda_evaluate_topic(query: Tuple[int, str], result_matrix: np.ndarray, d
     value = []
     for word_index in word_indexes:
         value.append(result_matrix[:, word_index])
-    p_vec = np.multiply.reduce(value)
+    p_vec = np.sum(value, axis=0)
     ranks = utility.rankify(dict(enumerate(p_vec)))
     ranks = sorted(enumerate(ranks), key=lambda x: x[1])
-    for index, document_value in tqdm(enumerate(dt_vector.toarray())):
-        score += document_value[0] / (ranks.index(index) + 1)
+    score = np.sum(np.divide(p_vec, np.array([x[0] + 1 for x in ranks])))
     return score, p_vec
 
 

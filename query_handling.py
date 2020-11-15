@@ -92,7 +92,7 @@ def lda_runthrough_query(model_path, cv, words, mini_corpus, K, alpha, eta, eval
         "Generated Files/",
         (K, alpha, eta))
     results = []
-    queries = generate_topic_queries(cv, dt_matrix, words, 100)
+    queries = generate_topic_queries(cv, dt_matrix, words, 100, min_length=4, max_length=4)
     result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
     for query in tqdm(queries):
         dt_vector = dt_matrix.getcol(query[0])
@@ -137,7 +137,7 @@ def generate_topic_queries(count_matrix,
                            words: Dict[int, str],
                            count: int,
                            min_length: int = 1,
-                           max_length: int = 4):
+                           max_length: int = 1):
     """
     Generates queries for random topics based and samples from 1-4 documents from that topic
     based on the topic distribution values.

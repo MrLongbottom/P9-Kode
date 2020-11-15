@@ -156,12 +156,15 @@ if __name__ == '__main__':
     mini_corpus = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
 
     # 4*4*4 = 64 combinations
-    Ks = [50, 60, 70, 80, 90, 100]
-    alphas = [0.1]  # 0.1 default from wiki
-    etas = [0.001]  # 0.001 default from wiki
+    # Ks = [50, 60, 70, 80, 90, 100]
+    # alphas = [0.1]  # 0.1 default from wiki
+    # etas = [0.001]  # 0.001 default from wiki
+    Ks = [10, 50, 100, 200, 300]
+    alphas = [0.5, 0.1, 0.01, 0.0001]
+    etas = [0.1, 0.01, 0.001, 0.0001]
 
     fixed_params = {"model_path": "LDA/model/test_model", "cv": cv, "words": word2vec,
-                    "mini_corpus": mini_corpus}
-    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas, "evaluation_function": [grid_lda_evaluate_topic]}
+                    "mini_corpus": mini_corpus, "evaluation_function": grid_lda_evaluate_topic}
+    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas}
     general_grid_search(query_handling.lda_runthrough_query, fixed_params=fixed_params, hyper_params=hyper_params,
                         plot=True, save_path="Generated Files/Evaluation/lda_test.png")

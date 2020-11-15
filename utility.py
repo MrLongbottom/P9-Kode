@@ -27,12 +27,6 @@ def rankify(dictionary):
     return list(dict(sorted(dictionary.items(), key=lambda x: x[1], reverse=True)).keys())
 
 
-
-def rankify_topic(dictionary):
-    return list(dict(sorted(dictionary.items(), key=lambda x: x[0], reverse=True)).keys())
-
-
-
 def save_vector_file(filepath, content, separator=','):
     """
     Saves content of list as a vector in a file, similar to a Word2Vec document.
