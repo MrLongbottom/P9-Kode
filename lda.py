@@ -94,7 +94,7 @@ def get_document_topics_from_model(text: List[str], lda: LdaModel, dictionary: D
     return dict(query)
 
 
-def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel, filename: str) -> sp.dok_matrix:
+def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel, filename: str) -> sp.csc_matrix:
     """
     Saves the document topics (list of dicts) in a matrix
     :param document_topics: list of dicts
@@ -110,7 +110,7 @@ def save_topic_doc_matrix(document_topics: List[Dict[int, float]], lda: LdaModel
     # print once again to show improvement
     # evaluate_doc_topic_distributions(matrix, show=True, tell=True, prune=False)
     sp.save_npz(filename, sp.csc_matrix(matrix))
-    return matrix
+    return sp.csc_matrix(matrix)
 
 
 def word_cloud(corpus):
@@ -192,7 +192,7 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_co
                                        save_path + str(param_combination) + "topic_doc_matrix.npz",
                                        dictionary, param_combination[0])
 
-    return lda
+    return lda, dt_matrix, tw_matrix
 
 
 def save_topic_word_matrix(lda: LdaModel, name: str):
@@ -200,7 +200,8 @@ def save_topic_word_matrix(lda: LdaModel, name: str):
     threshold = 1/matrix.shape[1]
     matrix = np.where(matrix < threshold, 0, matrix)
     matrix = sp.csr_matrix(matrix)
-    return sp.save_npz(name, matrix)
+    sp.save_npz(name, matrix)
+    return matrix
 
 
 def get_topic_word_matrix(lda: LdaModel) -> np.ndarray:

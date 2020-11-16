@@ -1,14 +1,15 @@
 import itertools
 import math
 from typing import List
-from test import test
 import matplotlib.pyplot as plt
 import numpy as np
 from gensim.corpora import Dictionary
 from tqdm import tqdm
-
+import utility
+import scipy.sparse as sp
 from lda import compute_coherence_values, compute_coherence_values_k_and_priors
 from preprocessing import preprocess
+import query_handling
 
 
 def general_grid_search(function, fixed_params, hyper_params, plot=True, y_label="Evaluation Score", save_path=None):
@@ -31,7 +32,10 @@ def general_grid_search(function, fixed_params, hyper_params, plot=True, y_label
         # add fixed parameters
         params.update(fixed_params)
         # call function using **kwargs and store result
-        results.append(function(**params))
+        res = function(**params)
+        with open("Generated Files/results.txt", 'a+') as file:
+            file.write(str(comb) + ',' + str(res) + '\n')
+        results.append(res)
     # plot results
     if plot:
         plt.plot([str(x) for x in hyper_combs], results)
@@ -89,26 +93,26 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
     cv_matrix, words, texts = preprocess("documents.json")
     dictionary = Dictionary(texts)
     _, coherence_values, _, tw_eval_results = compute_coherence_values_k_and_priors(cv_matrix=cv_matrix,
-                                                                         dictionary=dictionary,
-                                                                         texts=texts,
-                                                                         words=words,
-                                                                         Ks=Ks,
-                                                                         alphas=alphas,
-                                                                         etas=etas,
-                                                                         thresholds=thresholds,
-                                                                         evaluation=evaluation)
-    
+                                                                                    dictionary=dictionary,
+                                                                                    texts=texts,
+                                                                                    words=words,
+                                                                                    Ks=Ks,
+                                                                                    alphas=alphas,
+                                                                                    etas=etas,
+                                                                                    thresholds=thresholds,
+                                                                                    evaluation=evaluation)
+
     test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
-    
+
     if not evaluation:
         # Default sorting is based on K
         test_coherence_combination = list(zip(test_combinations, coherence_values))
         # Sort on alpha values
-        #test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][1])
+        # test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][1])
         # Sort on eta values
-        #test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][2])
+        # test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[0][2])
         # Sort on coherence value
-        test_combinations = sorted(test_coherence_combination, key = lambda tup: tup[1], reverse = True)
+        test_combinations = sorted(test_coherence_combination, key=lambda tup: tup[1], reverse=True)
 
         combinations_sorted = [x[0] for x in test_combinations]
         coherences_sorted = [x[1] for x in test_combinations]
@@ -122,21 +126,22 @@ def grid_search_coherence_k_and_priors(Ks: List[int], alphas: List[float], etas:
         plot_settings()
         plt.ylabel("Words without topics")
         save_fig(plot_file_name + "_zero_topic_words" + ".png")
-        
-        plt.plot([str(x) for x in test_combinations], [x[1][0][5] for x in tw_eval_results], label="Average words per topic")
+
+        plt.plot([str(x) for x in test_combinations], [x[1][0][5] for x in tw_eval_results],
+                 label="Average words per topic")
         plot_settings()
         plt.ylabel("Average words per topic")
         save_fig(plot_file_name + "_avg_words_per_topic" + ".png")
 
-    
+
 def plot_settings():
     plt.xticks(rotation=90, fontsize=5)
     plt.xlabel("Combination")
     plt.legend()
     plt.tight_layout()
     plt.grid(1, axis='x')
-    
-    
+
+
 def save_fig(plot_file_name: str):
     fig = plt.gcf()
     fig.savefig(plot_file_name, dpi=300)
@@ -144,14 +149,18 @@ def save_fig(plot_file_name: str):
 
 
 if __name__ == '__main__':
+    cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+    mini_corpus = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
+    queries = utility.load_vector_file("Generated Files/queries.csv")
+
     # 4*4*4 = 64 combinations
-    Ks = [80]
-    #Ks = [10, 40, 80, 160]
-    alphas = [0.1]
-    #alphas = [0.01, 0.1, 0.3, 0.6]  # 0.1 default from wiki
-    #alphas = ['asymmetric']
-    etas = [0.001]
-    #etas = [0.0001, 0.001, 0.005, 0.01]  # 0.001 default from wiki
-    #thresholds = [0.00001, 0.0001, 0.001, 0.01, 0.1]  # 0.001 default like the default eta
-    thresholds = list(np.linspace(0.00001, 0.001, 40))
-    grid_search_coherence_k_and_priors(Ks, alphas, etas, thresholds, "GridSearchEval2", evaluation=True)
+    Ks = [50, 60, 70, 80, 90, 100]
+    alphas = [0.1]  # 0.1 default from wiki
+    etas = [0.001]  # 0.001 default from wiki
+
+    fixed_params = {"queries": queries, "model_path": "LDA/model/test_model", "cv": cv, "words": word2vec,
+                    "mini_corpus": mini_corpus}
+    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas}
+    general_grid_search(query_handling.lda_runthrough_query, fixed_params=fixed_params, hyper_params=hyper_params,
+                        plot=True, save_path="Generated Files/Evaluation/lda_test.png")
