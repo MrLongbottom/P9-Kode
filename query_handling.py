@@ -10,6 +10,7 @@ import pandas
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
 from scipy.spatial import distance
+from sklearn.preprocessing import normalize
 import preprocessing
 import utility
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -19,7 +20,6 @@ from lda import get_document_topics_from_model, load_lda
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 inverse_w2v = {v: k for k, v in word2vec.items()}
-cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
 
 
 def evaluate_query_doc(function, query: List[str], document_index: int):
@@ -84,7 +84,8 @@ def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, 
     return np.mean(results)
 
 
-def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1, max_length: int = 4):
+def generate_document_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1,
+                              max_length: int = 4):
     """
     Generates queries for random documents based on tfidf values
     :param count_matrix: CountVectorization matrix
@@ -109,6 +110,51 @@ def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length
             query.append(word)
         query = ' '.join(query)
         queries[doc_id] = query
+    return queries
+
+
+def generate_topic_queries(count_matrix,
+                           document_topic_matrix,
+                           words: Dict[int, str],
+                           count: int,
+                           min_length: int = 1,
+                           max_length: int = 4):
+    """
+    Generates queries for random topics based and samples from 1-4 documents from that topic
+    based on the topic distribution values.
+    It then adds the highest tfidf word to the query.
+    If that word is already in the query it takes the next one in the tf-idf list.
+    :param count_matrix: CountVectorization matrix
+    :param document_topic_matrix: dt matrix
+    :param words: words dictionary
+    :param count: number of queries wanted
+    :param min_length: min words per query (exact length is random)
+    :param max_length: max words per query (exact length is random)
+    :return: dictionary mapping document ids to queries
+    """
+    tfidf = TfidfTransformer()
+    tfidf_matrix = tfidf.fit_transform(count_matrix)
+    queries = []
+    topic_count = document_topic_matrix.shape[1]
+    for i in tqdm(range(count)):
+        topic_id = random.randrange(0, topic_count)
+        query_length = random.randrange(min_length, max_length + 1)
+        query = []
+        topic_vec = tfidf_matrix.getcol(topic_id)
+        document_ids_in_topic = topic_vec.nonzero()[0]
+        normalized_topic_vector = normalize(topic_vec[document_ids_in_topic].toarray(), norm="l1", axis=0)
+        sampled_doc_ids = [np.random.choice(document_ids_in_topic, p=normalized_topic_vector[:, 0]) for x in
+                           range(0, query_length)]
+        for document in sampled_doc_ids:
+            index = 0
+            tf_idf_list = tfidf_matrix.getrow(document).toarray()[0].argsort()[-max_length:][::-1]
+            tf_idf_word = words[tf_idf_list[index]]
+            while tf_idf_word in query:
+                index += 1
+                tf_idf_word = words[tf_idf_list[index]]
+            query.append(tf_idf_word)
+        query = ' '.join(query)
+        queries.append((topic_id, query))
     return queries
 
 
@@ -263,7 +309,7 @@ def query_run_with_expansion():
     vectorizer = sp.load_npz("Generated Files/tfidf_matrix.npz")
     words = utility.load_vector_file("Generated Files/word2vec.csv")
     dictionary = Dictionary([words.values()])
-    queries = generate_queries(vectorizer, words, 10, 4)
+    queries = generate_document_queries(vectorizer, words, 10, 4)
     expanded_queries = []
 
     for query in tqdm(list(queries.items())):
@@ -280,9 +326,16 @@ def query_run_with_expansion():
 
 
 if __name__ == '__main__':
+    # Loading matrices
+    cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
+    dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+    
     queries = generate_queries(cv_matrix, word2vec, 10, min_length=1, max_length=4)
     print(str(check_valid_queries(queries)))
-    utility.save_vector_file("Generated Files/queries.csv", queries)
-
-    # queries = utility.load_vector_file("Generated Files/queries.csv")
-    # res, p_vec = lda_evaluate_query(list(queries.keys())[0], list(queries.values())[0].split(' '), tell=True)
+    utility.save_vector_file("Generated Files/doc_queries.csv", queries)
+    
+    queries = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 100, min_length=1, max_length=4)
+    print(str(check_valid_queries(queries)))
+    utility.save_vector_file("Generated Files/topic_queries.csv", queries)
+    print(queries)
