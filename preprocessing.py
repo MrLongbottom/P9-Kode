@@ -124,7 +124,7 @@ def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfid
         return words
 
 
-def stem_lem(corpus, words, documents, stem_or_lem: bool):
+def stem_lem(corpus, words, documents, stem_or_lem: bool = False):
     """
     Updates a word list and a corpus to use stemmed words.
     :param stem_or_lem: bool indicating whether to apply stemming or lemmatizer. True is stem, False is lem.
