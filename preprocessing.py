@@ -7,7 +7,11 @@ import scipy.sparse as sparse
 import numpy as np
 import utility
 
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+import lemmy
+from matplotlib import pyplot
+import seaborn as sb
+from sklearn.preprocessing import normalize
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 from tqdm import tqdm
 from nltk.corpus import stopwords
 from nltk.stem.snowball import DanishStemmer
@@ -53,7 +57,7 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
     step += 1
     print(f'Step {step}: stop words and word frequency.')
-    words = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count)
+    words = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfidf=False)
 
     print(len(words))
     if word_check:
@@ -65,12 +69,14 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     # Stemming to combine word declensions
     step += 1
     print(f"Step {step}: Apply Stemming / Lemming")
-    corpus, words, documents = stem_lem(corpus, words, documents)
+    w_len = len(words)
+    corpus, words, documents = stem_lem(corpus, words, documents, stem_or_lem=False)
+    print(f"Removed {w_len-len(words)} words.")
 
-    # filter documents to remove docs that now contain too few words (after all the word filtering)
+    # filter documents to remove docs that now contain no words (after all the word filtering)
     step += 1
     print(f"Step {step}: re-filter documents.")
-    corpus, documents = refilter_docs(words, corpus, doc_minimum_length, documents)
+    corpus, documents = refilter_docs(words, corpus, 1, documents)
 
     # transform documents into a matrix containing counts for each word in each document
     step += 1
@@ -99,40 +105,72 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     return cv_matrix, words, corpus
 
 
-def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count):
+def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfidf: bool = False):
     nltk.download('stopwords')
     stop_words = stopwords.words('danish')
-    cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
-    cv.fit(corpus)
-    words = key_dictionizer(cv.get_feature_names())
-    return words
+    stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
+    if not use_tfidf:
+        cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
+        cv_matrix = cv.fit_transform(corpus)
+        words = key_dictionizer(cv.get_feature_names())
+        return words
+    else:
+        cv = CountVectorizer(stop_words=stop_words)
+        cv_matrix = cv.fit_transform(corpus)
+        words = key_dictionizer(cv.get_feature_names())
+        words = {v: k for k,v in words.items()}
+        words = filter_tfidf(cv_matrix, words)
+
+        return words
 
 
-def stem_lem(corpus, words, documents):
+def stem_lem(corpus, words, documents, stem_or_lem: bool = False):
     """
     Updates a word list and a corpus to use stemmed words.
+    :param stem_or_lem: bool indicating whether to apply stemming or lemmatizer. True is stem, False is lem.
     :param corpus: a list of sentences (strings of words separated by spaces)
     :param words: a list of words
-    :return: new corpus and words list
+    :return: new corpus and words list, were all words have been replaced by stemmed/lemmetized versions.
     """
-    # Stemming
-    stemmer = DanishStemmer()
     stop_words = stopwords.words('danish')
-    # Update word list to use stemmed words
-    translator = {}
-    add = []
-    remove = []
-    for word in tqdm(words):
-        stem = stemmer.stem(word)
-        if stem != word:
-            if word not in remove:
-                remove.append(word)
-            if stem not in add and stem not in stop_words:
-                add.append(stem)
-            if word not in translator and stem not in stop_words:
-                translator[word] = stem
-    words = [x for x in words if x not in remove]
-    words.extend([x for x in add if x not in words])
+    stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
+    if stem_or_lem:
+        # Stemming
+        stemmer = DanishStemmer()
+        # Update word list to use stemmed words
+        translator = {}
+        add = []
+        remove = []
+        for word in tqdm(words):
+            stem = stemmer.stem(word)
+            if stem != word:
+                if word not in remove:
+                    remove.append(word)
+                if stem not in add and stem not in stop_words:
+                    add.append(stem)
+                if word not in translator and stem not in stop_words:
+                    translator[word] = stem
+        words = [x for x in words if x not in remove]
+        words.extend([x for x in add if x not in words])
+    else:
+        lemmer = lemmy.load("da")
+        # build up dictionary that translates old words into their new versions
+        translator = {}
+        add = []
+        remove = []
+        for word in tqdm(words):
+            lem = lemmer.lemmatize("", word)
+            other = [x for x in lem if x != word]
+            if len(other) > 0:
+                if word not in lem and word not in remove:
+                    remove.append(word)
+                # add all lem options if they are not stopwords
+                add.extend([x for x in lem if x not in stop_words and x not in add])
+                if word not in translator and lem not in stop_words:
+                    lem = " ".join(lem)
+                    translator[word] = lem
+        words = [x for x in words if x not in remove]
+        words.extend([x for x in add if x not in words])
 
     # update corpus to use stemmed words
     for x in tqdm(range(len(corpus))):
@@ -205,6 +243,30 @@ def load_document_file(filename):
             documents[data['id']] = data['headline'] + ' ' + data['body']
     print('Loaded ' + str(len(documents)) + ' documents.')
     return documents
+
+
+def cal_tf_idf(cv):
+    n_vec = np.bincount(cv.indices, minlength=cv.shape[1])
+    idf_vec = np.log10(cv.shape[0] / n_vec)
+    #cv.data = np.log10(1+cv.data)
+
+    tf_idf_matrix = cv.multiply(idf_vec)
+    return sparse.csc_matrix(tf_idf_matrix)
+
+
+def filter_tfidf(cv, words):
+    tf_idf = cal_tf_idf(cv)
+    rare_thresh = 0.0015
+    common_thresh = 1.5
+    total_mean = tf_idf.mean(axis=0)
+    total_mean = np.where(total_mean < rare_thresh, 0, total_mean)
+    indices1 = total_mean.nonzero()[1]
+    data_mean = np.array([tf_idf.getcol(i).data.mean() for i in range(tf_idf.shape[1])])
+    data_mean = np.where(data_mean < common_thresh, 0, data_mean)
+    indices2 = np.array(np.nonzero(data_mean)[0])
+    words = [words[i] for i in np.intersect1d(indices1, indices2)]
+    words = {words[i]: i for i in range(len(words))}
+    return words
 
 
 def filter_documents(documents, doc_minimum_length):
