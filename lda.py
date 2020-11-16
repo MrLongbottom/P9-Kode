@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import itertools
 from functools import partial
@@ -6,6 +7,9 @@ from multiprocessing import Pool
 from typing import Dict, List
 
 import time
+
+from gensim.models.callbacks import PerplexityMetric, ConvergenceMetric, CoherenceMetric
+
 import preprocessing
 import numpy as np
 import pandas as pd
@@ -27,27 +31,34 @@ import evaluate
 import utility
 
 
-def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: float = None):
+def fit_lda(documents, K: int, alpha: float = None, eta: float = None):
     """
     Fit LDA from a scipy CSR matrix (data).
-    :param data: a csr_matrix representing the vectorized words
+    :param cv_matrix: a csr_matrix representing the vectorized words
     :param vocab: a dictionary over the words
     :param K: number of topics
     :param alpha: the alpha prior weight of topics in documents
     :param eta: the eta prior weight of words in topics
     :return: a lda model trained on the data and vocab
     """
-    print('fitting lda...')
-    if alpha is None or eta is None:
-        return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
-                            id2word=vocab,
-                            num_topics=K)
-    else:
-        return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
-                            id2word=vocab,
-                            num_topics=K,
-                            alpha=alpha,
-                            eta=eta)
+    documents = [documents]
+    vocab = Dictionary(documents)
+    logging.basicConfig(filename='logstuff.log', format="%(asctime)s:%(levelname)s:%(message)s", level=logging.NOTSET)
+    corpus = [vocab.doc2bow(doc) for doc in documents]
+    perplexity_logger = PerplexityMetric(corpus=corpus, logger='shell')
+    convergence_logger = ConvergenceMetric(logger='shell')
+    coherence_cv_logger = CoherenceMetric(corpus=corpus, logger='shell', coherence='c_v', texts=documents)
+    
+    print("fitting lda...")
+    return LdaModel(corpus=corpus,
+                    id2word=vocab,
+                    num_topics=5,
+                    eval_every=20,
+                    passes=50,
+                    iterations=50,
+                    random_state=100,
+                    chunksize=100000,
+                    callbacks=[convergence_logger, perplexity_logger, coherence_cv_logger])
 
 
 def save_lda(lda: LdaModel, path: str):
@@ -176,9 +187,9 @@ def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
     return sp.vstack(ms)
 
 
-def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_combination: tuple):
+def run_lda(path: str, corpus, save_path, param_combination: tuple):
     # fitting the lda model and saving it
-    lda = fit_lda(cv_matrix, words, param_combination[0], param_combination[1], param_combination[2])
+    lda = fit_lda(corpus, param_combination[0], param_combination[1], param_combination[2])
     save_lda(lda, path)
 
     # saving topic words to file
@@ -190,7 +201,7 @@ def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_co
     print("creating document topics file")
     dt_matrix = create_document_topics(corpus, lda,
                                        save_path + str(param_combination) + "topic_doc_matrix.npz",
-                                       dictionary, param_combination[0])
+                                       vocabulary, param_combination[0])
 
     return lda, dt_matrix, tw_matrix
 
@@ -321,15 +332,10 @@ def load_mini_corpus():
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'LDA/model/document_model'
-    cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
-    words = load_dict_file("Generated Files/word2vec.csv")
-    mini_corpus = utility.load_vector_file("Generated Files/doc2word.csv").values()
-    K = math.floor(math.sqrt(cv.shape[0]) / 2)
+    corpus = [' '.join(x) for x in list(utility.load_vector_file("Generated Files/doc2word.csv").values())]
+    K = 10
     run_lda(model_path,
-            cv,
-            words,
-            mini_corpus,
-            Dictionary(mini_corpus),
+            corpus,
             "Generated Files/",
             (K, None, None))
 
