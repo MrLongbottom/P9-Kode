@@ -179,8 +179,7 @@ def stem_lem(corpus, words, documents, stem_or_lem: bool = False):
         for i in range(len(sentence)):
             word = sentence[i]
             if word in translator:
-                sentence.append(translator[word])
-                sentence.remove(word)
+                sentence[i] = translator[word]
         corpus[x] = ' '.join(sentence)
 
     return corpus, words, dict(zip(documents.keys(), corpus))
