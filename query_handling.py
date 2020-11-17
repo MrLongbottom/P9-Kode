@@ -1,7 +1,6 @@
 import itertools
 import random
 from functools import partial
-from itertools import product
 from multiprocessing import Pool
 from typing import Dict, List, Tuple
 
@@ -14,7 +13,6 @@ from tqdm import tqdm
 import lda
 import preprocessing
 import utility
-from query_evaluation import lda_evaluate_word_doc, grid_lda_evaluate
 
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
@@ -70,8 +68,8 @@ def evaluate_query(function, query_index, query_words, matrices, tell=False):
     return sorted_list.index(query_index), lst
 
 
-def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, eta, evaluation_function):
-    _, dt_matrix, tw_matrix = lda.run_lda(
+def lda_runthrough_query(model_path, cv, words, mini_corpus, K, alpha, eta):
+    lda_model, dt_matrix, tw_matrix = lda.run_lda(
         model_path,
         cv,
         words,
@@ -79,12 +77,14 @@ def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, 
         Dictionary(mini_corpus),
         "Generated Files/",
         (K, alpha, eta))
-    results = []
-    result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
-    for query in tqdm(queries):
-        res, p_vec = grid_lda_evaluate(query, result_matrix)
-        results.append(res)
-    return np.mean(results)
+    return lda_model.log_perplexity(dt_matrix.shape[0])
+# results = []
+# result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
+
+# for query in tqdm(queries):
+#     res, p_vec = grid_lda_evaluate(query, result_matrix)
+#     results.append(res)
+# return np.mean(results)
 
 
 def generate_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1, max_length: int = 4):

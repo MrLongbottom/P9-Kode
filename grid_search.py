@@ -160,8 +160,8 @@ if __name__ == '__main__':
     alphas = [0.1]  # 0.1 default from wiki
     etas = [0.001]  # 0.001 default from wiki
 
-    fixed_params = {"queries": queries, "model_path": "LDA/model/test_model", "cv": cv, "words": word2vec,
+    fixed_params = {"model_path": "LDA/model/test_model", "cv": cv, "words": word2vec,
                     "mini_corpus": mini_corpus}
-    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas, "evaluation_function": [lda_evaluate_word_doc]}
+    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas}
     general_grid_search(query_handling.lda_runthrough_query, fixed_params=fixed_params, hyper_params=hyper_params,
                         plot=True, save_path="Generated Files/Evaluation/lda_test.png")

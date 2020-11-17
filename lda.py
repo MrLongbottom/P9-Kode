@@ -1,29 +1,22 @@
+import itertools
 import json
 import math
-import itertools
 from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
 
-import time
-import preprocessing
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-import seaborn as sb
 from gensim import matutils
 from gensim.corpora import Dictionary
 from gensim.models import CoherenceModel
 from gensim.models import LdaModel, LdaMulticore
-from matplotlib import pyplot as plt
 from scipy.sparse import csr_matrix
-from scipy.stats import entropy
 from tqdm import tqdm
-from matplotlib.cbook import boxplot_stats
-from gensim.models import CoherenceModel
 
-import preprocessing
 import evaluate
+import preprocessing
 import utility
 
 
@@ -41,13 +34,19 @@ def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: flo
     if alpha is None or eta is None:
         return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
                             id2word=vocab,
-                            num_topics=K)
+                            num_topics=K,
+                            passes=20,
+                            iterations=100,
+                            chunksize=30000)
     else:
         return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
                             id2word=vocab,
                             num_topics=K,
                             alpha=alpha,
-                            eta=eta)
+                            eta=eta,
+                            passes=20,
+                            iterations=100,
+                            chunksize=30000)
 
 
 def save_lda(lda: LdaModel, path: str):
