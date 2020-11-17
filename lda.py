@@ -49,7 +49,6 @@ def fit_lda(documents, corpus, vocab, K: int, alpha: float = None, eta: float = 
                         passes=20,
                         iterations=100,
                         random_state=100,
-                        chunksize=100000,
                         update_every=1,
                         callbacks=[convergence_logger, perplexity_logger, coherence_cv_logger])
     else:
@@ -60,8 +59,7 @@ def fit_lda(documents, corpus, vocab, K: int, alpha: float = None, eta: float = 
                              alpha=alpha,
                              eta=eta,
                              passes=20,
-                             iterations=100,
-                             chunksize=100000)
+                             iterations=100)
     return model
 
 
