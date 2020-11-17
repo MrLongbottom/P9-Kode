@@ -75,7 +75,7 @@ def load_lda(path: str):
 
 
 def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary,
-                           K) -> sp.dok_matrix:
+                           K) -> sp.csc_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
@@ -140,74 +140,23 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
-def remove_from_rows_from_file(path, rows, separator=","):
-    if path[-4:] == ".csv":
-        doc = load_dict_file(path, separator=separator)
-        doc = [x for x in doc.values() if x not in rows]
-        preprocessing.save_vector_file(path, doc, seperator=separator)
-    elif path[-4:] == ".npz":
-        matrix = sp.load_npz(path)
-        s = matrix.shape
-        matrix = slice_sparse_row(matrix, rows)
-        s2 = matrix.shape
-        print()
-
-
-def slice_sparse_col(matrix: sp.csc_matrix, cols: List[int]):
-    """
-    Remove some columns from a sparse matrix.
-    :param matrix: CSC matrix.
-    :param cols: list of column numbers to be removed.
-    :return: modified matrix without the specified columns.
-    """
-    cols.sort()
-    ms = []
-    prev = -1
-    for c in cols:
-        # add slices of the matrix, skipping column c
-        ms.append(matrix[:, prev + 1:c - 1])
-        prev = c
-    ms.append(matrix[:, prev + 1:])
-    # combine matrix slices
-    return sp.hstack(ms)
-
-
-def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
-    """
-    Remove some rows from a sparse matrix.
-    :param matrix: CSR matrix.
-    :param rows: list of row numbers to be removed.
-    :return: modified matrix without the specified rows.
-    """
-    rows.sort()
-    ms = []
-    prev = -1
-    for r in rows:
-        # add slices of the matrix, skipping row r
-        ms.append(matrix[prev + 1:r - 1, :])
-        prev = r
-    ms.append(matrix[prev + 1:, :])
-    # combine matrix slices
-    return sp.vstack(ms)
-
-
 def run_lda(path: str, documents, corpus, vocab, save_path, param_combination: tuple):
     # fitting the lda model and saving it
     lda = fit_lda(documents, corpus, vocab, param_combination[0], param_combination[1], param_combination[2])
     save_lda(lda, path)
 
     # saving topic words to file
-    print("creating topic words file")
-    tw_matrix = save_topic_word_matrix(lda,
-                                       save_path + str(param_combination ) + "topic_word_matrix.npz")
+    # print("creating topic words file")
+    # tw_matrix = save_topic_word_matrix(lda,
+    #                                    save_path + str(param_combination ) + "topic_word_matrix.npz")
+    #
+    # # saving document topics to file
+    # print("creating document topics file")
+    # dt_matrix = create_document_topics(documents, lda,
+    #                                    save_path + str(param_combination) + "topic_doc_matrix.npz",
+    #                                    vocab, param_combination[0])
 
-    # saving document topics to file
-    print("creating document topics file")
-    dt_matrix = create_document_topics(corpus, lda,
-                                       save_path + str(param_combination) + "topic_doc_matrix.npz",
-                                       vocab, param_combination[0])
-
-    return lda, dt_matrix, tw_matrix
+    return lda
 
 
 def save_topic_word_matrix(lda: LdaModel, name: str):
