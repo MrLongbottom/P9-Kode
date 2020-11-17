@@ -41,16 +41,15 @@ def fit_lda(documents, K: int, alpha: float = None, eta: float = None):
     :param eta: the eta prior weight of words in topics
     :return: a lda model trained on the data and vocab
     """
-    documents = [documents]
     vocab = Dictionary(documents)
     logging.basicConfig(filename='logstuff.log', format="%(asctime)s:%(levelname)s:%(message)s", level=logging.NOTSET)
     corpus = [vocab.doc2bow(doc) for doc in documents]
     perplexity_logger = PerplexityMetric(corpus=corpus, logger='shell')
     convergence_logger = ConvergenceMetric(logger='shell')
     coherence_cv_logger = CoherenceMetric(corpus=corpus, logger='shell', coherence='c_v', texts=documents)
-    
+
     print("fitting lda...")
-    return LdaModel(corpus=corpus,
+    model = LdaModel(corpus=corpus,
                     id2word=vocab,
                     num_topics=5,
                     eval_every=20,
@@ -58,7 +57,9 @@ def fit_lda(documents, K: int, alpha: float = None, eta: float = None):
                     iterations=50,
                     random_state=100,
                     chunksize=100000,
+                    update_every=1,
                     callbacks=[convergence_logger, perplexity_logger, coherence_cv_logger])
+    return model
 
 
 def save_lda(lda: LdaModel, path: str):
@@ -332,7 +333,8 @@ def load_mini_corpus():
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'LDA/model/document_model'
-    corpus = [' '.join(x) for x in list(utility.load_vector_file("Generated Files/doc2word.csv").values())]
+    words = utility.load_vector_file("Generated Files/word2vec.csv")
+    corpus = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
     K = 10
     run_lda(model_path,
             corpus,
