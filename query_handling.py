@@ -68,16 +68,16 @@ def evaluate_query(function, query_index, query_words, matrices, tell=False):
     return sorted_list.index(query_index), lst
 
 
-def lda_runthrough_query(model_path, cv, words, mini_corpus, K, alpha, eta):
+def lda_runthrough_query(model_path, cv, words, corpus, K, alpha, eta):
     lda_model, dt_matrix, tw_matrix = lda.run_lda(
         model_path,
         cv,
         words,
-        mini_corpus,
-        Dictionary(mini_corpus),
+        corpus,
+        Dictionary(corpus),
         "Generated Files/",
         (K, alpha, eta))
-    return lda_model.log_perplexity(dt_matrix.shape[0])
+    return lda_model.log_perplexity(corpus)
 # results = []
 # result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
 
