@@ -93,7 +93,7 @@ def load_corpus(name: str):
     return corpus
 
 
-def get_document_topics_from_model(lda: LdaModel, bow) -> Dict[int, float]:
+def get_document_topics_from_model(bow, lda: LdaModel) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
