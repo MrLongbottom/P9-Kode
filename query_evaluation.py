@@ -3,6 +3,7 @@ import scipy.sparse as sp
 from gensim.models import TfidfModel
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 import preprocessing
+import query_handling
 import utility
 
 cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
@@ -23,12 +24,12 @@ def tfidf_evaluate_queries(queries):
 
 
 def tfidf_evaluate_query(query):
-    #tfidf = preprocessing.cal_tf_idf(cv_matrix)
-    model = TfidfTransformer()
-    tfidf = model.fit_transform(cv_matrix)
+    tfidf = preprocessing.cal_tf_idf(cv_matrix)
+    #model = TfidfTransformer()
+    #tfidf = model.fit_transform(cv_matrix)
     re_word2vec = {v: k for k, v in word2vec.items()}
     word_vecs = []
-    for word in query:
+    for word in query.split(' '):
         if word in re_word2vec:
             word_vector = tfidf.getcol(re_word2vec[word])
             word_vecs.append(word_vector.toarray())
@@ -87,6 +88,6 @@ def lm_lda_combo_evaluate_word_doc(document_index, word_index):
 
 
 if __name__ == '__main__':
-    diction = {10: ["hej", "fodbold", "rejse"], 2566: ["nej", "person", "hus"]}
-    test = tfidf_evaluate_queries(diction)
-    print(test)
+    queries = query_handling.generate_document_queries(cv_matrix, word2vec, 100, 4, 4)
+    ranks = tfidf_evaluate_queries(queries)
+    print(ranks)
