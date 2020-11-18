@@ -14,6 +14,13 @@ word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 
 
+def tfidf_evaluate_queries(queries):
+    ranks = {}
+    for doc_id, query in queries.items():
+        ranks[query] = tfidf_evaluate_query(query).get(doc_id)
+    return ranks
+
+
 def tfidf_evaluate_query(query):
     tfidf = preprocessing.cal_tf_idf(cv_matrix)
     re_word2vec = {v: k for k, v in word2vec.items()}
