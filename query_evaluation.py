@@ -15,17 +15,20 @@ dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2w
 
 
 def tfidf_evaluate_queries(queries):
-    ranks = {}
+    ranks = []
     for doc_id, query in queries.items():
-        ranks[query] = tfidf_evaluate_query(query).get(doc_id)
+        doc_ranks = tfidf_evaluate_query(query)
+        ranks.append(doc_ranks.index(doc_id))
     return ranks
 
 
 def tfidf_evaluate_query(query):
-    tfidf = preprocessing.cal_tf_idf(cv_matrix)
+    #tfidf = preprocessing.cal_tf_idf(cv_matrix)
+    model = TfidfTransformer()
+    tfidf = model.fit_transform(cv_matrix)
     re_word2vec = {v: k for k, v in word2vec.items()}
     word_vecs = []
-    for word in query.split(' '):
+    for word in query:
         if word in re_word2vec:
             word_vector = tfidf.getcol(re_word2vec[word])
             word_vecs.append(word_vector.toarray())
@@ -82,6 +85,8 @@ def lm_lda_combo_evaluate_word_doc(document_index, word_index):
     lda_score = lda_evaluate_word_doc(document_index, word_index)
     return lda_score * lm_score
 
+
 if __name__ == '__main__':
-    test = tfidf_evaluate_query("hej fodbold rejse")
-    print()
+    diction = {10: ["hej", "fodbold", "rejse"], 2566: ["nej", "person", "hus"]}
+    test = tfidf_evaluate_queries(diction)
+    print(test)
