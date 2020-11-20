@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
+from rank_bm25 import BM25Okapi
+from tqdm import tqdm
 from gensim.models import TfidfModel
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 import preprocessing
@@ -13,6 +15,18 @@ wordfreq = cv_matrix.sum(axis=0)
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
+
+
+def bm25_evaluate_query(queries):
+    bm25 = BM25Okapi(list(doc2word.values()))
+    correct_doc_ranks = []
+    all_doc_scores = []
+    for doc_id, words in tqdm(queries.items()):
+        scores = bm25.get_scores(words.split(' '))
+        ranks = utility.rankify(dict(enumerate(scores)))
+        all_doc_scores.append(ranks)
+        correct_doc_ranks.append(ranks.index(doc_id))
+    return correct_doc_ranks, all_doc_scores
 
 
 def tfidf_evaluate_queries(queries):
@@ -89,5 +103,7 @@ def lm_lda_combo_evaluate_word_doc(document_index, word_index):
 
 if __name__ == '__main__':
     queries = query_handling.generate_document_queries(cv_matrix, word2vec, 100, 4, 4)
+    rank, _ = bm25_evaluate_query(queries)
+    print(rank)
     ranks = tfidf_evaluate_queries(queries)
     print(ranks)
