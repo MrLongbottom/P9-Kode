@@ -67,21 +67,14 @@ def evaluate_query(function, query_index, query_words, tell=False):
     return sorted_list.index(query_index), lst
 
 
-def lda_runthrough_query(queries, model_path, cv, words, mini_corpus, K, alpha, eta):
-    _, dt_matrix, tw_matrix = lda.run_lda(
-        model_path,
-        cv,
-        words,
-        mini_corpus,
-        Dictionary(mini_corpus),
-        "Generated Files/",
-        (K, alpha, eta))
-    results = []
-    for query in queries.items():
-        res, p_vec = evaluate_query(query[0], query[1].split(' '), tell=False)
-        results.append(res)
-        print("query done")
-    return np.mean(results)
+def lda_runthrough_query(model_path, documents, corpus, vocab, K, alpha, eta):
+    lda_model = lda.run_lda(model_path,
+                            documents,
+                            corpus,
+                            vocab,
+                            "Generated Files/",
+                            (K, alpha, eta))
+    return lda_model.log_perplexity(corpus)
 
 
 def generate_document_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1,
@@ -330,11 +323,11 @@ if __name__ == '__main__':
     cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
     dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
     word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
-    
+
     queries = generate_queries(cv_matrix, word2vec, 10, min_length=1, max_length=4)
     print(str(check_valid_queries(queries)))
     utility.save_vector_file("Generated Files/doc_queries.csv", queries)
-    
+
     queries = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 100, min_length=1, max_length=4)
     print(str(check_valid_queries(queries)))
     utility.save_vector_file("Generated Files/topic_queries.csv", queries)
