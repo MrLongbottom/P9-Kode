@@ -1,12 +1,12 @@
 import json
+import logging
 import math
 import itertools
 from functools import partial
 from multiprocessing import Pool
 from typing import Dict, List
-
 import time
-import preprocessing
+from gensim.models.callbacks import PerplexityMetric, ConvergenceMetric, CoherenceMetric
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -21,33 +21,47 @@ from scipy.stats import entropy
 from tqdm import tqdm
 from matplotlib.cbook import boxplot_stats
 from gensim.models import CoherenceModel
-
 import preprocessing
 import evaluate
 import utility
 
 
-def fit_lda(data: csr_matrix, vocab: Dict, K: int, alpha: float = None, eta: float = None):
+def fit_lda(documents, corpus, vocab, K: int, alpha: float = None, eta: float = None, eval=False):
     """
     Fit LDA from a scipy CSR matrix (data).
-    :param data: a csr_matrix representing the vectorized words
     :param vocab: a dictionary over the words
     :param K: number of topics
     :param alpha: the alpha prior weight of topics in documents
     :param eta: the eta prior weight of words in topics
     :return: a lda model trained on the data and vocab
     """
-    print('fitting lda...')
-    if alpha is None or eta is None:
-        return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
-                            id2word=vocab,
-                            num_topics=K)
+    if eval:
+        logging.basicConfig(filename='logstuff.log', format="%(asctime)s:%(levelname)s:%(message)s", level=logging.NOTSET)
+        perplexity_logger = PerplexityMetric(corpus=corpus, logger='shell')
+        convergence_logger = ConvergenceMetric(logger='shell')
+        coherence_cv_logger = CoherenceMetric(corpus=corpus, logger='shell', coherence='c_v', texts=documents)
+
+        print("fitting lda...")
+        model = LdaModel(corpus=corpus,
+                        id2word=vocab,
+                        num_topics=K,
+                        eval_every=1,
+                        passes=20,
+                        iterations=100,
+                        random_state=100,
+                        chunksize=100000,
+                        update_every=1,
+                        callbacks=[convergence_logger, perplexity_logger, coherence_cv_logger])
     else:
-        return LdaMulticore(matutils.Sparse2Corpus(data, documents_columns=False),
-                            id2word=vocab,
-                            num_topics=K,
-                            alpha=alpha,
-                            eta=eta)
+        print("fitting lda...")
+        model = LdaMulticore(corpus=corpus,
+                             id2word=vocab,
+                             num_topics=K,
+                             alpha=alpha,
+                             eta=eta,
+                             passes=20,
+                             iterations=100)
+    return model
 
 
 def save_lda(lda: LdaModel, path: str):
@@ -59,15 +73,14 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary,
-                           K) -> sp.dok_matrix:
+def create_document_topics(corpus, lda: LdaModel, filename: str) -> sp.csc_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
     :return: a topic_document matrix
     """
     document_topics = []
-    par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary, K=K)
+    par = partial(get_document_topics_from_model, lda=lda)
     with Pool(8) as p:
         document_topics.append(p.map(par, corpus))
     matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
@@ -80,7 +93,7 @@ def load_corpus(name: str):
     return corpus
 
 
-def get_document_topics_from_model(text: List[str], lda: LdaModel, dictionary: Dictionary, K) -> Dict[int, float]:
+def get_document_topics_from_model(bow, lda: LdaModel) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
@@ -88,8 +101,7 @@ def get_document_topics_from_model(text: List[str], lda: LdaModel, dictionary: D
     :param dictionary: the dictionary over the whole document
     :return: a dict with the topics in the given document based on the lda model
     """
-    document_bow = dictionary.doc2bow(text)
-    query = lda.get_document_topics(document_bow, minimum_probability=0.0)
+    query = lda.get_document_topics(bow, minimum_probability=0.0)
     # 1/K is alternative threshold
     return dict(query)
 
@@ -125,72 +137,20 @@ def word_cloud(corpus):
     wordcloud.to_image().show()
 
 
-def remove_from_rows_from_file(path, rows, separator=","):
-    if path[-4:] == ".csv":
-        doc = load_dict_file(path, separator=separator)
-        doc = [x for x in doc.values() if x not in rows]
-        preprocessing.save_vector_file(path, doc, seperator=separator)
-    elif path[-4:] == ".npz":
-        matrix = sp.load_npz(path)
-        s = matrix.shape
-        matrix = slice_sparse_row(matrix, rows)
-        s2 = matrix.shape
-        print()
-
-
-def slice_sparse_col(matrix: sp.csc_matrix, cols: List[int]):
-    """
-    Remove some columns from a sparse matrix.
-    :param matrix: CSC matrix.
-    :param cols: list of column numbers to be removed.
-    :return: modified matrix without the specified columns.
-    """
-    cols.sort()
-    ms = []
-    prev = -1
-    for c in cols:
-        # add slices of the matrix, skipping column c
-        ms.append(matrix[:, prev + 1:c - 1])
-        prev = c
-    ms.append(matrix[:, prev + 1:])
-    # combine matrix slices
-    return sp.hstack(ms)
-
-
-def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
-    """
-    Remove some rows from a sparse matrix.
-    :param matrix: CSR matrix.
-    :param rows: list of row numbers to be removed.
-    :return: modified matrix without the specified rows.
-    """
-    rows.sort()
-    ms = []
-    prev = -1
-    for r in rows:
-        # add slices of the matrix, skipping row r
-        ms.append(matrix[prev + 1:r - 1, :])
-        prev = r
-    ms.append(matrix[prev + 1:, :])
-    # combine matrix slices
-    return sp.vstack(ms)
-
-
-def run_lda(path: str, cv_matrix, words, corpus, dictionary, save_path, param_combination: tuple):
+def run_lda(path: str, documents, corpus, vocab, save_path, param_combination: tuple):
     # fitting the lda model and saving it
-    lda = fit_lda(cv_matrix, words, param_combination[0], param_combination[1], param_combination[2])
+    lda = fit_lda(documents, corpus, vocab, param_combination[0], param_combination[1], param_combination[2])
     save_lda(lda, path)
 
     # saving topic words to file
     print("creating topic words file")
     tw_matrix = save_topic_word_matrix(lda,
-                                       save_path + str(param_combination ) + "topic_word_matrix.npz")
+                                       save_path + str(param_combination) + "topic_word_matrix.npz")
 
     # saving document topics to file
     print("creating document topics file")
     dt_matrix = create_document_topics(corpus, lda,
-                                       save_path + str(param_combination) + "topic_doc_matrix.npz",
-                                       dictionary, param_combination[0])
+                                       save_path + str(param_combination) + "topic_doc_matrix.npz")
 
     return lda, dt_matrix, tw_matrix
 
@@ -277,15 +237,15 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     dt_eval_results = []
     tw_eval_results = []
     completed_dt_evals = []
-    mini_corpus = load_mini_corpus()
+    documents = utility.load_vector_file("Generated Files/doc2word.csv")
 
     test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
     for combination in tqdm(test_combinations):
         model = run_lda('LDA/model/' + str(combination[0:3]) + 'document_model',
                         cv_matrix,
                         words,
-                        mini_corpus,
-                        Dictionary(mini_corpus),
+                        documents,
+                        Dictionary(documents),
                         "Generated Files/",
                         combination[0:3])
         model_list.append(model)
@@ -311,25 +271,18 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     return model_list, coherence_values, dt_eval_results, tw_eval_results
 
 
-def load_mini_corpus():
-    mini_corpus = load_dict_file("Generated Files/doc2word.csv", separator='-')
-    mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
-    mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    return mini_corpus
-
-
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'LDA/model/document_model'
-    cv = sp.load_npz("Generated Files/count_vec_matrix.npz")
-    words = load_dict_file("Generated Files/word2vec.csv")
-    mini_corpus = utility.load_vector_file("Generated Files/doc2word.csv").values()
-    K = math.floor(math.sqrt(cv.shape[0]) / 2)
+    words = utility.load_vector_file("Generated Files/word2vec.csv")
+    documents = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
+    vocab = Dictionary.load("Generated Files/diction")
+    corpus = [vocab.doc2bow(doc) for doc in documents]
+    K = 10
     run_lda(model_path,
-            cv,
-            words,
-            mini_corpus,
-            Dictionary(mini_corpus),
+            documents,
+            corpus,
+            vocab,
             "Generated Files/",
             (K, None, None))
 
