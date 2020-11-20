@@ -141,7 +141,7 @@ def word_cloud(corpus):
 def run_lda(path: str, documents, corpus, vocab, save_path, param_combination: tuple):
     # fitting the lda model and saving it
     lda = fit_lda(documents, corpus, vocab, param_combination[0], param_combination[1], param_combination[2])
-    save_lda(lda, path)
+    save_lda(lda, path+str(param_combination))
 
     # saving topic words to file
     # print("creating topic words file")
