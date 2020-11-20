@@ -148,18 +148,45 @@ def save_fig(plot_file_name: str):
     plt.show()
 
 
+def plot_results(path: str):
+    with open("Generated Files/results.txt", 'r') as file:
+        results = file.readlines()
+        string_results = [x.replace('\n', '').replace('(', '').split('),') for x in results]
+        results = dict([(k, float(v)) for k, v in string_results])
+    results = {k: math.pow(2, -v) for k, v in results.items() if v >= -10}
+    results = dict(sorted(results.items(), key=lambda x: x[1]))
+    with open("Generated Files/results_old.txt", 'r') as file:
+        results_old = file.readlines()
+        string_results_old = [x.replace('\n', '').replace('(', '').split('),') for x in results_old]
+        results_old = dict([(k, float(v)) for k, v in string_results_old])
+    results_old = {k: math.pow(2, -v) for k, v in results_old.items() if v >= -10}
+    results_old = dict(sorted(results_old.items(), key=lambda x: x[1]))
+    combined_results = {**results, **results_old}
+    combined_results = dict(sorted(combined_results.items(), key=lambda x: x[1]))
+    plt.plot(combined_results.keys(), combined_results.values())
+    plt.xticks(rotation=90, fontsize=6)
+    plt.grid(1, axis='x')
+    plt.subplots_adjust(bottom=0.2)
+    plt.ylabel("Perplexity")
+    if path is not None:
+        fig = plt.gcf()
+        fig.savefig(path)
+    plt.show()
+
+
 if __name__ == '__main__':
-    model_path = 'LDA/model/document_model'
-    words = utility.load_vector_file("Generated Files/word2vec.csv")
-    documents = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
-    vocab = Dictionary(documents)
-    corpus = [vocab.doc2bow(doc) for doc in documents]
-
-    Ks = [10, 50, 100, 200, 300]
-    alphas = [0.5, 0.1, 0.01, 0.0001]
-    etas = [0.1, 0.01, 0.001, 0.0001]
-
-    fixed_params = {"model_path": "LDA/model/test_model", "documents": documents, "corpus": corpus, "vocab": vocab}
-    hyper_params = {"K": Ks, "alpha": alphas, "eta": etas}
-    general_grid_search(query_handling.lda_runthrough_query, fixed_params=fixed_params, hyper_params=hyper_params,
-                        plot=True, save_path="Generated Files/Evaluation/lda_test.png")
+    # model_path = 'LDA/model/document_model'
+    # words = utility.load_vector_file("Generated Files/word2vec.csv")
+    # documents = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
+    # vocab = Dictionary(documents)
+    # corpus = [vocab.doc2bow(doc) for doc in documents]
+    #
+    # Ks = [10]
+    # alphas = [0.1, 0.01]
+    # etas = [0.1]
+    #
+    # fixed_params = {"model_path": model_path, "documents": documents, "corpus": corpus, "vocab": vocab}
+    # hyper_params = {"K": Ks, "alpha": alphas, "eta": etas}
+    # general_grid_search(query_handling.lda_runthrough_query, fixed_params=fixed_params, hyper_params=hyper_params,
+    #                     plot=True, save_path="Generated Files/Evaluation/lda_test.png")
+    plot_results("Generated Files/combined_sorted_perplexity_low.pdf")
