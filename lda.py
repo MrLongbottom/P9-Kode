@@ -49,7 +49,6 @@ def fit_lda(documents, corpus, vocab, K: int, alpha: float = None, eta: float = 
                         passes=20,
                         iterations=100,
                         random_state=100,
-                        chunksize=100000,
                         update_every=1,
                         callbacks=[convergence_logger, perplexity_logger, coherence_cv_logger])
     else:
@@ -71,6 +70,7 @@ def save_lda(lda: LdaModel, path: str):
 
 def load_lda(path: str):
     return LdaModel.load(path)
+
 
 
 def create_document_topics(corpus, lda: LdaModel, filename: str) -> sp.csc_matrix:
@@ -140,7 +140,7 @@ def word_cloud(corpus):
 def run_lda(path: str, documents, corpus, vocab, save_path, param_combination: tuple):
     # fitting the lda model and saving it
     lda = fit_lda(documents, corpus, vocab, param_combination[0], param_combination[1], param_combination[2])
-    save_lda(lda, path)
+    save_lda(lda, path+str(param_combination))
 
     # saving topic words to file
     print("creating topic words file")

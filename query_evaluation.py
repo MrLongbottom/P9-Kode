@@ -2,7 +2,9 @@ import numpy as np
 import scipy.sparse as sp
 from rank_bm25 import BM25Okapi
 from tqdm import tqdm
-
+from gensim.models import TfidfModel
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
+import preprocessing
 import query_handling
 import utility
 
@@ -25,6 +27,36 @@ def bm25_evaluate_query(queries):
         all_doc_scores.append(ranks)
         correct_doc_ranks.append(ranks.index(doc_id))
     return correct_doc_ranks, all_doc_scores
+
+
+def tfidf_evaluate_queries(queries):
+    ranks = []
+    for doc_id, query in queries.items():
+        doc_ranks = tfidf_evaluate_query(query)
+        ranks.append(doc_ranks.index(doc_id))
+    return ranks
+
+
+def tfidf_evaluate_query(query):
+    tfidf = preprocessing.cal_tf_idf(cv_matrix)
+    #model = TfidfTransformer()
+    #tfidf = model.fit_transform(cv_matrix)
+    re_word2vec = {v: k for k, v in word2vec.items()}
+    word_vecs = []
+    for word in query.split(' '):
+        if word in re_word2vec:
+            word_vector = tfidf.getcol(re_word2vec[word])
+            word_vecs.append(word_vector.toarray())
+        else:
+            raise Exception("PHUCK!")
+    res = np.multiply.reduce(word_vecs)
+    # summing P(w|d) instead of multiplying them
+    # this is often necessary to get any values
+    if np.count_nonzero(res) == 0:
+        word_vecs = np.stack(word_vecs)
+        res = np.sum(word_vecs, axis=0)
+    ranks = utility.rankify(dict(enumerate(res)))
+    return ranks
 
 
 def lda_evaluate_word_doc(document_index, word_index):
@@ -73,3 +105,5 @@ if __name__ == '__main__':
     queries = query_handling.generate_document_queries(cv_matrix, word2vec, 100, 4, 4)
     rank, _ = bm25_evaluate_query(queries)
     print(rank)
+    ranks = tfidf_evaluate_queries(queries)
+    print(ranks)
