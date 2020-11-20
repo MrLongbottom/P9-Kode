@@ -85,7 +85,7 @@ def get_topic_representative_text_dataframe(df_dominant_topics):
     return df_docs_topics_sorted
 
 
-def visualization_word_count_for_topic_words(lda_model, corpus, corpus_path, lda_path, topic_start: int):
+def visualization_word_count_for_topic_words(lda_model, corpus, corpus_path, lda_path, topic_start: int, all_topics: bool = True):
     """
     Visualize the word counts and weights for 4 topics from the starting topic number.
     :param lda_model: The LDA model
@@ -105,20 +105,24 @@ def visualization_word_count_for_topic_words(lda_model, corpus, corpus_path, lda
     print("Word counts calculated")
     df = pd.DataFrame(out, columns=['word', 'topic_id', 'importance', 'word_count'])
 
+    topic_len = 4
+    if all_topics:
+        topic_len = len(topics)
+
     # Get max y-axis value for the weight values
     max_y = 0
-    for topic in range(topic_start, topic_start + 4):
+    for topic in range(topic_start, topic_start + topic_len):
         max_y = max(df.loc[df.topic_id == topic, "importance"].max(), max_y)
 
     # Plot Word Count and Weights of Topic Keywords
-    fig, axes = plt.subplots(2, 2, figsize=(16, 10), sharey=True)
+    fig, axes = plt.subplots(topic_len, 1, figsize=(8, 5 * topic_len), sharey=True)
     plot_word_counts_and_weights(axes, df, max_y, topic_start)
 
     fig.tight_layout(w_pad=2)
-    fig.subplots_adjust(top=0.9)
+    fig.subplots_adjust(top=0.95)
     fig.suptitle('Word Count and Importance of Topic Keywords', fontsize=22)
     _, model_name, corpus_name = get_save_path(lda_path, corpus_path)
-    save_fig("Word count and importance_" + corpus_name + "_" + model_name + "_topic " + str(topic_start) + "-" + str(topic_start + 3) + ".pdf")
+    save_fig("Word count and importance_" + corpus_name + "_" + model_name + "_topic " + str(topic_start) + "-" + str(topic_start + topic_len - 1) + ".pdf")
 
 
 def plot_word_counts_and_weights(axes, df, max_y, topic_start: int):
@@ -237,7 +241,7 @@ def create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_
 
 
 if __name__ == '__main__':
-    lda_path = "LDA/model/test_model(5, 0.1, 0.1)"
+    lda_path = "LDA/model/test_model(15, 0.01, 0.1)"
     corpus_path = "Generated Files/corpus2017"
     lda_model = load_lda(lda_path)
     corpus = load_corpus(corpus_path)
@@ -256,7 +260,7 @@ if __name__ == '__main__':
     display(df_topic_representative_text.head(10))
 
     # Visualize word count and word weights per topic
-    visualization_word_count_for_topic_words(lda_model, corpus, corpus_path, lda_path, topic_start=4)
+    visualization_word_count_for_topic_words(lda_model, corpus, corpus_path, lda_path, topic_start=0)
 
     # Visualize the distribution of amount of words over documents
-    visualization_distribution_doc_word_count(df_dominant_topics, corpus_path, lda_path, topic_start=4)
+    visualization_distribution_doc_word_count(df_dominant_topics, corpus_path, lda_path, topic_start=0)
