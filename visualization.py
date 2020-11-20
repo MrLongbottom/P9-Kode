@@ -133,7 +133,7 @@ def plot_word_counts_and_weights(axes, df, max_y, topic_start: int):
     :param max_y: The max y-axis value for the weights
     :param topic_start: The topic number to start visualizing from
     """
-    cols = [color for name, color in mcolors.TABLEAU_COLORS.items()]
+    cols = [color for name, color in mcolors.XKCD_COLORS.items()]
     for i, ax in enumerate(axes.flatten()):
         ax.bar(x='word', height="word_count", data=df.loc[df.topic_id == i + topic_start, :], color=cols[i], width=0.5,
                alpha=0.3, label='Word Count')
@@ -149,7 +149,7 @@ def plot_word_counts_and_weights(axes, df, max_y, topic_start: int):
         ax_twin.legend(loc='upper right')
 
 
-def visualization_distribution_doc_word_count(df_dominant_topics, corpus_path: str = "", lda_path: str = "", topic_start: int = 0):
+def visualization_distribution_doc_word_count(lda_model, df_dominant_topics, corpus_path: str = "", lda_path: str = "", topic_start: int = 0):
     """
     Visualizes a distribution of the amount of documents over word counts for the corpus and 4 chosen topics.
     Statistics of this are included in the corpus distribution.
@@ -164,7 +164,7 @@ def visualization_distribution_doc_word_count(df_dominant_topics, corpus_path: s
     # Plots distribution for whole corpus
     plot_word_count_distribution_corpus(corpus_path, doc_lens, max_word_count)
     # Plots distribution for topics
-    plot_word_count_distribution_topics(df_dominant_topics, max_word_count, topic_start, corpus_path, lda_path)
+    plot_word_count_distribution_topics(lda_model, df_dominant_topics, max_word_count, topic_start, corpus_path, lda_path)
 
 
 def plot_word_count_distribution_corpus(corpus_path, doc_lens, max_word_count):
@@ -190,15 +190,20 @@ def plot_word_count_distribution_corpus(corpus_path, doc_lens, max_word_count):
     plt.show()
 
 
-def plot_word_count_distribution_topics(df_dominant_topics, max_word_count, topic_start, corpus_path, lda_path):
+def plot_word_count_distribution_topics(lda_model, df_dominant_topics, max_word_count, topic_start, corpus_path, lda_path, all_topics: bool = True):
     """
     Plots the distribution of word counts for 4 topics, starting from the topic_start.
     :param df_dominant_topics: The document dominant topic dataframe
     :param max_word_count: The maximum amount of words in a document
     :param topic_start: The topic to start plotting from
     """
-    cols = [color for name, color in mcolors.TABLEAU_COLORS.items()]  # more colors: 'mcolors.XKCD_COLORS'
-    fig, axes = plt.subplots(2, 2, figsize=(16, 14), sharex=True, sharey=True)
+    topics = lda_model.show_topics(num_topics=0, formatted=False)
+    topic_len = 4
+    if all_topics:
+        topic_len = len(topics)
+
+    cols = [color for name, color in mcolors.XKCD_COLORS.items()]  # more colors: 'mcolors.XKCD_COLORS'
+    fig, axes = plt.subplots(topic_len, 1, figsize=(8, 5 * topic_len), sharex=True, sharey=True)
     for i, ax in enumerate(axes.flatten()):
         df_dominant_topic_sub = df_dominant_topics.loc[df_dominant_topics.Dominant_Topic == i + topic_start, :]
         doc_lens = [len(d) for d in df_dominant_topic_sub.Text]
@@ -209,11 +214,11 @@ def plot_word_count_distribution_topics(df_dominant_topics, max_word_count, topi
         ax.set_ylabel('Number of Documents', color=cols[i])
         ax.set_title('Topic: ' + str(i + topic_start), fontdict=dict(size=16, color=cols[i]))
     fig.tight_layout()
-    fig.subplots_adjust(top=0.90)
+    fig.subplots_adjust(top=0.95)
     plt.xticks(np.linspace(0, max_word_count, 15).astype(int))
     fig.suptitle('Distribution of Document Word Counts by Dominant Topic', fontsize=22)
     _, model_name, corpus_name = get_save_path(lda_path, corpus_path)
-    save_fig("Word count distribution per topic_" + corpus_name + "_" + model_name + "_topic " + str(topic_start) + "-" + str(topic_start + 3) + ".pdf")
+    save_fig("Word count distribution per topic_" + corpus_name + "_" + model_name + "_topic " + str(topic_start) + "-" + str(topic_start + topic_len - 1) + ".pdf")
 
 
 def get_save_path(model_path: str, corpus_path: str):
@@ -241,7 +246,7 @@ def create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_
 
 
 if __name__ == '__main__':
-    lda_path = "LDA/model/test_model(15, 0.01, 0.1)"
+    lda_path = "LDA/model/test_model(35, 0.01, 0.1)"
     corpus_path = "Generated Files/corpus2017"
     lda_model = load_lda(lda_path)
     corpus = load_corpus(corpus_path)
@@ -263,4 +268,4 @@ if __name__ == '__main__':
     visualization_word_count_for_topic_words(lda_model, corpus, corpus_path, lda_path, topic_start=0)
 
     # Visualize the distribution of amount of words over documents
-    visualization_distribution_doc_word_count(df_dominant_topics, corpus_path, lda_path, topic_start=0)
+    visualization_distribution_doc_word_count(lda_model, df_dominant_topics, corpus_path, lda_path, topic_start=0)
