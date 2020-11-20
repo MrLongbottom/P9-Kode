@@ -1,3 +1,6 @@
+from typing import List
+
+import scipy.sparse as sp
 
 
 def load_vector_file(filepath, separator=','):
@@ -7,13 +10,13 @@ def load_vector_file(filepath, separator=','):
     :param separator: optional separator between values (default: ',')
     :return: dictionary containing the content of the file
     """
-    with open(filepath, 'r') as file:
+    with open(filepath, 'r', encoding='utf-8') as file:
         dictionary = {}
         for line in file.readlines():
             kv = line.split(separator)
             value = kv[1].replace('\n', '')
-            if len(value.split(';')) > 1:
-                value = value.split(';')
+            if len(value.split(' ')) > 1:
+                value = value.split(' ')
             dictionary[int(kv[0])] = value
     return dictionary
 
@@ -36,7 +39,7 @@ def save_vector_file(filepath, content, separator=','):
     :return: None
     """
     print('Saving file "' + filepath + '".')
-    with open(filepath, "w") as file:
+    with open(filepath, "w", encoding='utf-8') as file:
         if isinstance(content, dict):
             for k, v in content.items():
                 file.write(str(k) + separator + str(v) + '\n')
@@ -44,3 +47,41 @@ def save_vector_file(filepath, content, separator=','):
             for i, c in enumerate(content):
                 file.write(str(i) + separator + str(c) + '\n')
     print('"' + filepath + '" has been saved.')
+
+
+def slice_sparse_col(matrix: sp.csc_matrix, cols: List[int]):
+    """
+    Remove some columns from a sparse matrix.
+    :param matrix: CSC matrix.
+    :param cols: list of column numbers to be removed.
+    :return: modified matrix without the specified columns.
+    """
+    cols.sort()
+    ms = []
+    prev = -1
+    for c in cols:
+        # add slices of the matrix, skipping column c
+        ms.append(matrix[:, prev + 1:c - 1])
+        prev = c
+    ms.append(matrix[:, prev + 1:])
+    # combine matrix slices
+    return sp.hstack(ms)
+
+
+def slice_sparse_row(matrix: sp.csr_matrix, rows: List[int]):
+    """
+    Remove some rows from a sparse matrix.
+    :param matrix: CSR matrix.
+    :param rows: list of row numbers to be removed.
+    :return: modified matrix without the specified rows.
+    """
+    rows.sort()
+    ms = []
+    prev = -1
+    for r in rows:
+        # add slices of the matrix, skipping row r
+        ms.append(matrix[prev + 1:r - 1, :])
+        prev = r
+    ms.append(matrix[prev + 1:, :])
+    # combine matrix slices
+    return sp.vstack(ms)

@@ -72,15 +72,15 @@ def load_lda(path: str):
     return LdaModel.load(path)
 
 
-def create_document_topics(corpus: List[str], lda: LdaModel, filename: str, dictionary: Dictionary,
-                           K) -> sp.csc_matrix:
+
+def create_document_topics(corpus, lda: LdaModel, filename: str) -> sp.csc_matrix:
     """
     Creates a topic_doc_matrix which describes the amount of topics in each document
     :param corpus: list of document strings
     :return: a topic_document matrix
     """
     document_topics = []
-    par = partial(get_document_topics_from_model, lda=lda, dictionary=dictionary, K=K)
+    par = partial(get_document_topics_from_model, lda=lda)
     with Pool(8) as p:
         document_topics.append(p.map(par, corpus))
     matrix = save_topic_doc_matrix(document_topics[0], lda, filename)
@@ -93,7 +93,7 @@ def load_corpus(name: str):
     return corpus
 
 
-def get_document_topics_from_model(text: List[str], lda: LdaModel, dictionary: Dictionary, K) -> Dict[int, float]:
+def get_document_topics_from_model(bow, lda: LdaModel) -> Dict[int, float]:
     """
     A method used concurrently in create_document_topics
     :param lda: the lda model
@@ -101,8 +101,7 @@ def get_document_topics_from_model(text: List[str], lda: LdaModel, dictionary: D
     :param dictionary: the dictionary over the whole document
     :return: a dict with the topics in the given document based on the lda model
     """
-    document_bow = dictionary.doc2bow(text)
-    query = lda.get_document_topics(document_bow, minimum_probability=0.0)
+    query = lda.get_document_topics(bow, minimum_probability=0.0)
     # 1/K is alternative threshold
     return dict(query)
 
@@ -144,17 +143,16 @@ def run_lda(path: str, documents, corpus, vocab, save_path, param_combination: t
     save_lda(lda, path+str(param_combination))
 
     # saving topic words to file
-    # print("creating topic words file")
-    # tw_matrix = save_topic_word_matrix(lda,
-    #                                    save_path + str(param_combination ) + "topic_word_matrix.npz")
-    #
-    # # saving document topics to file
-    # print("creating document topics file")
-    # dt_matrix = create_document_topics(documents, lda,
-    #                                    save_path + str(param_combination) + "topic_doc_matrix.npz",
-    #                                    vocab, param_combination[0])
+    print("creating topic words file")
+    tw_matrix = save_topic_word_matrix(lda,
+                                       save_path + str(param_combination) + "topic_word_matrix.npz")
 
-    return lda
+    # saving document topics to file
+    print("creating document topics file")
+    dt_matrix = create_document_topics(corpus, lda,
+                                       save_path + str(param_combination) + "topic_doc_matrix.npz")
+
+    return lda, dt_matrix, tw_matrix
 
 
 def save_topic_word_matrix(lda: LdaModel, name: str):
@@ -239,15 +237,15 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     dt_eval_results = []
     tw_eval_results = []
     completed_dt_evals = []
-    mini_corpus = load_mini_corpus()
+    documents = utility.load_vector_file("Generated Files/doc2word.csv")
 
     test_combinations = list(itertools.product(Ks, alphas, etas, thresholds))
     for combination in tqdm(test_combinations):
         model = run_lda('LDA/model/' + str(combination[0:3]) + 'document_model',
                         cv_matrix,
                         words,
-                        mini_corpus,
-                        Dictionary(mini_corpus),
+                        documents,
+                        Dictionary(documents),
                         "Generated Files/",
                         combination[0:3])
         model_list.append(model)
@@ -273,19 +271,12 @@ def compute_coherence_values_k_and_priors(cv_matrix, words, dictionary, texts,
     return model_list, coherence_values, dt_eval_results, tw_eval_results
 
 
-def load_mini_corpus():
-    mini_corpus = load_dict_file("Generated Files/doc2word.csv", separator='-')
-    mini_corpus = [x[1:-1].split(', ') for x in mini_corpus.values()]
-    mini_corpus = [[y[1:-1] for y in x] for x in mini_corpus]
-    return mini_corpus
-
-
 if __name__ == '__main__':
     # Loading data and preprocessing
     model_path = 'LDA/model/document_model'
     words = utility.load_vector_file("Generated Files/word2vec.csv")
     documents = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
-    vocab = Dictionary(documents)
+    vocab = Dictionary.load("Generated Files/diction")
     corpus = [vocab.doc2bow(doc) for doc in documents]
     K = 10
     run_lda(model_path,

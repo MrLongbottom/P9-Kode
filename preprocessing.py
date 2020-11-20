@@ -1,6 +1,8 @@
 import json
 import random
 import re
+
+import gensim
 import nltk
 import pandas as pd
 import scipy.sparse as sparse
@@ -50,59 +52,65 @@ def preprocess(filename_or_docs="documents.json", word_save_filename="Generated 
     # load documents file
     print(f'Step {step}: loading documents.')
     # If filename_or_docs is a string, load documents from path, else continue as if given documents directly
-    documents = load_document_file(filename_or_docs) if isinstance(filename_or_docs, str) else filename_or_docs
-    # filter documents and create corpus
-    documents, corpus = filter_documents(documents, doc_minimum_length)
+    document_ids = load_document_file(filename_or_docs) if isinstance(filename_or_docs, str) else filename_or_docs
+    # filter documents and create document set
+    document_ids, documents = filter_documents(document_ids, doc_minimum_length)
 
     # cut off words that are used too often or too little (max/min document frequency) or are stop words
     step += 1
     print(f'Step {step}: stop words and word frequency.')
-    words = cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfidf=False)
+    # Filter words based on rarity
+    vocab = gensim.corpora.Dictionary(documents)
+    vocab.filter_extremes(word_minimum_count, word_maximum_doc_percent)
+    # Get stopwords
+    nltk.download('stopwords')
+    stop_words = stopwords.words('danish')
+    stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
+    # Remove stopwords
+    words = vocab.token2id
+    bad_ids = []
+    for sw in stop_words:
+        if sw in words:
+            bad_ids.append(words[sw])
+    vocab.filter_tokens(bad_ids=bad_ids)
+    vocab.compactify()
 
-    print(len(words))
     if word_check:
         # cut off words that are not used in danish word databases or are wrong word type
         step += 1
         print(f"Step {step}: word databases and POS-tagging.")
-        words = word_checker(words)
+        words = vocab.token2id
+        bad_ids = word_checker(words)
+        for sw in stop_words:
+            if sw in words:
+                bad_ids.append(words[sw])
+        vocab.filter_tokens(bad_ids=bad_ids)
+        vocab.compactify()
 
     # Stemming to combine word declensions
     step += 1
     print(f"Step {step}: Apply Stemming / Lemming")
-    w_len = len(words)
-    corpus, words, documents = stem_lem(corpus, words, documents, stem_or_lem=False)
-    print(f"Removed {w_len-len(words)} words.")
-
-    # filter documents to remove docs that now contain no words (after all the word filtering)
-    step += 1
-    print(f"Step {step}: re-filter documents.")
-    corpus, documents = refilter_docs(words, corpus, 1, documents)
+    words = list(vocab.token2id.keys())
+    vocab, documents = stem_lem(words, documents, stem_or_lem=False)
 
     # transform documents into a matrix containing counts for each word in each document
     step += 1
     print(f"Step {step}: doc-word matrix construction")
-    cv2 = CountVectorizer(vocabulary=words)
-    cv_matrix = cv2.fit_transform(corpus)
+    words = list(vocab.token2id.keys())
+    cv = CountVectorizer(vocabulary=words)
+    cv_matrix = cv.fit_transform([' '.join(x) for x in documents])
     print("Matrix is: " + str(cv_matrix.shape))
-
-    # Get new word dict (without the cut words)
-    words = value_dictionizer(cv2.get_feature_names())
-    # Get new corpus (without the cut words)
-    corpus = cv2.inverse_transform(cv_matrix)
-    corpus = [list(x) for x in corpus]
 
     if save:
         step += 1
         print(f'Step {step}: saving files.')
-        utility.save_vector_file(word_save_filename, words.values())
-        utility.save_vector_file(doc_save_filename, documents.keys())
-        corpus_save = [';'.join(x) for x in corpus]
-        utility.save_vector_file(doc_word_save_filename, corpus_save)
+        utility.save_vector_file(word_save_filename, words)
+        utility.save_vector_file(doc_save_filename, document_ids.keys())
+        utility.save_vector_file(doc_word_save_filename, [' '.join(x) for x in documents])
+        vocab.save("Generated Files/vocab")
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
-        with open("Generated Files/corpus", 'w', encoding='utf8') as json_file:
-            json.dump(corpus, json_file, ensure_ascii=False)
     print('Finished Preprocessing Procedure.')
-    return cv_matrix, words, corpus
+    return cv_matrix, vocab, documents
 
 
 def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfidf: bool = False):
@@ -124,7 +132,7 @@ def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfid
         return words
 
 
-def stem_lem(corpus, words, documents, stem_or_lem: bool = False):
+def stem_lem(words, documents, stem_or_lem: bool = False):
     """
     Updates a word list and a corpus to use stemmed words.
     :param stem_or_lem: bool indicating whether to apply stemming or lemmatizer. True is stem, False is lem.
@@ -173,16 +181,23 @@ def stem_lem(corpus, words, documents, stem_or_lem: bool = False):
         words.extend([x for x in add if x not in words])
 
     # update corpus to use stemmed words
-    for x in tqdm(range(len(corpus))):
-        sen = corpus[x]
-        sentence = sen.split(' ')
+    for x in tqdm(range(len(documents))):
+        sentence = documents[x]
         for i in range(len(sentence)):
             word = sentence[i]
             if word in translator:
                 sentence[i] = translator[word]
-        corpus[x] = ' '.join(sentence)
+        sentence = ' '.join(sentence)
+        sentence = sentence.split(' ')
+        documents[x] = sentence
 
-    return corpus, words, dict(zip(documents.keys(), corpus))
+    diction = gensim.corpora.Dictionary(documents)
+    d_words = diction.token2id
+    good_ids = [d_words[x] for x in words]
+    diction.filter_tokens(good_ids=good_ids)
+    diction.compactify()
+
+    return diction, documents
 
 
 def find_indexes(dict, values):
@@ -284,9 +299,9 @@ def filter_documents(documents, doc_minimum_length):
             bad_docs.append(doc)
             continue
         # reconstruct documents
+        corpus.append(text)
         text = ' '.join(text)
         documents[doc[0]] = text
-        corpus.append(text)
     for doc in bad_docs:
         del documents[doc[0]]
     print('Filtered documents. ' + str(len(documents)) + ' remaining')
@@ -299,7 +314,7 @@ def csv_append(filename, content, index=0):
         :param filename: path of file to save.
         :param content: list of content to save.
         :return: None
-        """
+    """
     print('Saving file "' + filename + '".')
     with open(filename, "a") as file:
         id_counter = index
@@ -311,7 +326,6 @@ def csv_append(filename, content, index=0):
 
 def new_word_db_fetch(words, wik_word_index=0, wik_nonword_index=0):
     # setup Wiktionary Parser
-
     wik_parser = WiktionaryParser()
     wik_parser.set_default_language('danish')
     wik_parser.RELATIONS = []
@@ -356,13 +370,24 @@ def word_checker(words):
         wik_words.extend(new_words)
 
     # Test how many databases contain the given words
-    bad_words = []
+    bad_ids = []
     for word in tqdm(words):
         if word not in wik_words and word not in dannet_words:
-            bad_words.append(word)
-    print(str(len(bad_words)) + " words were not supported by any databases.")
-    return [x for x in words if x not in bad_words]
+            bad_ids.append(words.get(word))
+    print(str(len(bad_ids)) + " words were not supported by any databases.")
+    return bad_ids
 
 
 if __name__ == '__main__':
-    cv_matrix, words, corpus = preprocess()
+    """
+    words = utility.load_vector_file("Generated Files/word2vec.csv")
+    docs = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
+    words2 = {}
+    for doc in docs:
+        for word in doc:
+            words2[word] = 0
+    words3 = gensim.corpora.Dictionary(docs)
+    """
+
+    print("Hello World!")
+    cv_matrix, vocab, documents = preprocess()
