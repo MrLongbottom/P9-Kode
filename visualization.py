@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from grid_search import save_fig
 from lda import load_lda, load_corpus
+from preprocessing import preprocess
 
 
 def create_doc_main_topic_df(ldamodel, corpus, term_doc_freq):
@@ -246,18 +247,20 @@ def create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_
 
 
 if __name__ == '__main__':
-    lda_path = "LDA/model/test_model(35, 0.01, 0.1)"
-    corpus_path = "Generated Files/corpus2017"
+    lda_path = "LDA/model/final_model(30, 0.1, 0.1)(30, 0.1, 0.1)"
+    corpus_name = "corpus2017"
     lda_model = load_lda(lda_path)
-    corpus = load_corpus(corpus_path)
+
+    cv_matrix, vocab, documents = preprocess("Data/2017_data.json")
+    #corpus = [vocab.doc2bow(doc) for doc in documents]
 
     # Create Dictionary
-    id2word = corpora.Dictionary(corpus)
+    id2word = corpora.Dictionary(documents)
     # Create Corpus: Term Document Frequency
-    tdf = [id2word.doc2bow(text) for text in corpus]
+    tdf = [id2word.doc2bow(text) for text in documents]
 
     # Create or load main dataframe file
-    df_dominant_topics = create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_path)
+    df_dominant_topics = create_or_load_doc_topic_dataframe(lda_model, documents, tdf, lda_path, corpus_name)
     display(df_dominant_topics.head(10))
 
     # Get a representative text for each topic from the document with the highest topic contribution
@@ -265,7 +268,7 @@ if __name__ == '__main__':
     display(df_topic_representative_text.head(10))
 
     # Visualize word count and word weights per topic
-    visualization_word_count_for_topic_words(lda_model, corpus, corpus_path, lda_path, topic_start=0)
+    visualization_word_count_for_topic_words(lda_model, documents, corpus_name, lda_path, topic_start=0)
 
     # Visualize the distribution of amount of words over documents
-    visualization_distribution_doc_word_count(lda_model, df_dominant_topics, corpus_path, lda_path, topic_start=0)
+    visualization_distribution_doc_word_count(lda_model, df_dominant_topics, corpus_name, lda_path, topic_start=0)
