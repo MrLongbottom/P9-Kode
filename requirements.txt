@@ -10,3 +10,4 @@ sklearn
 tqdm
 wiktionaryparser
 IPython
+wordcloud

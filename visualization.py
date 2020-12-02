@@ -178,11 +178,11 @@ def plot_word_count_distribution_corpus(corpus_path, doc_lens, max_word_count):
     plt.figure(figsize=(16, 7))
     plt.hist(doc_lens, bins=max_word_count, color='navy')
     # Statistics
-    plt.text(max_word_count - 100, 135, "Mean   : " + str(round(np.mean(doc_lens))))
-    plt.text(max_word_count - 100, 120, "Median : " + str(round(np.median(doc_lens))))
-    plt.text(max_word_count - 100, 105, "Stdev   : " + str(round(np.std(doc_lens))))
-    plt.text(max_word_count - 100, 90, "1%ile    : " + str(round(np.quantile(doc_lens, q=0.01))))
-    plt.text(max_word_count - 100, 75, "99%ile  : " + str(round(np.quantile(doc_lens, q=0.99))))
+    plt.text(max_word_count - 500, 135, "Mean   : " + str(round(np.mean(doc_lens))))
+    plt.text(max_word_count - 500, 120, "Median : " + str(round(np.median(doc_lens))))
+    plt.text(max_word_count - 500, 105, "Stdev   : " + str(round(np.std(doc_lens))))
+    plt.text(max_word_count - 500, 90, "1%ile    : " + str(round(np.quantile(doc_lens, q=0.01))))
+    plt.text(max_word_count - 500, 75, "99%ile  : " + str(round(np.quantile(doc_lens, q=0.99))))
     plt.gca().set(xlim=(0, max_word_count), ylabel='Number of Documents', xlabel='Document Word Count')
     plt.tick_params(size=16)
     plt.xticks(np.linspace(0, max_word_count, 15).astype(int))
@@ -247,17 +247,16 @@ def create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_
 
 
 if __name__ == '__main__':
-    lda_path = "LDA/model/test_model(5, 0.1, 0.1)"
+    lda_path = "LDA/model/final_model(30, 0.1, 0.1)(30, 0.1, 0.1)"
     corpus_name = "corpus2017"
     lda_model = load_lda(lda_path)
 
     cv_matrix, vocab, documents = preprocess("2017_data.json")
-    #corpus = [vocab.doc2bow(doc) for doc in documents]
 
     # Create Dictionary
     id2word = corpora.Dictionary(documents)
     # Create Corpus: Term Document Frequency
-    tdf = [id2word.doc2bow(text) for text in documents]
+    tdf = [vocab.doc2bow(text) for text in documents]
 
     # Create or load main dataframe file
     df_dominant_topics = create_or_load_doc_topic_dataframe(lda_model, documents, tdf, lda_path, corpus_name)
