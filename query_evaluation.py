@@ -76,6 +76,15 @@ def lm_evaluate_query(query: List[str]):
     return np.prod(word_probability)
 
 
+def precision_at_X(query_value_matrix, query_answers, limit):
+    hit = 0
+    for i, query_values in enumerate(query_value_matrix):
+        topX = query_values.argsort()[-limit:][::-1]
+        if query_answers in topX:
+            hit += 1
+    return hit
+
+
 if __name__ == '__main__':
     paths = ["queries/" + x for x in os.listdir("queries/")]
     queries = [utility.load_vector_file(x) for x in paths]
