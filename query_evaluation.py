@@ -1,14 +1,13 @@
-from typing import Tuple, List
+import os
+from typing import List
 
 import numpy as np
 import scipy.sparse as sp
 from rank_bm25 import BM25Okapi
-from tqdm import tqdm
 
 import preprocessing
 import query_handling
 import utility
-import os
 
 cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
 dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
@@ -56,19 +55,6 @@ def lda_evaluate(query: List[str], result_matrix: np.ndarray):
     return p_vec
 
 
-def lda_evaluate_word_doc(document_index, word_index):
-    """
-    The LDA evaluates a document against a word and returns the score
-    :param document_index: document
-    :param word_index: word
-    :return: a score
-    """
-    word_topics = tw_matrix.getcol(word_index)
-    doc_topics = dt_matrix[document_index].T
-    score = word_topics.multiply(doc_topics).sum()
-    return score
-
-
 def lm_evaluate_query(query: List[str]):
     """
     The language model evaluates a document against a word and returns the score
@@ -88,18 +74,6 @@ def lm_evaluate_query(query: List[str]):
                             w_freq_in_D / number_of_word_tokens))
             word_probability.append(score)
     return np.prod(word_probability)
-
-
-def lm_lda_combo_evaluate_word_doc(document_index, word_index):
-    """
-    Combines the two score functions from LDA and LM
-    :param document_index: document
-    :param word_index: word
-    :return: a score
-    """
-    lm_score = lm_evaluate_query(word_index)
-    lda_score = lda_evaluate_word_doc(document_index, word_index)
-    return lda_score * lm_score
 
 
 if __name__ == '__main__':
