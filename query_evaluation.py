@@ -13,7 +13,7 @@ import os
 cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
 dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
 tw_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_word_matrix.npz")
-wordfreq = cv_matrix.sum(axis=0)
+wordfreq = np.array(cv_matrix.sum(axis=0))[0]
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
@@ -47,7 +47,7 @@ def tfidf_evaluate_query(query):
 
 
 def lda_evaluate(query: List[str], result_matrix: np.ndarray):
-    word_indexes = [inverse_w2v[x] for x in query[1]]
+    word_indexes = [inverse_w2v[x] for x in query]
 
     value = []
     for word_index in word_indexes:
@@ -69,21 +69,25 @@ def lda_evaluate_word_doc(document_index, word_index):
     return score
 
 
-def lm_evaluate_word_doc(document_index, word_index):
+def lm_evaluate_query(query: List[str]):
     """
     The language model evaluates a document against a word and returns the score
-    :param document_index: document
-    :param word_index: word
+    :param query: a list of query words
     :return: a score
     """
-    N_d = len(doc2word[document_index])
-    tf = cv_matrix[document_index, word_index]
-    w_freq_in_D = wordfreq[word_index].data[0]
-    number_of_word_tokens = len(word2vec)
-    score = ((N_d / (N_d + dirichlet_smoothing)) * (tf / N_d)) + \
-            ((1 - (N_d / (N_d + dirichlet_smoothing))) * (
-                    w_freq_in_D / number_of_word_tokens))
-    return score
+    word_indexes = [inverse_w2v[x] for x in query]
+    word_probability = []
+    for word_index in word_indexes:
+        for document_index in range(dt_matrix.shape[0]):
+            N_d = len(doc2word[document_index])
+            tf = cv_matrix[document_index, word_index]
+            w_freq_in_D = wordfreq[word_index]
+            number_of_word_tokens = len(word2vec)
+            score = ((N_d / (N_d + dirichlet_smoothing)) * (tf / N_d)) + \
+                    ((1 - (N_d / (N_d + dirichlet_smoothing))) * (
+                            w_freq_in_D / number_of_word_tokens))
+            word_probability.append(score)
+    return np.prod(word_probability)
 
 
 def lm_lda_combo_evaluate_word_doc(document_index, word_index):
@@ -93,7 +97,7 @@ def lm_lda_combo_evaluate_word_doc(document_index, word_index):
     :param word_index: word
     :return: a score
     """
-    lm_score = lm_evaluate_word_doc(document_index, word_index)
+    lm_score = lm_evaluate_query(word_index)
     lda_score = lda_evaluate_word_doc(document_index, word_index)
     return lda_score * lm_score
 
@@ -103,9 +107,9 @@ if __name__ == '__main__':
     queries = [utility.load_vector_file(x) for x in paths]
     matrices = []
     for queryset in queries:
-        matrices.append(np.array(query_handling.evaluate_queries(queryset.items(), bm25_evaluate_query)))
+        matrices.append(np.array(query_handling.evaluate_queries(queryset.items(), lm_evaluate_query)))
     # save matrix
-    np.save("bm25_evaluate_matrices", matrices)
+    np.save("lm_evaluate_matrices", matrices)
 
     # load matrix
     # matrix = list(np.load("lda_evaluate_matrices.npy"))
