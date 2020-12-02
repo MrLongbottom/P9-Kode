@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 import scipy.sparse as sp
@@ -18,37 +18,22 @@ doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 inverse_w2v = {v: k for k, v in word2vec.items()}
+result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
+bm25 = BM25Okapi(list(doc2word.values()))
 
 
-def bm25_evaluate_query(queries):
-    bm25 = BM25Okapi(list(doc2word.values()))
-    correct_doc_ranks = []
-    all_doc_scores = []
-    for doc_id, words in tqdm(queries.items()):
-        scores = bm25.get_scores(words.split(' '))
-        ranks = utility.rankify(dict(enumerate(scores)))
-        all_doc_scores.append(ranks)
-        correct_doc_ranks.append(ranks.index(doc_id))
-    return correct_doc_ranks, all_doc_scores
-
-
-def tfidf_evaluate_queries(queries):
-    ranks = []
-    for doc_id, query in queries.items():
-        doc_ranks = tfidf_evaluate_query(query)
-        ranks.append(doc_ranks.index(doc_id))
-    return ranks
+def bm25_evaluate_query(query: List[str]):
+    return bm25.get_scores(query)
 
 
 def tfidf_evaluate_query(query):
     tfidf = preprocessing.cal_tf_idf(cv_matrix)
     # model = TfidfTransformer()
     # tfidf = model.fit_transform(cv_matrix)
-    re_word2vec = {v: k for k, v in word2vec.items()}
     word_vecs = []
-    for word in query.split(' '):
-        if word in re_word2vec:
-            word_vector = tfidf.getcol(re_word2vec[word])
+    for word in query:
+        if word in inverse_w2v:
+            word_vector = tfidf.getcol(inverse_w2v[word])
             word_vecs.append(word_vector.toarray())
         else:
             raise Exception("PHUCK!")
@@ -58,16 +43,11 @@ def tfidf_evaluate_query(query):
     if np.count_nonzero(res) == 0:
         word_vecs = np.stack(word_vecs)
         res = np.sum(word_vecs, axis=0)
-    ranks = utility.rankify(dict(enumerate(res)))
-    return ranks
+    return res
 
 
-def lda_evaluate(query: Tuple[int, str or list], result_matrix: np.ndarray):
-    document_index = query[0]
-    if type(query[1]) == str:
-        word_indexes = [inverse_w2v[x] for x in [query[1]]]
-    else:
-        word_indexes = [inverse_w2v[x] for x in query[1]]
+def lda_evaluate(query: List[str], result_matrix: np.ndarray):
+    word_indexes = [inverse_w2v[x] for x in query[1]]
 
     value = []
     for word_index in word_indexes:
@@ -123,9 +103,9 @@ if __name__ == '__main__':
     queries = [utility.load_vector_file(x) for x in paths]
     matrices = []
     for queryset in queries:
-        matrices.append(np.array(query_handling.evaluate_queries(queryset.items(), dt_matrix, tw_matrix, lda_evaluate)))
+        matrices.append(np.array(query_handling.evaluate_queries(queryset.items(), bm25_evaluate_query)))
     # save matrix
-    np.save("lda_evaluate_matrices", matrices)
+    np.save("bm25_evaluate_matrices", matrices)
 
     # load matrix
-    matrix = list(np.load("lda_evaluate_matrices.npy"))
+    # matrix = list(np.load("lda_evaluate_matrices.npy"))
