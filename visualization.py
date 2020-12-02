@@ -247,7 +247,7 @@ def create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_
 
 
 if __name__ == '__main__':
-    lda_path = "LDA/model/final_model(30, 0.1, 0.1)(30, 0.1, 0.1)"
+    lda_path = "LDA/model/test_model(5, 0.1, 0.1)"
     corpus_name = "corpus2017"
     lda_model = load_lda(lda_path)
 
