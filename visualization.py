@@ -251,7 +251,7 @@ if __name__ == '__main__':
     corpus_name = "corpus2017"
     lda_model = load_lda(lda_path)
 
-    cv_matrix, vocab, documents = preprocess("Data/2017_data.json")
+    cv_matrix, vocab, documents = preprocess("2017_data.json")
     #corpus = [vocab.doc2bow(doc) for doc in documents]
 
     # Create Dictionary
