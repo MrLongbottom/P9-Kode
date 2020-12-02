@@ -4,11 +4,11 @@ import numpy as np
 import scipy.sparse as sp
 from rank_bm25 import BM25Okapi
 from tqdm import tqdm
-from gensim.models import TfidfModel
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
+
 import preprocessing
 import query_handling
 import utility
+import os
 
 cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
 dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
@@ -42,8 +42,8 @@ def tfidf_evaluate_queries(queries):
 
 def tfidf_evaluate_query(query):
     tfidf = preprocessing.cal_tf_idf(cv_matrix)
-    #model = TfidfTransformer()
-    #tfidf = model.fit_transform(cv_matrix)
+    # model = TfidfTransformer()
+    # tfidf = model.fit_transform(cv_matrix)
     re_word2vec = {v: k for k, v in word2vec.items()}
     word_vecs = []
     for word in query.split(' '):
@@ -62,16 +62,18 @@ def tfidf_evaluate_query(query):
     return ranks
 
 
-def grid_lda_evaluate(query: Tuple[int, str], result_matrix: np.ndarray):
+def lda_evaluate(query: Tuple[int, str or list], result_matrix: np.ndarray):
     document_index = query[0]
-    word_indexes = [inverse_w2v[x] for x in query[1].split(' ')]
+    if type(query[1]) == str:
+        word_indexes = [inverse_w2v[x] for x in [query[1]]]
+    else:
+        word_indexes = [inverse_w2v[x] for x in query[1]]
 
     value = []
     for word_index in word_indexes:
         value.append(result_matrix[:, word_index])
     p_vec = np.multiply.reduce(value)
-    res = utility.rankify(dict(enumerate(p_vec))).index(document_index)
-    return res, p_vec
+    return p_vec
 
 
 def lda_evaluate_word_doc(document_index, word_index):
@@ -100,7 +102,7 @@ def lm_evaluate_word_doc(document_index, word_index):
     number_of_word_tokens = len(word2vec)
     score = ((N_d / (N_d + dirichlet_smoothing)) * (tf / N_d)) + \
             ((1 - (N_d / (N_d + dirichlet_smoothing))) * (
-                w_freq_in_D / number_of_word_tokens))
+                    w_freq_in_D / number_of_word_tokens))
     return score
 
 
@@ -117,6 +119,13 @@ def lm_lda_combo_evaluate_word_doc(document_index, word_index):
 
 
 if __name__ == '__main__':
-    queries = query_handling.generate_document_queries(cv_matrix, word2vec, 100, 4, 4)
-    ranks = query_handling.lda_evaluate_document_query(queries.items(), dt_matrix, tw_matrix, grid_lda_evaluate)
-    print(ranks)
+    paths = ["queries/" + x for x in os.listdir("queries/")]
+    queries = [utility.load_vector_file(x) for x in paths]
+    matrices = []
+    for queryset in queries:
+        matrices.append(np.array(query_handling.evaluate_queries(queryset.items(), dt_matrix, tw_matrix, lda_evaluate)))
+    # save matrix
+    np.save("lda_evaluate_matrices", matrices)
+
+    # load matrix
+    matrix = list(np.load("lda_evaluate_matrices.npy"))

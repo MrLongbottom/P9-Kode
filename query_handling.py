@@ -77,12 +77,12 @@ def lda_runthrough_query(model_path, documents, corpus, vocab, K, alpha, eta):
     return lda_model.log_perplexity(corpus)
 
 
-def lda_evaluate_document_query(queries, dt_matrix, tw_matrix, evaluation_function):
+def evaluate_queries(queries, dt_matrix, tw_matrix, evaluation_function):
     result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
     results = []
     for query in tqdm(queries):
-        res, p_vec = evaluation_function(query, result_matrix)
-        results.append(res)
+        p_vec = evaluation_function(query, result_matrix)
+        results.append(p_vec)
     return results
 
 
