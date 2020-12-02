@@ -25,7 +25,7 @@ def bm25_evaluate_query(query: List[str]):
     return bm25.get_scores(query)
 
 
-def tfidf_evaluate_query(query):
+def tfidf_evaluate_query(query: List[str]):
     tfidf = preprocessing.cal_tf_idf(cv_matrix)
     # model = TfidfTransformer()
     # tfidf = model.fit_transform(cv_matrix)
@@ -45,9 +45,8 @@ def tfidf_evaluate_query(query):
     return res
 
 
-def lda_evaluate(query: List[str], result_matrix: np.ndarray):
+def lda_evaluate(query: List[str]):
     word_indexes = [inverse_w2v[x] for x in query]
-
     value = []
     for word_index in word_indexes:
         value.append(result_matrix[:, word_index])
@@ -62,8 +61,9 @@ def lm_evaluate_query(query: List[str]):
     :return: a score
     """
     word_indexes = [inverse_w2v[x] for x in query]
-    word_probability = []
+    prob = []
     for word_index in word_indexes:
+        word_probability = []
         for document_index in range(dt_matrix.shape[0]):
             N_d = len(doc2word[document_index])
             tf = cv_matrix[document_index, word_index]
@@ -73,7 +73,8 @@ def lm_evaluate_query(query: List[str]):
                     ((1 - (N_d / (N_d + dirichlet_smoothing))) * (
                             w_freq_in_D / number_of_word_tokens))
             word_probability.append(score)
-    return np.prod(word_probability)
+        prob.append(np.array(word_probability))
+    return np.multiply.reduce(prob)
 
 
 def precision_at_X(query_value_matrix, query_answers, limit):
