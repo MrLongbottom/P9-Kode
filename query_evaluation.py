@@ -1,4 +1,6 @@
 import os
+from functools import partial
+from multiprocessing import Pool
 from typing import List
 
 import numpy as np
@@ -97,32 +99,41 @@ def mean_average_precision():
                 # GTP is answer
                 AP.append(1 / (ranks[query_n].index(answer) + 1))
         else:
-            for query_n, (answer, _) in tqdm(list(enumerate(queries[i]))):
-                topic = dt_matrix.getcol(answer).toarray()
-                threshold = topic.mean()
-                gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
-                gtp_ranks = [ranks[query_n].index(gtp_id) for gtp_id in gtp_ids]
-                precision = [(i + 1) / (gtp_ranks[i] + 1) for i in range(len(gtp_ranks))]
-                AP.append(np.mean(precision))
+            with Pool(processes=8) as p:
+                max_ = len(list(enumerate(queries[i])))
+                with tqdm(total=max_) as pbar:
+                    for _, score in enumerate(p.starmap(partial(inner_func, ranks), list(enumerate(queries[i])))):
+                        AP.append(score)
+                        pbar.update()
         MAP.append(np.mean(AP))
         print(np.mean(AP))
     return MAP
 
 
+def inner_func(ranks, query_n, answer):
+    topic = dt_matrix.getcol(answer[0]).toarray()
+    threshold = topic.mean()
+    gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
+    gtp_ranks = [ranks[query_n].index(gtp_id) for gtp_id in gtp_ids]
+    gtp_ranks.sort()
+    precision = [(i + 1) / (gtp_ranks[i] + 1) for i in range(len(gtp_ranks))]
+    return np.mean(precision)
+
+
 if __name__ == '__main__':
     paths = ["queries/" + x for x in os.listdir("queries/")]
+    paths.sort()
     doc_queries = [utility.load_vector_file(x) for x in paths[:4]]
-    queries = [[(x,y) for x,y in q.items()] for q in doc_queries]
+    queries = [[(x, y) for x, y in q.items()] for q in doc_queries]
     queries.extend([utility.load_vecter_file_nonunique(x) for x in paths[4:]])
-    matrices = []
-    #for queryset in queries:
+    # matrices = []
+    # for queryset in queries:
     #    matrices.append(np.array(query_handling.evaluate_queries(queryset, bm25_evaluate_query)))
-    # save matrix
-    #np.save("bm25_evaluate_matrices", matrices)
+    # # save matrix
+    # np.save("bm25_evaluate_matrices", matrices)
 
     # load matrix
     matrices = list(np.load("bm25_evaluate_matrices.npy"))
 
     map = mean_average_precision()
-    print(map)
-
+    utility.save_vector_file("Generated Files/bm25_res_map", map)
