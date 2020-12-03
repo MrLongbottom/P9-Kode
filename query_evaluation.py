@@ -102,7 +102,7 @@ def mean_average_precision():
                 threshold = topic.mean()
                 gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
                 gtp_ranks = [ranks[query_n].index(gtp_id) for gtp_id in gtp_ids]
-                precision = [(i + 1) / (gtp_ranks[i] + 1) for i in range(len(gtp_ranks))]
+                precision = [(i + 1) / (rank + 1) for i, rank in enumerate(gtp_ranks)]
                 AP.append(np.mean(precision))
         MAP.append(np.mean(AP))
         print(np.mean(AP))
@@ -111,6 +111,7 @@ def mean_average_precision():
 
 if __name__ == '__main__':
     paths = ["queries/" + x for x in os.listdir("queries/")]
+    paths.sort()
     doc_queries = [utility.load_vector_file(x) for x in paths[:4]]
     queries = [[(x,y) for x,y in q.items()] for q in doc_queries]
     queries.extend([utility.load_vecter_file_nonunique(x) for x in paths[4:]])
