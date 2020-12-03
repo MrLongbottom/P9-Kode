@@ -4,6 +4,7 @@ from typing import List
 import numpy as np
 import scipy.sparse as sp
 from rank_bm25 import BM25Okapi
+from tqdm import tqdm
 
 import preprocessing
 import query_handling
@@ -88,12 +89,39 @@ def precision_at_X(query_value_matrix, query_answers, limit):
 
 if __name__ == '__main__':
     paths = ["queries/" + x for x in os.listdir("queries/")]
-    queries = [utility.load_vector_file(x) for x in paths]
+    doc_queries = [utility.load_vector_file(x) for x in paths[:4]]
+    queries = [[(x,y) for x,y in q.items()] for q in doc_queries]
+    queries.extend([utility.load_vecter_file_nonunique(x) for x in paths[4:]])
     matrices = []
     for queryset in queries:
-        matrices.append(np.array(query_handling.evaluate_queries(queryset.items(), lm_evaluate_query)))
+        matrices.append(np.array(query_handling.evaluate_queries(queryset, bm25_evaluate_query)))
+    MAP = []
+    for i in range(8):
+        AP = []
+        ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
+        if i < 4:
+            for x, (answer, str) in enumerate(queries[i]):
+                # GTP is answer
+                AP.append(1 / (ranks[x].index(answer) + 1))
+
+        else:
+            for x, (answer, str) in tqdm(enumerate(queries[i])):
+                topic = dt_matrix.getcol(answer).toarray()
+                threshold = topic.mean()
+                gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
+                precision = []
+                for gtp_n, gtp_id in enumerate(gtp_ids):
+                    precision.append((gtp_n + 1) / (ranks[x].index(gtp_id) + 1))
+                AP.append(np.mean(precision))
+        MAP.append(np.mean(AP))
+        print(np.mean(AP))
+
+    print(MAP)
+
     # save matrix
-    np.save("lm_evaluate_matrices", matrices)
+    np.save("bm25_evaluate_matrices", matrices)
+
+
 
     # load matrix
     # matrix = list(np.load("lda_evaluate_matrices.npy"))
