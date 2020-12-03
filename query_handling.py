@@ -345,9 +345,9 @@ if __name__ == '__main__':
     t_queries3 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=3, max_length=3)
     t_queries4 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=4, max_length=4)
 
-    utility.save_vector_file("Generated Files/top_queries1.csv", t_queries1)
-    utility.save_vector_file("Generated Files/top_queries2.csv", t_queries2)
-    utility.save_vector_file("Generated Files/top_queries3.csv", t_queries3)
-    utility.save_vector_file("Generated Files/top_queries4.csv", t_queries4)
+    utility.save_vector_file_nonunique("Generated Files/top_queries1.csv", t_queries1)
+    utility.save_vector_file_nonunique("Generated Files/top_queries2.csv", t_queries2)
+    utility.save_vector_file_nonunique("Generated Files/top_queries3.csv", t_queries3)
+    utility.save_vector_file_nonunique("Generated Files/top_queries4.csv", t_queries4)
 
     print("Goodbye cruel world...")
