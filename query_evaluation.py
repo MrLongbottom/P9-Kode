@@ -80,13 +80,17 @@ def lm_evaluate_query(query: List[str]):
     return np.multiply.reduce(prob)
 
 
-def hit_at_X(query_value_matrix, query_answers, limit):
-    hit = 0
-    for i, query_values in enumerate(query_value_matrix):
-        topX = query_values.argsort()[-limit:][::-1]
-        if query_answers in topX:
-            hit += 1
-    return hit
+def hit_point():
+    hits = []
+    for i in range(4):
+        hit = []
+        ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
+        for query_n, (answer, _) in enumerate(queries[i]):
+            # GTP is answer
+            hit.append(ranks[query_n].index(answer)+1)
+        hits.append(np.mean(hit))
+        print(np.mean(hit))
+    return hits
 
 
 def precision_at_X(X):
