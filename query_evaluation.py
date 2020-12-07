@@ -100,7 +100,7 @@ def precision_at_X(X):
                 if ranks[query_n].index(answer) < X:
                     precision.append(1/X)
         else:
-            with Pool(processes=4) as p:
+            with Pool(processes=8) as p:
                 max_ = len(list(enumerate(queries[i])))
                 with tqdm(total=max_) as pbar:
                     for _, score in enumerate(p.starmap(partial(inner_func2, ranks, X), list(enumerate(queries[i])))):
