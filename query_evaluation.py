@@ -143,12 +143,11 @@ def inner_func(ranks, query_n, answer):
 
 
 def inner_func2(ranks, X, query_n, answer):
-    topic = dt_matrix.getcol(answer).toarray()
+    topic = dt_matrix.getcol(answer[0]).toarray()
     threshold = topic.mean()
     gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
-    gtp_ranks = [ranks[query_n].index(gtp_id) for gtp_id in gtp_ids]
-    gtp_in_X = [y for y in gtp_ranks if y < X]
-    return len(gtp_in_X) / X
+    gtp_in_N = [x for x in ranks[query_n][:X] if x in gtp_ids]
+    return len(gtp_in_N) / X
 
 
 if __name__ == '__main__':
