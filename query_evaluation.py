@@ -80,13 +80,35 @@ def lm_evaluate_query(query: List[str]):
     return np.multiply.reduce(prob)
 
 
-def precision_at_X(query_value_matrix, query_answers, limit):
+def hit_at_X(query_value_matrix, query_answers, limit):
     hit = 0
     for i, query_values in enumerate(query_value_matrix):
         topX = query_values.argsort()[-limit:][::-1]
         if query_answers in topX:
             hit += 1
     return hit
+
+
+def precision_at_X(X):
+    precisions = []
+    for i in range(8):
+        precision = []
+        ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
+        if i < 4:
+            for query_n, (answer, _) in enumerate(queries[i]):
+                # GTP is answer
+                if ranks[query_n].index(answer) < X:
+                    precision.append(1/X)
+        else:
+            with Pool(processes=4) as p:
+                max_ = len(list(enumerate(queries[i])))
+                with tqdm(total=max_) as pbar:
+                    for _, score in enumerate(p.starmap(partial(inner_func2, ranks, X), list(enumerate(queries[i])))):
+                        precision.append(score)
+                        pbar.update()
+        precisions.append(np.mean(precision))
+        print(np.mean(precision))
+    return precisions
 
 
 def mean_average_precision():
@@ -120,6 +142,15 @@ def inner_func(ranks, query_n, answer):
     return np.mean(precision)
 
 
+def inner_func2(ranks, X, query_n, answer):
+    topic = dt_matrix.getcol(answer).toarray()
+    threshold = topic.mean()
+    gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
+    gtp_ranks = [ranks[query_n].index(gtp_id) for gtp_id in gtp_ids]
+    gtp_in_X = [y for y in gtp_ranks if y < X]
+    return len(gtp_in_X) / X
+
+
 if __name__ == '__main__':
     paths = ["queries/" + x for x in os.listdir("queries/")]
     paths.sort()
@@ -135,5 +166,5 @@ if __name__ == '__main__':
     # load matrix
     matrices = list(np.load("bm25_evaluate_matrices.npy"))
 
-    map = mean_average_precision()
-    utility.save_vector_file("Generated Files/bm25_res_map", map)
+    pre10 = precision_at_X(10)
+    utility.save_vector_file("Generated Files/bm25_pre_10", pre10)
