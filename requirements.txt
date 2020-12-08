@@ -1,0 +1,13 @@
+gensim
+nltk
+pandas
+scipy
+numpy
+lemmy
+matplotlib
+seaborn
+sklearn
+tqdm
+wiktionaryparser
+IPython
+wordcloud

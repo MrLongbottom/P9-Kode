@@ -21,7 +21,7 @@ from typing import Dict
 from wiktionaryparser import WiktionaryParser
 
 
-def preprocess(filename_or_docs="documents.json", word_save_filename="Generated Files/word2vec.csv",
+def preprocess(filename_or_docs="2017_data.json", word_save_filename="Generated Files/word2vec.csv",
                doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
                doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20,
                word_maximum_doc_percent=0.25,
