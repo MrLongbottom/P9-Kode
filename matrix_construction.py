@@ -154,12 +154,9 @@ def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
     with Pool(processes=poolsize) as p:
         max_ = td_matrix.shape[0]
         with tqdm(total=max_) as pbar:
-            for _, distance in enumerate(p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
-                distances.append(distance)
+            for index, distance in enumerate(p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
+                sp.save_npz(f"Generated Files/adj/adj_matrix{index}", sp.csr_matrix(distance))
                 pbar.update()
-    adj_matrix = np.vstack(distances)
-    adj_matrix = sp.csr_matrix(adj_matrix)
-    return adj_matrix
 
 
 def calculate_js_on_matrix_row(td_matrix, i):
@@ -181,8 +178,9 @@ def calculate_js_on_matrix_row(td_matrix, i):
 if __name__ == '__main__':
     # Loading topic-document distribution matrix and initialisation
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
-    matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-    sp.save_npz("Generated Files/adj_matrix.npz", construct_adj_matrix_based_on_topic_document_matrix(matrix))
+    # matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
+    # construct_adj_matrix_based_on_topic_document_matrix(matrix)
+    sp.save_npz("Generated Files/full_adj_matrix.npz", stack_matrices_in_folder("Generated Files/adj/"))
 
     # # Save full matrix
     # sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
