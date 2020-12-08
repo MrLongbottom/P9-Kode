@@ -63,6 +63,12 @@ def tfidf_evaluate_query(query):
 
 
 def grid_lda_evaluate(query: Tuple[int, str], result_matrix: np.ndarray):
+    """
+    Evaluates a query based on the LDA evaluation measure presented in the paper
+    :param query: query index and a string
+    :param result_matrix: dt matrix * tw matrix
+    :return: returns the ranks and personalization vector
+    """
     document_index = query[0]
     word_indexes = [inverse_w2v[x] for x in query[1].split(' ')]
 
@@ -118,5 +124,5 @@ def lm_lda_combo_evaluate_word_doc(document_index, word_index):
 
 if __name__ == '__main__':
     queries = query_handling.generate_document_queries(cv_matrix, word2vec, 100, 4, 4)
-    ranks = query_handling.lda_evaluate_document_query(queries.items(), dt_matrix, tw_matrix, grid_lda_evaluate)
+    ranks = query_handling.evaluate_document_query(queries.items(), dt_matrix, tw_matrix, grid_lda_evaluate)
     print(ranks)
