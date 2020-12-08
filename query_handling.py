@@ -319,16 +319,35 @@ def query_run_with_expansion():
 
 
 if __name__ == '__main__':
+    print("Hello world!")
+
     # Loading matrices
     cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
-    dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+    dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
 
-    queries = generate_queries(cv_matrix, word2vec, 10, min_length=1, max_length=4)
-    print(str(check_valid_queries(queries)))
-    utility.save_vector_file("Generated Files/doc_queries.csv", queries)
+    d_queries1 = generate_document_queries(cv_matrix, word2vec, 80, min_length=1, max_length=1)
+    d_queries2 = generate_document_queries(cv_matrix, word2vec, 80, min_length=2, max_length=2)
+    d_queries3 = generate_document_queries(cv_matrix, word2vec, 80, min_length=3, max_length=3)
+    d_queries4 = generate_document_queries(cv_matrix, word2vec, 80, min_length=4, max_length=4)
 
-    queries = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 100, min_length=1, max_length=4)
-    print(str(check_valid_queries(queries)))
-    utility.save_vector_file("Generated Files/topic_queries.csv", queries)
-    print(queries)
+    print(str(check_valid_queries(d_queries1)))
+    print(str(check_valid_queries(d_queries2)))
+    print(str(check_valid_queries(d_queries3)))
+    print(str(check_valid_queries(d_queries4)))
+
+    utility.save_vector_file("Generated Files/doc_queries1.csv", d_queries1)
+    utility.save_vector_file("Generated Files/doc_queries2.csv", d_queries2)
+    utility.save_vector_file("Generated Files/doc_queries3.csv", d_queries3)
+    utility.save_vector_file("Generated Files/doc_queries4.csv", d_queries4)
+
+    t_queries1 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=1, max_length=1)
+    t_queries2 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=2, max_length=2)
+    t_queries3 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=3, max_length=3)
+    t_queries4 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=4, max_length=4)
+
+    utility.save_vector_file_nonunique("Generated Files/top_queries1.csv", t_queries1)
+    utility.save_vector_file_nonunique("Generated Files/top_queries2.csv", t_queries2)
+    utility.save_vector_file_nonunique("Generated Files/top_queries3.csv", t_queries3)
+    utility.save_vector_file_nonunique("Generated Files/top_queries4.csv", t_queries4)
+
+    print("Goodbye cruel world...")

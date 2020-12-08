@@ -21,6 +21,18 @@ def load_vector_file(filepath, separator=','):
     return dictionary
 
 
+def load_vecter_file_nonunique(filepath, separator=','):
+    with open(filepath, 'r', encoding='utf-8') as file:
+        listen = []
+        for line in file.readlines():
+            kv = line.split(separator)
+            value = kv[1].replace('\n', '')
+            if len(value.split(' ')) > 1:
+                value = value.split(' ')
+            listen.append((int(kv[0]), value))
+    return listen
+
+
 def rankify(dictionary):
     """
     convert dictionary of id:score to a ranked list of id's.
@@ -46,6 +58,14 @@ def save_vector_file(filepath, content, separator=','):
         else:
             for i, c in enumerate(content):
                 file.write(str(i) + separator + str(c) + '\n')
+    print('"' + filepath + '" has been saved.')
+
+
+def save_vector_file_nonunique(filepath, content, separator=','):
+    print('Saving file "' + filepath + '".')
+    with open(filepath, "w", encoding='utf-8') as file:
+        for i, c in content:
+            file.write(str(i) + separator + str(c) + '\n')
     print('"' + filepath + '" has been saved.')
 
 
