@@ -96,7 +96,7 @@ def hit_point():
 def precision_at_x(X, matrices):
     """
     Calculates precision at X
-    :param matrices: 4 ndarrays of document queries + 4 4 ndarrays of document
+    :param matrices: 4 ndarrays of document queries + 4 ndarrays of documents
     :param X: int
     :return: precision
     """
