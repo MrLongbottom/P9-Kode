@@ -167,7 +167,11 @@ if __name__ == '__main__':
     # np.save("bm25_evaluate_matrices", matrices)
 
     # load matrix
-    matrices = list(np.load("bm25_evaluate_matrices.npy"))
+    model1 = list(np.load("pr_matrix.npy"))
+    model1 = ([np.vstack([np.array(model1), ] * 80), ] * 8)
+    model2 = list(np.load("lda_evaluate_matrices.npy"))
+    model3 = list(np.load("bm25_evaluate_matrices.npy"))
+    matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in zip(model1, model2, model3)]
 
     pre10 = precision_at_X(10)
     utility.save_vector_file("Generated Files/bm25_pre_10", pre10)
