@@ -80,20 +80,17 @@ def lm_evaluate_query(query: List[str]):
     return np.multiply.reduce(prob)
 
 
-def hit_at_x(query_value_matrix, query_answers, limit):
-    """
-    Calculate hit at x
-    :param query_value_matrix:
-    :param query_answers: the ranks of
-    :param limit:
-    :return:
-    """
-    hit = 0
-    for i, query_values in enumerate(query_value_matrix):
-        topX = query_values.argsort()[-limit:][::-1]
-        if query_answers in topX:
-            hit += 1
-    return hit
+def hit_point():
+    hits = []
+    for i in range(4):
+        hit = []
+        ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
+        for query_n, (answer, _) in enumerate(queries[i]):
+            # GTP is answer
+            hit.append(ranks[query_n].index(answer)+1)
+        hits.append(np.mean(hit))
+        print(np.mean(hit))
+    return hits
 
 
 def precision_at_x(X, matrices):
@@ -113,7 +110,7 @@ def precision_at_x(X, matrices):
                 if ranks[query_n].index(answer) < X:
                     precision.append(1/X)
         else:
-            with Pool(processes=4) as p:
+            with Pool(processes=8) as p:
                 max_ = len(list(enumerate(queries[i])))
                 with tqdm(total=max_) as pbar:
                     for _, score in enumerate(p.starmap(partial(precision_function, ranks, X), list(enumerate(queries[i])))):
@@ -132,7 +129,7 @@ def mean_average_precision(matrices):
     :return: mean average precision
     """
     MAP = []
-    for i in range(8):
+    for i in range(8):  # 8 because there are 8 sets of queries of different lengths
         AP = []
         ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
         if i < 4:
@@ -184,5 +181,5 @@ if __name__ == '__main__':
     # load matrix
     matrices = list(np.load("bm25_evaluate_matrices.npy"))
 
-    pre10 = precision_at_x(10)
+    pre10 = precision_at_x(10, matrices)
     utility.save_vector_file("Generated Files/bm25_pre_10", pre10)
