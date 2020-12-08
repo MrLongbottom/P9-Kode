@@ -117,7 +117,7 @@ def precision_at_X(X):
 
 def mean_average_precision():
     MAP = []
-    for i in range(8):
+    for i in range(8):  # 8 because there are 8 sets of queries of different lengths
         AP = []
         ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
         if i < 4:
