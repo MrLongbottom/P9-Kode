@@ -279,10 +279,8 @@ def query_expansion(query: List[str], n_top_word: int = 10) -> List[str]:
     :return: expanded query
     """
     documents = utility.load_vector_file("Generated Files/doc2word.csv")
-    doc_id = query[0]
     result = []
-    words = query[1]
-    for word in words.split(' '):
+    for word in query:
         expanded_query = {}
         # append original word to query
         document_ids = [ids for ids, values in documents.items() if word in values]
@@ -301,7 +299,7 @@ def query_expansion(query: List[str], n_top_word: int = 10) -> List[str]:
         expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
         sorted_query_words = list(dict(sorted(expanded_query.items(), key=lambda x: x[1], reverse=True)).keys())
         result.append(sorted_query_words[:n_top_word])
-    result.append(words.split(' '))
+    result.append(query)
     return list(set(itertools.chain.from_iterable(result)))
 
 
