@@ -77,6 +77,23 @@ def lda_runthrough_query(model_path, documents, corpus, vocab, K, alpha, eta):
     return lda_model.log_perplexity(corpus)
 
 
+def evaluate_document_query(queries, dt_matrix, tw_matrix, evaluation_function):
+    """
+
+    :param queries: queries
+    :param dt_matrix: document topic matrix
+    :param tw_matrix: topic word matrix
+    :param evaluation_function: the given evaluation function
+    :return: evaluation results
+    """
+    result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
+    results = []
+    for query in tqdm(queries):
+        res, p_vec = evaluation_function(query, result_matrix)
+        results.append(res)
+    return results
+
+
 def generate_document_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1,
                               max_length: int = 4):
     """
@@ -320,9 +337,6 @@ def query_run_with_expansion():
 
 if __name__ == '__main__':
     print("Hello world!")
-
-    # Loading matrices
-    cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
     dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
 
     d_queries1 = generate_document_queries(cv_matrix, word2vec, 80, min_length=1, max_length=1)

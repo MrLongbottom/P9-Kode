@@ -11,10 +11,10 @@ if __name__ == '__main__':
     corpus = [vocab.doc2bow(doc) for doc in documents]
 
     # Run LDA
-    K = math.floor(math.sqrt(cv_matrix.shape[0]) / 2)
-    params = (K, None, 0.001)
+    K = 30
+    params = (K, 0.1, 0.1)
 
-    run_lda("LDA/model/document_model" + str(params),
+    run_lda("LDA/model/final_model" + str(params),
             documents=documents,
             corpus=corpus,
             vocab=vocab,

@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 import scipy.sparse as sp
 from rank_bm25 import BM25Okapi
@@ -9,12 +11,13 @@ import query_handling
 import utility
 
 cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
-dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
+dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
+tw_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_word_matrix.npz")
 wordfreq = cv_matrix.sum(axis=0)
 doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
 word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
+inverse_w2v = {v: k for k, v in word2vec.items()}
 
 
 def bm25_evaluate_query(queries):
@@ -57,6 +60,24 @@ def tfidf_evaluate_query(query):
         res = np.sum(word_vecs, axis=0)
     ranks = utility.rankify(dict(enumerate(res)))
     return ranks
+
+
+def grid_lda_evaluate(query: Tuple[int, str], result_matrix: np.ndarray):
+    """
+    Evaluates a query based on the LDA evaluation measure presented in the paper
+    :param query: query index and a string
+    :param result_matrix: dt matrix * tw matrix
+    :return: returns the ranks and personalization vector
+    """
+    document_index = query[0]
+    word_indexes = [inverse_w2v[x] for x in query[1].split(' ')]
+
+    value = []
+    for word_index in word_indexes:
+        value.append(result_matrix[:, word_index])
+    p_vec = np.multiply.reduce(value)
+    res = utility.rankify(dict(enumerate(p_vec))).index(document_index)
+    return res, p_vec
 
 
 def lda_evaluate_word_doc(document_index, word_index):
@@ -103,7 +124,5 @@ def lm_lda_combo_evaluate_word_doc(document_index, word_index):
 
 if __name__ == '__main__':
     queries = query_handling.generate_document_queries(cv_matrix, word2vec, 100, 4, 4)
-    rank, _ = bm25_evaluate_query(queries)
-    print(rank)
-    ranks = tfidf_evaluate_queries(queries)
+    ranks = query_handling.evaluate_document_query(queries.items(), dt_matrix, tw_matrix, grid_lda_evaluate)
     print(ranks)
