@@ -93,7 +93,13 @@ def hit_point():
     return hits
 
 
-def precision_at_X(X):
+def precision_at_x(X, matrices):
+    """
+    Calculates precision at X
+    :param matrices: 4 ndarrays of document queries + 4 ndarrays of documents
+    :param X: int
+    :return: precision
+    """
     precisions = []
     for i in range(8):
         precision = []
@@ -107,7 +113,7 @@ def precision_at_X(X):
             with Pool(processes=8) as p:
                 max_ = len(list(enumerate(queries[i])))
                 with tqdm(total=max_) as pbar:
-                    for _, score in enumerate(p.starmap(partial(inner_func2, ranks, X), list(enumerate(queries[i])))):
+                    for _, score in enumerate(p.starmap(partial(precision_function, ranks, X), list(enumerate(queries[i])))):
                         precision.append(score)
                         pbar.update()
         precisions.append(np.mean(precision))
@@ -115,9 +121,15 @@ def precision_at_X(X):
     return precisions
 
 
-def mean_average_precision():
+def mean_average_precision(matrices):
+    """
+    Calculates the documents queries for the first 4 iterations and
+    then it calculates the topic queries for the last 4 iterations
+    :param matrices: the 8 query sets
+    :return: mean average precision
+    """
     MAP = []
-    for i in range(8):
+    for i in range(8):  # 8 because there are 8 sets of queries of different lengths
         AP = []
         ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
         if i < 4:
@@ -128,7 +140,7 @@ def mean_average_precision():
             with Pool(processes=8) as p:
                 max_ = len(list(enumerate(queries[i])))
                 with tqdm(total=max_) as pbar:
-                    for _, score in enumerate(p.starmap(partial(inner_func, ranks), list(enumerate(queries[i])))):
+                    for _, score in enumerate(p.starmap(partial(map_function, ranks), list(enumerate(queries[i])))):
                         AP.append(score)
                         pbar.update()
         MAP.append(np.mean(AP))
@@ -136,7 +148,7 @@ def mean_average_precision():
     return MAP
 
 
-def inner_func(ranks, query_n, answer):
+def map_function(ranks, query_n, answer):
     topic = dt_matrix.getcol(answer[0]).toarray()
     threshold = topic.mean()
     gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
@@ -146,7 +158,7 @@ def inner_func(ranks, query_n, answer):
     return np.mean(precision)
 
 
-def inner_func2(ranks, X, query_n, answer):
+def precision_function(ranks, X, query_n, answer):
     topic = dt_matrix.getcol(answer[0]).toarray()
     threshold = topic.mean()
     gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
@@ -173,5 +185,5 @@ if __name__ == '__main__':
     model3 = list(np.load("bm25_evaluate_matrices.npy"))
     matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in zip(model1, model2, model3)]
 
-    pre10 = precision_at_X(10)
+    pre10 = precision_at_x(10, matrices)
     utility.save_vector_file("Generated Files/bm25_pre_10", pre10)
