@@ -1,29 +1,80 @@
-5,harvey årig en weinstein mande filmproduceren
-3,for sygdom veteran af i og
-11,peter valsgaard søndag skaarup i og
-8,brønderslev sygdom psykisk børn it som
-17,til på borger plejehjem nordkorea
-2,fra kontakte nordsalling ahmad bk ahmade
-20,fra klub egon andersen medlem anden
-10,med miljømæssig plejehjemsplads på gevinst og
-29,så psykologhjælp regionsråd forretningsudvalg er gratis
-22,regionshospital el nordjylland har avis pa
-1,til flygtning samvirkes styrelse men og
-21,fra putin har følge stenum som
-19,jerusalem pengeinstitut jøde og
-12,under degn har tage tagge otto
-16,josef burch mandag tæbringe stilletid og
-28,hel bog herred han sæson og
-0,boel nordjylland kirke region jesper og
-14,spil spile fredag morgen spille og
-27,erik natur thomsen undertegnet anderledes og
-9,afdeling i en fredensbo boligforening er
-23,daværende ane nordjylland jomfru region og
-26,man spise by af dem er
-18,francisco på vila stryge etape bratsch
-15,ellers jammerbugt steffensen dreng lasse og
-25,forlig rejse til politisk forlige og
-4,undersøgelse til ved de pårørende
-13,dania dgi bazar skelund dgie åben
-24,brand kollerup kvist i kelde brande
-7,klasse til flygtning nyslåede elevere men
+27,['udvalg', 'beslutte', 'badmintonklub', 'hadsunde', 'at', 'hadsund']
+55,['og', 'skagen', 'sydøst', 'i', 'ugil']
+76,['igen', 'pct', 'tyskland', 'point', 'frankrig', 'højere']
+19,['hus', 'toftegården', 'helt', 'rigtig', 'hel', 'huse']
+71,['og', 'tvang', 'tvinge', 'sydøst', 'prise', 'ugil']
+50,['albæk', 'tromme', 'indsatsleder', 'jakobsen', 'oluf']
+18,['blev', 'mand', 'mande', 'kollerup', 'kvist', 'rv']
+62,['folkeskole', 'diabetes', 'og', 'forening', 'med']
+55,['hvor', 'valgforbund', 'lions', 'et', 'i', 'kvinde']
+65,['madpakke', 'den', 'inderside', 'tålmodighed', 'side', 'de']
+64,['der', 'strikke', 'og', 'aalborg', 'frii', 'i']
+55,['lokalt', 'hos', 'øl', 'i', 'data', 'vendsyssel']
+14,['koncertere', 'og', 'rundt', 'koncert', 'sygdom', 'for']
+77,['nordjylland', 'og', 'operation', 'på', 'region', 'dyr']
+52,['der', 'bymidte', 'mandag', 'spidskandidat', 'været', 'centrale']
+61,['lave', 'blev', 'laudrup', 'gin', 'michael', 'hvis']
+34,['mads', 'og', 'joronen', 'spille', 'aab', 'døhr']
+68,['og', 'billedskolen', 'dueholmskole', 'repræsentantskab', 'sige']
+46,['vulcan', 'hurup', 'øster', 'deutschland', 'afd', 'det']
+9,['er', 'boligforening', 'og', 'borgerliste', 'fredensbo', 'vesthimmerland']
+32,['udbrud', 'kraftigt', 'på', 'angreb', 'angribe', 'to']
+58,['svensk', 'karsten', 'den', 'svenske', 'frederiksen', 'k']
+49,['og', 'slagtesvin', 'til', 'i', 'brugerbetaling', 'indenfor']
+2,['dansk', 'øre', 'med', 'til', 'ør', 'mixeddouble']
+34,['er', 'aars', 'messecenter', 'i', 'af', 'fiskekvote']
+80,['krone', 'hjørring', 'torsdag', 'til', 'banegård', 'bevilge']
+22,['rebild', 'har', 'og', 'ellers', 'dreng', 'kommune']
+41,['lions', 'fredag', 'og', 'hanstholm', 'morgen', 'teutonia']
+51,['fjendtlig', 'stemme', 'stemt', 'ålbæk', 'i']
+15,['nordkorea', 'og', 'ellers', 'dreng', 'libanon', 'mongoliet']
+51,['ullit', 'ik', 'skagen', 'i', 'farsø']
+38,['og', 'handicap', 'handicappet', 'med', 'handicappe']
+71,['er', 'mande', 'en', 'patient', 'årig', 'nordsjællandsk']
+31,['på', 'ikke', 'have', 'indstille', 'sommerhus']
+58,['der', 'omstridt', 'landbrugspakke', 'i', 'ulv', 'af']
+51,['ældreområde', 'læge', 'mindre', 'på', 'europa', 'end']
+8,['uefa', 'hammershøj', 'fra', 'ikke', 'mistrati', 'edgar']
+39,['forskning', 'brix', 'mere', 'blandt', 'jonas', 'damborg']
+37,['liste', 'benedicte', 'fra', 'tønsberg', 'list', 'anne']
+41,['havne', 'jammerbugt', 'havn', 'ren', 'henrik', 'af']
+71,['kontor', 'kommunale', 'græsplæne', 'den', 'grøn', 'lægeklinik']
+25,['starte', 'jensen', 'amtsavis', 'randers', 'troels', 'skrive']
+49,['fire', 'amfetamin', 'politi', 'indskrive', 'at', 'farsø']
+34,['nairobi', 'kenya', 'i', 'fyre', 'at', 'fyr']
+20,['ødelæggelse', 'dannelsen', 'en', 'ensretning', 'det', 'vindmølle']
+28,['nordsalling', 'kontakte', 'bk', 'finde', 'fund', 'have']
+26,['sparekasse', 'flytte', 'hjemmefra', 'hobro', 'fond', 'skal']
+34,['bade', 'gemme', 'dag', 'bad', 'for', 'hash']
+5,['udvalg', 'beslutte', 'hat', 'af', 'at', 'jeg']
+56,['verdenskendt', 'pris', 'så', 'prise', 'maleri', 'hip']
+15,['og', 'ellers', 'dreng', 'barn', 'især']
+43,['prinse', 'helt', 'offentlig', 'wozniacki', 'offentligt']
+50,['udlænding', 'morse', 'mange', 'fra', 'hjemløs', 'hf']
+67,['system', 'forlader', 'juridisk', 'af', 'som', 'nederlag']
+29,['karlsen', 'er', 'og', 'manø', 'omfatte', 'bolig']
+31,['forsvares', 'læge', 'helbrede', 'svagest', 'lægge', 'de']
+33,['blev', 'dræbe', 'hus', 'på', 'limfjorden', 'klasse']
+31,['sparekasse', 'fra', 'hobro', 'fond', 'vejle', 'han']
+26,['morten', 'kirke', 'poulsen', 'rostrup', 'komposition']
+35,['og', 'periodeciffer', 'til', 'gange', 'hvidovre', 'venstre']
+33,['og', 'en', 'ved', 'fra', 'fjord', 'skrænt']
+77,['dyr', 'operation', 'male', 'på', 'malene', 'yde']
+63,['reparere', 'eller', 'værdi', 'til', 'bliver', 'i']
+9,['der', 'dansk', 'budget', 'frederikshavn', 'og', 'olie']
+10,['differentierede', 'spille', 'krolf', 'sundhedstilbud', 'i', 'som']
+61,['forening', 'og', 'vil', 'en', 'mod', 'politianmeldelse']
+38,['der', 'handicap', 'med', 'i', 'byråd', 'handicappe']
+38,['der', 'budget', 'frederikshavn', 'værdi', 'til', 'i']
+73,['også', 'ko', 'kø', 'hjælpe', 'lange', 'de']
+55,['boge', 'og', 'føde', 'barn', 'især', 'bog']
+54,['år', 'tryghed', 'aflyse', 'at', 'selvsamme']
+33,['terndrup', 'bælum', 'nordjylland', 'og', 'by', 'region']
+24,['øvrig', 'kontakte', 'det', 'politi', 'parti', 'bakke']
+49,['andersen', 'grethe', 'år', 'haubro', 'kulturmøde', 'palletankene']
+28,['teamleder', 'marker', 'mark', 'ved', 'markere', 'nielsen']
+80,['show', 'rumme', 'offentlig', 'ny', 'luthers', 'offentligt']
+27,['rebild', 'har', 'bus', 'på', 'kommune', 'offentlig']
+5,['havne', 'jammerbugt', 'havn', 'projekt', 'et', 'gammel']
+69,['meget', 'løbeduellen', 'hjælpe', 'vinder', 'hjælp', 'vinde']
+7,['og', 'ellers', 'morten', 'dreng', 'poulsen', 'komposition']

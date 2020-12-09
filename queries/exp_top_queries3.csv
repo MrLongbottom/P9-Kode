@@ -1,28 +1,80 @@
-17,i kniv mod morsø deltage fodslaw sparekasse deltager trak
-14,barn fast postnord især bopæl og blev i
-28,kenya i nairobi bil kairo sæby bile egypten
-15,en kranset bæk mor dreng ellers morse og i
-2,fra danny men olsen ahmade til flygtning ahmad
-27,forvaltning min søn om ubetinget og fængsel havde i
-23,bjørn nørgaard som tage tur hele frii i aalborg
-4,sikre som merkel elev klynge bebyggelse knappe i angela
-12,fra en chefkonsulent alkohol sørensen der samle pct souschef
-13,lions løkke rasmussen men kvinde til flygtning i
-7,barn musik der især handicappet og handicappe
-26,så thisted for analysecenter biograf kino sundhed og
-16,hvor blød møller spadestik første vin bliver merlot flemming
-21,udelukkende udelukke har vejet men louise hvelplund radikale domstol
-9,kommunale ulrich at fritidstilbud opret oprette fortælle albrechtsen
-0,lokalplan åbne et over projekt af gammel sæbe og
-1,bro øre styrelse på ør til og i samvirkes
-3,et korruption sangglade hjertestop af dronninglund onsdag i
-19,michael når nordjylland deres region af og demens kunde
-20,økonomisk på patient nordsjællandsk spørgsmål er kompensation og fortov
-11,hvor orlov bevilge ucn krone år til og i
-29,ren pap christensen at øge henrik tv og i
-24,så en tomat stor ville hjerne som kampagne og
-22,en overalt far mor mave fare nykøbing ens og
-25,hyundai lægge en med spisested læge forsvares og i
-18,var når ti på minut vært dræbe er blev
-10,kommune har rebild jakob brønderslev komme it svendsen børn
-5,flere havnefronter på slå for svømmehal lejlighed højtryk
+30,['vil', 'kønsskifte', 'og', 'kommune', 'kristendemokrat', 'allerede', 'kvadratmeter', 'logo', 'på']
+18,['pege', 'og', 'barcelona', 'sige', 'i', 'repræsentantskab', 'forsker', 'på']
+81,['spille', 'borger', 'cykel', 'plejehjem', 'god', 'endnu', 'spiller', 'gammel', 'på']
+39,['med', 'for', 'og', 'handicappe', 'handicap', 'handicappet', 'et', 'botilbud']
+82,['der', 'bi', 'den', 'lindholm', 'fra', 'bie', 'bk', 'hvepse', 'isolering']
+51,['kortklub', 'bil', 'bile', 'it', 'brønderslev', 'park', 'rotary', 'børn', 'sæby']
+79,['min', 'centre', 'centrum', 'center', 'familie', 'en', 'et', 'splitte', 'by']
+46,['springe', 'støvring', 'og', 'korn', 'nordlige', 'grøn', 'pige', 'rundkørsel']
+1,['flygtning', 'når', 'fra', 'til', 'is', 'men', 'ahmad', 'ise', 'ahmade']
+37,['julehjælp', 'lokal', 'fra', 'metal', 'indbrud', 'i', 'hawks', 'ishockey']
+76,['nordkorea', 'ved', 'se', 'og', 'julemarked', 'til', 'teater', 'kombinere']
+64,['dansker', 'onsdag', 'med', 'dronninglund', 'sangglade', 'bevidsthed', 'hos', 'data', 'vendsyssel']
+14,['lars', 'afgift', 'og', 'museum', 'hver', 'afgifte', 'filantropidirektør', 'realdania', 'på']
+65,['a', 'terrorbevogtning', 'grænsekontrol', 'en', 'fra', 'udtage', 'dispensation', 'udtag', 'skaktalentet']
+61,['der', 'velfærd', 'hansen', 'støvring', 'af', 'det', 'i', 'veteran', 'på']
+62,['fremtid', 'blotte', 'bombe', 'af', 'i', 'siger', 'damaskus', 'er', 'by']
+31,['pavol', 'vm', 'safranko', 'udgiver', 'hver', 'til', 'uge', 'i', 'er']
+3,['time', 'york', 'østerild', 'kan', 'times', 'i', 'naturområde', 'unikt']
+69,['bundhold', 'med', 'intet', 'over', 'og', 'ingen', 'ønske', 'folkeskole', 'kampfaktum']
+58,['væk', 'angela', 'er', 'udlænding', 'i', 'merkel', 'dy', 'dyr', 'kriminel']
+60,['banegård', 'velkommen', 'forældremyndighed', 'byde', 'tildele', 'hjørring', 'torsdag', 'er', 'på']
+46,['anklager', 'nær', 'skagen', 'grønland', 'oplyse', 'i', 'anklage']
+66,['som', 'tørklæde', 'med', 'hurtigst', 'muligt', 'mariane', 'madsen', 'gang', 'saltum']
+35,['egen', 'møller', 'skov', 'man', 'virksomhed', 'i', 'er', 'flemming', 'mølle']
+46,['husejer', 'dtu', 'ved', 'hus', 'ny', 'mange', 'har', 'huse', 'fødevareinstituttet']
+23,['damgaard', 'at', 'nyfor', 'frejlev', 'han', 'vækstpulje', 'samt', 'frejleve', 'fastslå']
+54,['den', 'for', 'løbe', 'løb', 'af', 'togdrift', 'i', 'brand', 'brande']
+66,['frustration', 'læge', 'weekend', 'bliver', 'forsvares', 'parkering', 'af', 'det', 'lægge']
+77,['prinse', 'syrien', 'østlig', 'prins', 'fagperson', 'af', 'henrik', 'det', 'staten']
+67,['konventionel', 'region', 'produktion', 'og', 'nordjylland', 'stagstrup', 'er', 'skole', 'på']
+48,['støjberg', 'år', 'finde', 'v', 'inger', 'palletankene', 'kulturmøde', 'værelse', 'på']
+3,['ikast', 'ikaste', 'projekt', 'kfum', 'helikopter', 'sikorsky', 'i', 'et', 'gammel']
+29,['jakobsen', 'oluf', 'og', 'så', 'tirsdag', 'indsatsleder', 'blenstrup', 'kvindelandshold', 'samt']
+40,['handicappet', 'og', 'kultur', 'df', 'handicappe', 'idræt', 'oue', 's', 'bakke']
+47,['ca', 'skagen', 'åbne', 'pund', 'af', 'lokalplan', 'i', 'på']
+14,['fiskeaffald', 'charlotte', 'prinsesse', 'at', 'jagte', 'stormestertitlen', 'fisk', 'fiske']
+8,['kroatien', 'den', 'for', 'her', 'ud', 'dania', 'højesteret', 'real', 'besejre']
+72,['som', 'fc', 'med', 'træ', 'arbejde', 'inter', 'sallingsund', 'i', 'dække']
+16,['elektronik', 'poulsen', 'inventar', 'ingeniør', 'morten', 'flemming', 'møller', 'arkitekt', 'hvor']
+38,['med', 'og', 'arvad', 'penge', 'susanne', 'handicappe', 'handicap', 'handicappet']
+55,['blev', 'væk', 'sprog', 'matematik', 'naturfag', 'i', 'kommentere', 'dy', 'dyr']
+73,['onsdag', 'strand', 'ved', 'dronninglund', 'sangglade', 'fra', 'hjælpe', 'de', 'også']
+29,['astride', 'aggerholm', 'øster', 'hurup', 'pension', 'astrid', 'vulcan', 'i', 'på']
+41,['der', 'fjortende', 'containerne', 'dag', 'frederikshavn', 'en', 'sige', 'budget', 'mildt']
+35,['som', 'amtsavis', 'stemmeseddel', 'for', 'overrække', 'blomst', 'skrive', 'randers', 'på']
+36,['ved', 'per', 'og', 'laursen', 'barn', 'løgstør', 'christiansmindeskoven', 'især']
+80,['og', 'en', 'uddannelse', 'få', 'glyngøre', 'i', 'videregående', 'tiger', 'gennem']
+80,['med', 'for', 'peder', 'i', 'kapelmester', 'hospice', 'regionsråd', 'hirtshals', 'på']
+52,['med', 'og', 'folkeskole', 'uttrup', 'nørre', 'terndrup', 'by', 'bælum', 'kirke']
+8,['træning', 'for', 'mose', 'rund', 'mellem', 'tirsdag', 'citat', 'mos', 'op']
+23,['danse', 'faktum', 'musik', 'dans', 'pension', 'det', 'i', 'på']
+20,['der', 'skal', 'erstatning', 'om', 'vejet', 'trier', 'har', 'domstol', 'petersen']
+35,['for', 'er', 'psykiatri', 'sidste', 'aftentur', 'har', 'hovedstadens', 'råderum', 'professionel']
+19,['bangladesh', 'bruge', 'en', 'landbrug', 'vvs', 'i', 'har', 'mande']
+13,['fattigdom', 'og', 'september', 'lavtlønnet', 'i', 'akkc', 'fortsætter']
+77,['operation', 'ville', 'hjerne', 'og', 'af', 'er', 'by', 'dyr', 'på']
+45,['over', 'vælgermøde', 'liverpool', 'spiller', 'i', 'stemt', 'to', 'stemme']
+0,['hær', 'birgitte', 'kun', 'ved', 'om', 'og', 'syriske', 'lundholm', 'vuc']
+10,['blev', 'borger', 'aktivitetscenter', 'plejehjem', 'grønning', 'flytning', 'bredgade', 'da', 'på']
+50,['som', 'juridisk', 'malthe', 'jakobsen', 'albæk', 'kapelmester', 'nielsen', 'tromme', 'system']
+56,['boel', 'blev', 'lions', 'fra', 'gjøl', 'i', 'kontanter', 'nielsen', 'kvinde']
+1,['ahmade', 'danny', 'fra', 'til', 'ahmad', 'øre', 'olsen', 'ør']
+16,['elektronik', 'poulsen', 'meditation', 'og', 'yoga', 'rungsted', 'morten', 'er', 'mod']
+29,['boel', 'der', 'cafe', 'detailhandel', 'emballage', 'sørensen', 'gjøl', 'christian', 'nielsen']
+78,['kvoteflygtning', 'snild', 'til', 'lidt', 'i', 'et', 'erslev', 'tilbud']
+79,['borger', 'syrer', 'herunder', 'flygtning', 'til', 'i', 'politiker', 'men', 'civil']
+42,['skib', 'bil', 'ny', 'en', 'kirkegård', 'tornby', 'hjørring', 'skibe']
+28,['ferskner', 'og', 'æble', 'til', 'hærværk', 'periodeciffer', 'hvidovre', 'ske']
+41,['bil', 'tulipanfeber', 'havne', 'forleden', 'annabelle', 'jammerbugt', 'out', 'havn', 'sæby']
+17,['vi', 'og', 'fodslaw', 'sundhedsudvalg', 'it', 'brønderslev', 'morsø', 'sparekasse', 'børn']
+22,['hobro', 'cecilie', 'overgaard', 'fond', 'df', 'sparekasse', 's', 'bakke', 'signe']
+67,['novembervej', 'vi', 'om', 'michael', 'klarup', 'af', 'vores', 'inge', 'demens']
+71,['lions', 'fritidshus', 'angå', 'parcelhus', 'i', 'kvinde', 'procent', 'på']
+67,['hvis', 'nordvestjylland', 'og', 'ride', 'jens', 'blød', 'vin', 'merlot', 'dahlgaard']
+57,['som', 'julemand', 'krone', 'kælder', 'sydafrikanerne', 'selveste', 'bevilge', 'til', 'i']
+29,['fc', 'europa', 'mindre', 'stjæle', 'at', 'end', 'aab', 'agf', 'to']
+11,['der', 'hansen', 'bil', 'a', 'støvring', 'forleden', 'enggaard', 'søren', 'sæby']
+81,['sygehus', 'aalborg', 'så', 'af', 'spænding', 'i', 'var', 'er', 'på']
+12,['for', 'år', 'palletankene', 'kulturmøde', 'hash', 'gemme', 'er', 'når', 'tunnel']
+73,['uden', 'bil', 'bænke', 'unge', 'forleden', 'bænk', 'menneske', 'sæby', 'på']

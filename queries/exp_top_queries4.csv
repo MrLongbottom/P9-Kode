@@ -1,29 +1,80 @@
-6,og en mogensen plejer folkeskole at oprøre undgå pleje med bil tornby
-9,en de ung beboer ulstede også slå flere i unge lejlighed vække
-25,nordjylland og af for the evening region byggeri papir star
-10,jespersgaard frederikshavn en s og for ole bibliotek terrassedør er marked ulåst
-7,nordjylland billige og studieforsikringer prins brønderslev region børn it prinse henrik billig
-13,og europæisk det som nette indvandring pct menneskerettighedsdomstol net i vestlig point
-3,om vande vand borup kubikmeter nabo reformation til blive anmelde jakob
-14,om og investering semifinale billedskolen dueholmskole aalborg i næstbedst
-16,og anker samtale mole planter kort blev anke klaus med plante der
-29,og bliver kræve i holde albæk catalonien kulturstyrelse tromme jakobsen hold
-21,og på er aalborg æg i kød rente frii høj ægge kunst
-5,ny og østergaard christma digital hemme infrastruktur trine carols stemning asaa
-24,har nørregård folkesanger joh at kommunalbestyrelse rebild omkring professor kommune fiske fisker
-26,bakke overskud af markus sparekasse fond hobro er demokratisk aalborg denne philips
-0,har og drukne gennem derfor til opsparing turisme i århundred var deres
-17,og træ brønderslev som børn rebild plejehjemsplads it digitalt alle med
-18,budget borger og frederikshavn politiker når barcelona er i der tunnel
-27,har og lære overholde dgi at rebild grænseværdierne dgie kommune lærer
-4,kirke af men mener jesper ulykke henning boel jørgensen i thisted ikke
-12,har otto det de universitet palletankene mangle aalborg degn ungdomsbolig kulturmøde år
-8,om for på reformation navn dansk den vil brigade jakob gåser gandrup
-15,sin og support rasmussen ellers supporte thyge knallert dreng opsummerer i ad
-22,og brand bile at sælge i videre brande patrick wiesmach bil ulåste
-2,pris så ør fra dansk prise til ahmade øre mixeddouble med ahmad
-23,har vejet det på oplysning domstol faktum rebild lokales kommune meget
-1,bakke og christiansen fra dansk parti børglum foto øvrig mixeddouble med mathias
-28,en cool fund serum er institut stor trailer stjæle end stat feature
-11,har af et by vindue årig at beslutte er udvalg blev ombygning
-19,over det på stemt halkær velfærd øster vulcan stemme bredning hurup ved
+18,['if', 'sundhedsvæsen', 'bk', 'brøndby', 'i', 'jeg', 'støvring', 'kunstboxen', 'gøttrup', 'mariager', 'søren', 'krone']
+24,['manø', 'kommunaldirektør', 'karlsen', 'norwegian', 'besynderlig', 'læsø', 'evig', 'navn', 'lars', 'er', 'blue', 'måske']
+46,['ren', 'hus', 'forrygende', 'i', 'jazze', 'skagen', 'christensen', 'ny', 'jazz', 'huse', 'peder']
+64,['point', 'arbejdsmarked', 'pct', 'og', 'hun', 'buple', 'jervad', 'måtte', 'aggersund', 'på', 'under', 'biografere']
+63,['vil', 'fremragende', 'den', 'der', 'indlægge', 'tjekkisk', 'intelligens', 'forfatte', 'indlæg', 'kønsskifte', 'kristendemokrat', 'nok']
+75,['gave', 'christiansmindeskoven', 'en', 'til', 'kulturer', 'løgstør', 'fremme', 'mads', 'sanger', 'og', 'fremmed']
+36,['kommune', 'skelund', 'jammerbugt', 'åben', 'i', 'som', 'stor', 'kampagne', 'styrte', 'jammerbugte']
+67,['hel', 'himmelsk', 'bid', 'det', 'fremgang', 'hus', 'sæson', 'musisk', 'bide', 'og', 'aalborg', 'fortsætte']
+65,['klitgaard', 'der', 'andersen', 'svinge', 'i', 'støvring', 'hansen', 'medlem', 'andrea', 'sving', 'egon', 'sofie']
+56,['gregersen', 'netop', 'der', 'kombinere', 'christian', 'kaste', 'johansson', 'tidlig', 'julemarked', 'og', 'kast', 'bo']
+35,['hip', 'til', 'det', 'verdenskendt', 'barn', 'israelske', 'maleri', 'evne', 'malene', 'male', 'embedsmand', 'yde']
+17,['mande', 'mand', 'år', 'job', 'blev', 'jobbe', 'trak', 'pernille', 'nytte', 'mod', 'mathiesen', 'kniv']
+31,['parti', 'bevares', 'til', 'øvrig', 'bakke', 'døhr', 'mads', 'joronen', 'bygning', 'nordkorea', 'gård']
+19,['date', 'det', 'jamali', 'kvotekonge', 'to', 'politi', 'kontakte', 'udvisning', 'man', 'aalborg', 'fiskerierhvervet']
+38,['forskning', 'blandt', 'det', 'handicappet', 'handicappe', 'byrådsmøde', 'træf', 'træffe', 'december', 'mere', 'og', 'konstituerende']
+1,['flygtning', 'ahmad', 'noor', 'til', 'for', 'nem', 'fra', 'valg', 'men', 'ahmade']
+29,['machell', 'kaspe', 'lauge', 'charlie', 'skagen', 'i', 'mensah', 'jakob', 'larsen', 'pedersen', 's']
+66,['nissen', 'nisse', 'sjørring', 'i', 'trafik', 'offentlig', 'undersøgelse', 'kollektiv', 'offentligt', 'rumme', 'hundborg', 'bo']
+26,['jørgen', 'land', 'boligforening', 'fra', 'med', 'fredensbo', 'besætte', 'friplejehjem', 'lande', 'er', 'ny', 'aagaard']
+21,['sige', 'eggert', 'plejehjemsplads', 'med', 'tirsdag', 'landmand', 'lildstrand', 'er', 'anders', 'og', 'gammel', 'r']
+75,['studieforsikringer', 'strikker', 'sig', 'lade', 'billig', 'carlsen', 'gerne', 'strikke', 'billige', 'reymann', 'lader', 'ikke']
+27,['kommune', 'ren', 'for', 'takst', 'dronninglund', 'har', 'igen', 'onsdag', 'af', 'henrik', 'rebild', 'sangglade']
+79,['også', 'rørbæk', 'kirke', 'ammitzbøll', 'bille', 'som', 'er', 'la', 'regel', 'udlænding', 'kriminel']
+15,['knappe', 'elev', 'hold', 'arne', 'holde', 'sikre', 'bortvise', 'og', 'tiggere', 's', 'boelt', 'at']
+32,['flygtning', 'dark', 'til', 'prins', 'the', 'hampstead', 'prinse', 'gavekort', 'men', 'et', 'at']
+21,['mande', 'årig', 'en', 'der', 'holde', 'storstilet', 'men', 'borgermøde', 'skattereform', 'budget', 'frederikshavn']
+67,['mande', 'børnehave', 'faste', 'mølle', 'hal', 'i', 'minut', 'fast', 'ivers', 'hall', 'som', 'og']
+10,['sundhedshus', 'møde', 'specialdesignede', 'øster', 'fruerlundpark', 'møbel', 'naturligvis', 'løsning', 'hurup', 'mødes', 'møblere', 'at']
+73,['porto', 'lange', 'til', 'i', 'kø', 'lorentz', 'kunstboxen', 'ko', 'lisbeth', 'santo', 'mariager', 'krone']
+11,['skærpe', 'anti', 'til', 'det', 'hun', 'tendens', 'foreningsliv', 'i', 'demokratisk', 'genopstille', 'tavshedspligt', 'ikke']
+47,['gjord', 'skive', 'gospelkor', 'gud', 'ild', 'homoseksuelle', 'gerning', 'anklagemyndighed', 'gospel', 'åbne', 'd', 'og']
+11,['tid', 'det', 'der', 'siger', 'flauenskjold', 'mindst', 'politik', 'spidskandidat', 'østervrå', 'dronninglund', 'skolestruktur', 'været']
+13,['fradrage', 'thomas', 'flemming', 'kunst', 'mølle', 'musiker', 'albæk', 'fradrag', 'et', 'er', 'og', 'møller']
+52,['dyr', 'lokalråde', 'få', 'væk', 'i', 'første', 'vække', 'sørup', 'og', 'jonasen', 'skoledag', 'aksel']
+81,['plejehjem', 'god', 'vogn', 'træde', 'i', 'borger', 'over', 'regionsråd', 'er', 'på', 'forretningsudvalg']
+0,['lægge', 'procentpoint', 'senest', 'forsvares', 'i', 'har', 'vesløs', 'nordjyllandsværk', 'stor', 'er', 'læge', 'og']
+57,['kommune', 'jane', 'rundt', 'vælte', 'der', 'i', 'kælder', 'mortensen', 'har', 'som', 'sydafrikanerne', 'rebild']
+75,['kort', 'forkert', 'plejehjem', 'samtale', 'med', 'borger', 'nyhed', 'skulder', 'på', 'bære', 'servere', 'skuldre']
+11,['chr', 'der', 'kokain', 'i', 'finde', 'gram', 'byråd', 'jens', 'meldgaard', 'terndrup', 'by', 'bælum']
+10,['så', 'jensen', 'indbrud', 'prise', 'pris', 'brønderslev', 'starte', 'i', 'børn', 'troels', 'it']
+79,['pa', 'også', 'centrum', 'el', 'af', 'som', 'er', 'aalborg', 'center', 'avis', 'regel', 'centre']
+74,['vestergaard', 'for', 'kristian', 'seniorråd', 'ansætte', 'thulesen', 'tage', 'ansat', 'per', 'og', 'dahl']
+47,['toftegården', 'landsby', 'kirketorv', 'lions', 'hus', 'ride', 'i', 'askildrup', 'omgang', 'på', 'huse', 'red']
+32,['indvandrer', 'når', 'der', 'rejsegilde', 'i', 'deres', 'købmandsgård', 'kunde', 'doverod', 'og', 'doverodde']
+24,['bruge', 'knallertkører', 'landsby', 'egen', 'i', 'askildrup', 'omgang', 'er', 'virksomhed', 'uden', 'vendelbohus']
+26,['machell', 'en', 'charlie', 'hun', 'ved', 'i', 'frøstrup', 'traktor', 'mensah', 'lanterne', 'ringvig', 'er']
+19,['trætte', 'træt', 'sig', 'arne', 'i', 'sygehus', 'er', 'på', 'og', 'udlænding', 'kriminel', 'kirk']
+69,['vilsund', 'vilsunde', 'klein', 'møde', 'arne', 'op', 'skilt', 'sebastian', 's', 'hos', 'boelt', 'skilte']
+81,['musik', 'der', 'i', 'byråd', 'by', 'af', 'er', 'og', 'hest']
+16,['parti', 'der', 'øvrig', 'bakke', 'kubikmeter', 'planter', 'rungsted', 'mod', 'vand', 'og', 'plante', 'vande']
+1,['mixeddouble', 'ahmad', 'parti', 'dansk', 'øvrig', 'bakke', 'fra', 'med', 'ahmade', 'styrelse', 'og', 'samvirkes']
+56,['slå', 'netop', 'dragstrup', 'ved', 'fællesspisning', 'fruerlundpark', 'flere', 'vige', 'lejlighed', 'og', 'kast', 'kaste']
+3,['have', 'vesterbro', 'vælge', 'for', 'laursen', 'alvorlig', 'ved', 'økonomiske', 'vælger', 'per', 'og', 'at']
+78,['en', 'det', 'der', 'thisted', 'bakke', 'i', 'hanne', 'tang', 'df', 'vindmølle', 's', 'ikke']
+62,['skibsted', 'menighedsråd', 'luth', 'margrethe', 'dronning', 'bag', 'eller', 'af', 'på', 'misbruge', 'misbrug', 'barret']
+82,['sygedagpenge', 'førtidspension', 'til', 'fly', 'i', 'august', 'morse', 'midt', 'in', 'af', 'pesticid', 'mor']
+53,['til', 'dag', 'fjortende', 'fra', 'bevilge', 'region', 'vejle', 'containerne', 'nordjylland', 'han', 'og', 'krone']
+6,['jerslev', 'da', 'ung', 'bede', 'kirkekor', 'unge', 'i', 'nordjylland', 'af', 'et', 'anden', 'fotograf']
+14,['eje', 'vm', 'håndboldkvinde', 'til', 'dansk', 'sin', 'i', 'ejer', 'på', 'om', 'ryå', 'forud']
+53,['hund', 'præsident', 'til', 'for', 'oscar', 'i', 'bevilge', 'ledsager', 'ny', 'sindal', 'bindslev', 'krone']
+53,['de', 'stille', 'chris', 'bakke', 'i', 'region', 'froome', 'nordjylland', 'og', 'miami', 'opera']
+61,['de', 'mølle', 'tro', 'i', 'minut', 'voksen', 'polen', 'pol', 'ivers', 'og', 'lettere', 'at']
+38,['og', 'handicappe', 'handicappet', 'i', 'med', 'handicap', 'social', 'på', 'om', 'trivsel', 'handicapområde']
+53,['dyr', 'dy', 'enggaard', 'væk', 'i', 'procent', 'pernille', 'på', 'holbæk', 'cannabis', 'a', 'søren']
+62,['ibsen', 'selvmord', 'ligge', 'lig', 'med', 'måned', 'som', 'fysioterapi', 'på', 'begår', 'og', 'rasmus']
+75,['strikker', 'trine', 'assel', 'nikolaj', 'spanggaard', 'gerne', 'dam', 'strikke', 'indebære', 'om', 'v', 'forestilling']
+9,['hvem', 'på', 'boligforening', 'i', 'kommunale', 'fredensbo', 'som', 'er', 'børnehøjde', 'fritidstilbud', 'hæder']
+51,['parti', 'pct', 'alkohol', 'hvor', 'øvrig', 'bakke', 'samle', 'preben', 'festival', 'pedersen', 'assistenttræne', 'blå']
+46,['de', 'toftegården', 'grøn', 'skattelettelse', 'studere', 'hus', 'korn', 'studerende', 'men', 'og', 'huse', 'fortsætte']
+8,['ung', 'tilsvarende', 'hobro', 'lyd', 'fede', 'unge', 'superliga', 'i', 'nugældende', 'fed', 'kommuneplan', 'fodbold']
+67,['agerholm', 'idræt', 'forlænge', 'den', 'op', 'skilt', 'og', 'oue', 'kultur', 'thorup', 'skilte', 'spilletid']
+29,['agf', 'afslag', 'i', 'har', 'får', 'penge', 'aab', 'på', 'og', 'myanmar', 'fc']
+66,['en', 'medborger', 'bile', 'sæby', 'forskellig', 'disciplin', 'har', 'vi', 'disciplinere', 'kære', 'bil', 'aktindsigt']
+19,['dybvad', 'dybvade', 'kaspe', 'netop', 'pallesen', 'eller', 'udstrakt', 'af', 'installation', 'pedersen', 'og', 'ytringsfrihed']
+53,['da', 'blev', 'bedstede', 'det', 'tyv', 'fattigdom', 'politi', 'kontakte', 'og', 'fortsætter', 'klokkespilskoncert', 'bedsted']
+82,['jord', 'boldrup', 'limfjordsråd', 'rold', 'der', 'fra', 'i', 'med', 'morse', 'hf', 'om', 'jorden']
+11,['høgh', 'hvidsten', 'demonstrant', 'til', 'vibeke', 'der', 'i', 'kro', 'lokalplan', 'af', 'palæstinensisk', 'åbne']
+79,['flygtning', 'og', 'til', 'min', 'vuc', 'nielsen', 'tage', 'et', 'men', 'odgaard', 'om', 'familie']
+20,['erstatning', 'skal', 'eu', 'lokal', 'handicappe', 'siger', 'handicappet', 'sag', 'medlemskab', 'er', 'om']
+36,['big', 'verden', 'fiskemetoder', 'barn', 'passe', 'skabe', 'fredelig', 'af', 'er', 'og', 'game', 'især']

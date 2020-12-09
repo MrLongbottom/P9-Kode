@@ -334,11 +334,16 @@ if __name__ == '__main__':
     dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
     word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 
-    queries = generate_document_queries(cv_matrix, word2vec, 10, min_length=1, max_length=4)
-    print(str(check_valid_queries(queries)))
-    utility.save_vector_file("Generated Files/doc_queries.csv", queries)
+    # Doc query generation
+    queries = generate_document_queries(cv_matrix, word2vec, 80, min_length=4, max_length=4)
+    # Doc query expansion
+    queries = {a: query_expansion(b.split(' ')) for a, b in queries.items()}
+    utility.save_vector_file("queries/exp_doc_queries4.csv", queries)
+    print(queries)
 
-    queries = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 100, min_length=1, max_length=4)
-    print(str(check_valid_queries(queries)))
-    utility.save_vector_file("Generated Files/topic_queries.csv", queries)
+    # Topic query generation
+    queries = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=4, max_length=4)
+    # Topic query expansion
+    queries = [(a, query_expansion(b.split(' '))) for a, b in queries]
+    utility.save_vector_file_nonunique("queries/exp_top_queries4.csv", queries)
     print(queries)
