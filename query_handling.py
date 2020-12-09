@@ -290,13 +290,15 @@ def query_expansion(query: List[str], n_top_word: int = 10) -> List[str]:
             word_index = document.index(word)
             if word_index == 0:
                 before_word = document[word_index]
+                expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
             elif word_index == len(document) - 1:
                 after_word = document[word_index]
+                expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
             else:
                 before_word = document[word_index - 1]
                 after_word = document[word_index + 1]
-        expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
-        expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
+                expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
+                expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
         sorted_query_words = list(dict(sorted(expanded_query.items(), key=lambda x: x[1], reverse=True)).keys())
         result.append(sorted_query_words[:n_top_word])
     result.append(query)
@@ -331,7 +333,7 @@ def query_run_with_expansion():
 if __name__ == '__main__':
     # Loading matrices
     cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
-    dt_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
+    dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
     word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 
     for i in range(1, 5):
