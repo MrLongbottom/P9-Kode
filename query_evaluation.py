@@ -6,6 +6,7 @@ from typing import List
 import numpy as np
 import scipy.sparse as sp
 from rank_bm25 import BM25Okapi
+from sklearn.preprocessing import normalize
 from tqdm import tqdm
 
 import preprocessing
@@ -169,6 +170,7 @@ def precision_function(ranks, X, query_n, answer):
 if __name__ == '__main__':
     paths = ["queries/" + x for x in os.listdir("queries/")]
     paths.sort()
+    paths = paths[4:12]
     doc_queries = [utility.load_vector_file(x) for x in paths[:4]]
     queries = [[(x, y) for x, y in q.items()] for q in doc_queries]
     queries.extend([utility.load_vecter_file_nonunique(x) for x in paths[4:]])
