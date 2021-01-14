@@ -1,24 +1,21 @@
 import itertools
 import random
-from functools import partial
-from multiprocessing import Pool
+from typing import Dict, List
+
 import numpy as np
 import scipy.sparse as sp
-import lda
-from typing import Dict, List
-import pandas
 from gensim.corpora import Dictionary
-from gensim.models import LdaModel
-from scipy.spatial import distance
+from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.preprocessing import normalize
+from tqdm import tqdm
+
 import preprocessing
 import utility
-from sklearn.feature_extraction.text import TfidfTransformer
-from tqdm import tqdm
-from lda import get_document_topics_from_model, load_lda
+from models import lda
+from models.lda import get_document_topics_from_model, load_lda
 
-doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
-word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+doc2word = utility.load_vector_file("generated_files/doc2word.csv")
+word2vec = utility.load_vector_file("generated_files/word2vec.csv")
 inverse_w2v = {v: k for k, v in word2vec.items()}
 
 
@@ -77,23 +74,18 @@ def lda_runthrough_query(model_path, documents, corpus, vocab, K, alpha, eta):
     return lda_model.log_perplexity(corpus)
 
 
-def evaluate_document_query(queries, dt_matrix, tw_matrix, evaluation_function):
-    """
-
-    :param queries: queries
-    :param dt_matrix: document topic matrix
-    :param tw_matrix: topic word matrix
-    :param evaluation_function: the given evaluation function
-    :return: evaluation results
-    """
-    result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
+def evaluate_queries(queries, evaluation_function):
     results = []
     for query in tqdm(queries):
-        res, p_vec = evaluation_function(query, result_matrix)
-        results.append(res)
+        if type(query[1]) == str:
+            p_vec = evaluation_function([query[1]])
+            results.append(p_vec)
+        else:
+            p_vec = evaluation_function(query[1])
+            results.append(p_vec)
     return results
 
-
+  
 def generate_document_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1,
                               max_length: int = 4):
     """
@@ -209,71 +201,6 @@ def preprocess_query(query: str, word_check=True):
     return words
 
 
-def make_personalization_vector(word: str, topic_doc_matrix, corpus: Dictionary, lda: LdaModel):
-    """
-    Making a personalization vector based on the topics.
-    Gives each documents in the document a score based on the distribution value
-    :param lda: the lda model
-    :param corpus: a dictionary over the whole document set
-    :param word: a word
-    :param topic_doc_matrix: topic document matrix
-    :return: np.ndarray
-    """
-    topics = get_document_topics_from_model([word], lda, corpus)
-    vector = np.zeros(topic_doc_matrix.shape[0])
-    for key, value in topics.items():
-        vector[topic_doc_matrix.getrow(key).nonzero()[1]] = value
-    return vector
-
-
-def make_personalization_vector_word_based(word: str, topic_doc_matrix, lda):
-    """
-    Takes a query and transforms it into a vector based on each words topic distribution
-    For each word we find its topic distribution and compare it against every other document
-    using jensen shannon distance.
-    :param word: a word
-    :param topic_doc_matrix: topic document matrix
-    :param lda: the lda model
-    :return: a personalization vector (np.ndarray)
-    """
-    # Initialization
-    p_vector = np.zeros(topic_doc_matrix.shape[0])
-    vector = np.zeros(topic_doc_matrix.shape[1])
-    df = pandas.read_csv("Generated Files/word2vec.csv", header=None)
-    words = dict(zip(df[0], df[1]))
-    topic_word_matrix = lda.get_topics()
-
-    # Getting the word index and then getting the topic distribution for that given word
-    word_index = [key for key, value in words.items() if value == word][0]
-    vector += topic_word_matrix.T[word_index]
-
-    for index, doc in enumerate(topic_doc_matrix):
-        p_vector[index] = 1 - distance.jensenshannon(vector, doc.toarray()[0])
-    return p_vector
-
-
-def query_topics(query: List[str], model_path: str, topic_doc_path, corpus) -> np.ndarray:
-    """
-    Takes a list of words and makes a personalization vector based on these
-    :param corpus: the corpus of the whole document set
-    :param query: list of words
-    :param model_path: lda model path
-    :param topic_doc_path: topic document matrix path
-    :return: a personalization vector
-    """
-
-    lda = load_lda(model_path)
-    topic_doc_matrix = sp.load_npz(topic_doc_path)[:2000]
-    p_vector = np.zeros(2000)
-    for word in query:
-        if word in corpus.values():
-            p_vector += make_personalization_vector_word_based(word, topic_doc_matrix, lda)
-        else:
-            # Todo needs to be cut
-            p_vector += make_personalization_vector(word, topic_doc_matrix, corpus, lda)
-    return p_vector / np.linalg.norm(p_vector)
-
-
 def query_expansion(query: List[str], n_top_word: int = 10) -> List[str]:
     """
     Expands a given query based on the word in the query
@@ -284,10 +211,8 @@ def query_expansion(query: List[str], n_top_word: int = 10) -> List[str]:
     :return: expanded query
     """
     documents = utility.load_vector_file("Generated Files/doc2word.csv")
-    doc_id = query[0]
     result = []
-    words = query[1]
-    for word in words.split(' '):
+    for word in query:
         expanded_query = {}
         # append original word to query
         document_ids = [ids for ids, values in documents.items() if word in values]
@@ -297,16 +222,18 @@ def query_expansion(query: List[str], n_top_word: int = 10) -> List[str]:
             word_index = document.index(word)
             if word_index == 0:
                 before_word = document[word_index]
+                expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
             elif word_index == len(document) - 1:
                 after_word = document[word_index]
+                expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
             else:
                 before_word = document[word_index - 1]
                 after_word = document[word_index + 1]
-        expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
-        expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
+                expanded_query[before_word] = expanded_query.get(before_word, 0) + 1
+                expanded_query[after_word] = expanded_query.get(after_word, 0) + 1
         sorted_query_words = list(dict(sorted(expanded_query.items(), key=lambda x: x[1], reverse=True)).keys())
         result.append(sorted_query_words[:n_top_word])
-    result.append(words.split(' '))
+    result.append(query)
     return list(set(itertools.chain.from_iterable(result)))
 
 
@@ -316,8 +243,8 @@ def query_run_with_expansion():
     for each query generated.
     :return: 
     """
-    vectorizer = sp.load_npz("Generated Files/tfidf_matrix.npz")
-    words = utility.load_vector_file("Generated Files/word2vec.csv")
+    vectorizer = sp.load_npz("generated_files/tfidf_matrix.npz")
+    words = utility.load_vector_file("generated_files/word2vec.csv")
     dictionary = Dictionary([words.values()])
     queries = generate_document_queries(vectorizer, words, 10, 4)
     expanded_queries = []
@@ -336,32 +263,22 @@ def query_run_with_expansion():
 
 
 if __name__ == '__main__':
-    print("Hello world!")
+    # Loading matrices
+    cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
     dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
+    word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 
-    d_queries1 = generate_document_queries(cv_matrix, word2vec, 80, min_length=1, max_length=1)
-    d_queries2 = generate_document_queries(cv_matrix, word2vec, 80, min_length=2, max_length=2)
-    d_queries3 = generate_document_queries(cv_matrix, word2vec, 80, min_length=3, max_length=3)
-    d_queries4 = generate_document_queries(cv_matrix, word2vec, 80, min_length=4, max_length=4)
+    for i in range(1, 5):
+        # Doc query generation
+        queries = generate_document_queries(cv_matrix, word2vec, 80, min_length=i, max_length=i)
+        # Doc query expansion
+        queries = {a: ' '.join(query_expansion(b.split(' '))) for a, b in queries.items()}
+        utility.save_vector_file(f"queries/exp_doc_queries{i}.csv", queries)
+        print(queries)
 
-    print(str(check_valid_queries(d_queries1)))
-    print(str(check_valid_queries(d_queries2)))
-    print(str(check_valid_queries(d_queries3)))
-    print(str(check_valid_queries(d_queries4)))
-
-    utility.save_vector_file("Generated Files/doc_queries1.csv", d_queries1)
-    utility.save_vector_file("Generated Files/doc_queries2.csv", d_queries2)
-    utility.save_vector_file("Generated Files/doc_queries3.csv", d_queries3)
-    utility.save_vector_file("Generated Files/doc_queries4.csv", d_queries4)
-
-    t_queries1 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=1, max_length=1)
-    t_queries2 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=2, max_length=2)
-    t_queries3 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=3, max_length=3)
-    t_queries4 = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=4, max_length=4)
-
-    utility.save_vector_file_nonunique("Generated Files/top_queries1.csv", t_queries1)
-    utility.save_vector_file_nonunique("Generated Files/top_queries2.csv", t_queries2)
-    utility.save_vector_file_nonunique("Generated Files/top_queries3.csv", t_queries3)
-    utility.save_vector_file_nonunique("Generated Files/top_queries4.csv", t_queries4)
-
-    print("Goodbye cruel world...")
+        # Topic query generation
+        queries = generate_topic_queries(cv_matrix, dt_matrix, word2vec, 80, min_length=i, max_length=i)
+        # Topic query expansion
+        queries = [(a, ' '.join(query_expansion(b.split(' ')))) for a, b in queries]
+        utility.save_vector_file_nonunique(f"queries/exp_top_queries{i}.csv", queries)
+        print(queries)

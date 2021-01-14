@@ -11,7 +11,7 @@ from IPython.display import display
 from tqdm import tqdm
 
 from grid_search import save_fig
-from lda import load_lda, load_corpus
+from models.lda import load_lda
 from preprocessing import preprocess
 
 
@@ -225,7 +225,7 @@ def plot_word_count_distribution_topics(lda_model, df_dominant_topics, max_word_
 def get_save_path(model_path: str, corpus_path: str):
     lda_model_name = model_path.split("/")[-1]
     corpus_name = corpus_path.split("/")[-1]
-    return "Generated Files/df_" + lda_model_name + "_" + corpus_name + ".pkl", lda_model_name, corpus_name
+    return "generated_files/df_" + lda_model_name + "_" + corpus_name + ".pkl", lda_model_name, corpus_name
 
 
 def create_or_load_doc_topic_dataframe(lda_model, corpus, tdf, lda_path, corpus_path):

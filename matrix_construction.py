@@ -39,7 +39,7 @@ def save_document_similarity(td_matrix: sp.spmatrix, start: int, end: int, pool:
     with Pool(pool) as p:
         similarities = p.map(partial(document_similarity, td_matrix), range(start, end))
     matrix = sp.vstack(similarities)
-    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(matrix))
+    sp.save_npz(f"generated_files/adj/adj_matrix{start}-{end}", sp.csr_matrix(matrix))
     del matrix
     del similarities
 
@@ -154,8 +154,8 @@ def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
         max_ = td_matrix.shape[0]
         with tqdm(total=max_) as pbar:
             for index, distance in enumerate(
-                    p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
-                sp.save_npz(f"Generated Files/adj/adj_matrix{index}", sp.csr_matrix(distance))
+              p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
+                sp.save_npz(f"generated_files/adj/adj_matrix{index}", sp.csr_matrix(distance))
                 pbar.update()
 
 
@@ -178,13 +178,12 @@ def jenson_shannon_distance(doc1, doc2):
 if __name__ == '__main__':
     # Loading topic-document distribution matrix and initialisation
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
-    matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
-    # construct_adj_matrix_based_on_topic_document_matrix(matrix)
+    # matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_doc_matrix.npz")
     construct_adj_matrix_based_on_topic_document_matrix(matrix)
-    sp.save_npz("Generated Files/full_adj_matrix.npz", stack_matrices_in_folder("Generated Files/adj/"))
+    sp.save_npz("generated_files/full_adj_matrix.npz", stack_matrices_in_folder("generated_files/adj/"))
 
     # # Save full matrix
-    # sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
+    # sp.save_npz("generated_files/full_matrix", stack_matrices_in_folder("generated_files/adj/"))
     #
     # # Load full matrix
-    # adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
+    # adj_matrix = sp.load_npz("generated_files/full_matrix.npz")

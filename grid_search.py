@@ -2,12 +2,10 @@ import itertools
 import math
 from typing import List
 import matplotlib.pyplot as plt
-import numpy as np
 from gensim.corpora import Dictionary
 from tqdm import tqdm
 import utility
-import scipy.sparse as sp
-from lda import compute_coherence_values, compute_coherence_values_k_and_priors
+from models.lda import compute_coherence_values, compute_coherence_values_k_and_priors
 from preprocessing import preprocess
 import query_handling
 
@@ -33,7 +31,7 @@ def general_grid_search(function, fixed_params, hyper_params, plot=True, y_label
         params.update(fixed_params)
         # call function using **kwargs and store result
         res = function(**params)
-        with open("Generated Files/results.txt", 'a+') as file:
+        with open("generated_files/results.txt", 'a+') as file:
             file.write(str(comb) + ',' + str(res) + '\n')
         results.append(res)
     # plot results
@@ -150,8 +148,8 @@ def save_fig(plot_file_name: str):
 
 if __name__ == '__main__':
     model_path = 'LDA/model/document_model'
-    words = utility.load_vector_file("Generated Files/word2vec.csv")
-    documents = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
+    words = utility.load_vector_file("generated_files/word2vec.csv")
+    documents = list(utility.load_vector_file("generated_files/doc2word.csv").values())
     vocab = Dictionary(documents)
     corpus = [vocab.doc2bow(doc) for doc in documents]
 
@@ -161,5 +159,5 @@ if __name__ == '__main__':
 
     fixed_params = {"model_path": "LDA/model/test_model", "documents": documents, "corpus": corpus, "vocab": vocab}
     hyper_params = {"K": Ks, "alpha": alphas, "eta": etas}
-    general_grid_search(query_handling.lda_runthrough_query, fixed_params=fixed_params, hyper_params=hyper_params,
-                        plot=True, save_path="Generated Files/Evaluation/lda_test.png")
+    general_grid_search(query_handling.run_lda_and_compute_perplexity, fixed_params=fixed_params, hyper_params=hyper_params,
+                        plot=True, save_path="generated_files/Evaluation/lda_test.png")
