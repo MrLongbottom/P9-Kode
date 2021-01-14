@@ -141,7 +141,7 @@ def matrix_connection_check(adj_matrix) -> bool:
     else:
         return True
 
-      
+
 def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
     """
     Create an adjacency matrix by using the topic-document matrix and it is parallelized
@@ -150,11 +150,11 @@ def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
     :param poolsize: the number of cores you want to use
     :return:
     """
-    distances = []
     with Pool(processes=poolsize) as p:
         max_ = td_matrix.shape[0]
         with tqdm(total=max_) as pbar:
-            for index, distance in enumerate(p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
+            for index, distance in enumerate(
+              p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
                 sp.save_npz(f"generated_files/adj/adj_matrix{index}", sp.csr_matrix(distance))
                 pbar.update()
 
@@ -167,19 +167,19 @@ def calculate_js_on_matrix_row(td_matrix, i):
     :return: an array with similarities
     """
     doc1 = td_matrix.getrow(i).toarray()[0]
-    array = np.zeros(td_matrix.shape[0])
-    for j in range(i):
-        doc2 = td_matrix.getrow(j).toarray()[0]
-        # value is set to be similarity (1 - distance)
-        array[j] = 1 - distance.jensenshannon(doc1, doc2)
+    array = np.apply_along_axis(partial(jenson_shannon_distance, doc1), 1, td_matrix.toarray())
     return array
+
+
+def jenson_shannon_distance(doc1, doc2):
+    return 1 - distance.jensenshannon(doc1, doc2)
 
 
 if __name__ == '__main__':
     # Loading topic-document distribution matrix and initialisation
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
     # matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_doc_matrix.npz")
-    # construct_adj_matrix_based_on_topic_document_matrix(matrix)
+    construct_adj_matrix_based_on_topic_document_matrix(matrix)
     sp.save_npz("generated_files/full_adj_matrix.npz", stack_matrices_in_folder("generated_files/adj/"))
 
     # # Save full matrix
