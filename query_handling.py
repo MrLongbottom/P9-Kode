@@ -1,24 +1,21 @@
 import itertools
 import random
-from functools import partial
-from multiprocessing import Pool
+from typing import Dict, List
+
 import numpy as np
 import scipy.sparse as sp
-import lda
-from typing import Dict, List
-import pandas
 from gensim.corpora import Dictionary
-from gensim.models import LdaModel
-from scipy.spatial import distance
+from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.preprocessing import normalize
+from tqdm import tqdm
+
 import preprocessing
 import utility
-from sklearn.feature_extraction.text import TfidfTransformer
-from tqdm import tqdm
-from lda import get_document_topics_from_model, load_lda
+from models import lda
+from models.lda import get_document_topics_from_model, load_lda
 
-doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
-word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+doc2word = utility.load_vector_file("generated_files/doc2word.csv")
+word2vec = utility.load_vector_file("generated_files/word2vec.csv")
 inverse_w2v = {v: k for k, v in word2vec.items()}
 
 
@@ -88,7 +85,7 @@ def evaluate_queries(queries, evaluation_function):
             results.append(p_vec)
     return results
 
-
+  
 def generate_document_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1,
                               max_length: int = 4):
     """
@@ -204,71 +201,6 @@ def preprocess_query(query: str, word_check=True):
     return words
 
 
-def make_personalization_vector(word: str, topic_doc_matrix, corpus: Dictionary, lda: LdaModel):
-    """
-    Making a personalization vector based on the topics.
-    Gives each documents in the document a score based on the distribution value
-    :param lda: the lda model
-    :param corpus: a dictionary over the whole document set
-    :param word: a word
-    :param topic_doc_matrix: topic document matrix
-    :return: np.ndarray
-    """
-    topics = get_document_topics_from_model([word], lda, corpus)
-    vector = np.zeros(topic_doc_matrix.shape[0])
-    for key, value in topics.items():
-        vector[topic_doc_matrix.getrow(key).nonzero()[1]] = value
-    return vector
-
-
-def make_personalization_vector_word_based(word: str, topic_doc_matrix, lda):
-    """
-    Takes a query and transforms it into a vector based on each words topic distribution
-    For each word we find its topic distribution and compare it against every other document
-    using jensen shannon distance.
-    :param word: a word
-    :param topic_doc_matrix: topic document matrix
-    :param lda: the lda model
-    :return: a personalization vector (np.ndarray)
-    """
-    # Initialization
-    p_vector = np.zeros(topic_doc_matrix.shape[0])
-    vector = np.zeros(topic_doc_matrix.shape[1])
-    df = pandas.read_csv("Generated Files/word2vec.csv", header=None)
-    words = dict(zip(df[0], df[1]))
-    topic_word_matrix = lda.get_topics()
-
-    # Getting the word index and then getting the topic distribution for that given word
-    word_index = [key for key, value in words.items() if value == word][0]
-    vector += topic_word_matrix.T[word_index]
-
-    for index, doc in enumerate(topic_doc_matrix):
-        p_vector[index] = 1 - distance.jensenshannon(vector, doc.toarray()[0])
-    return p_vector
-
-
-def query_topics(query: List[str], model_path: str, topic_doc_path, corpus) -> np.ndarray:
-    """
-    Takes a list of words and makes a personalization vector based on these
-    :param corpus: the corpus of the whole document set
-    :param query: list of words
-    :param model_path: lda model path
-    :param topic_doc_path: topic document matrix path
-    :return: a personalization vector
-    """
-
-    lda = load_lda(model_path)
-    topic_doc_matrix = sp.load_npz(topic_doc_path)[:2000]
-    p_vector = np.zeros(2000)
-    for word in query:
-        if word in corpus.values():
-            p_vector += make_personalization_vector_word_based(word, topic_doc_matrix, lda)
-        else:
-            # Todo needs to be cut
-            p_vector += make_personalization_vector(word, topic_doc_matrix, corpus, lda)
-    return p_vector / np.linalg.norm(p_vector)
-
-
 def query_expansion(query: List[str], n_top_word: int = 10) -> List[str]:
     """
     Expands a given query based on the word in the query
@@ -311,8 +243,8 @@ def query_run_with_expansion():
     for each query generated.
     :return: 
     """
-    vectorizer = sp.load_npz("Generated Files/tfidf_matrix.npz")
-    words = utility.load_vector_file("Generated Files/word2vec.csv")
+    vectorizer = sp.load_npz("generated_files/tfidf_matrix.npz")
+    words = utility.load_vector_file("generated_files/word2vec.csv")
     dictionary = Dictionary([words.values()])
     queries = generate_document_queries(vectorizer, words, 10, 4)
     expanded_queries = []

@@ -39,7 +39,7 @@ def save_document_similarity(td_matrix: sp.spmatrix, start: int, end: int, pool:
     with Pool(pool) as p:
         similarities = p.map(partial(document_similarity, td_matrix), range(start, end))
     matrix = sp.vstack(similarities)
-    sp.save_npz(f"Generated Files/adj/adj_matrix{start}-{end}", sp.csr_matrix(matrix))
+    sp.save_npz(f"generated_files/adj/adj_matrix{start}-{end}", sp.csr_matrix(matrix))
     del matrix
     del similarities
 
@@ -141,7 +141,7 @@ def matrix_connection_check(adj_matrix) -> bool:
     else:
         return True
 
-      
+
 def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
     """
     Create an adjacency matrix by using the topic-document matrix and it is parallelized
@@ -150,16 +150,13 @@ def construct_adj_matrix_based_on_topic_document_matrix(td_matrix, poolsize=8):
     :param poolsize: the number of cores you want to use
     :return:
     """
-    distances = []
     with Pool(processes=poolsize) as p:
         max_ = td_matrix.shape[0]
         with tqdm(total=max_) as pbar:
-            for _, distance in enumerate(p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
-                distances.append(distance)
+            for index, distance in enumerate(
+              p.imap(partial(calculate_js_on_matrix_row, td_matrix), range(max_))):
+                sp.save_npz(f"generated_files/adj/adj_matrix{index}", sp.csr_matrix(distance))
                 pbar.update()
-    adj_matrix = np.vstack(distances)
-    adj_matrix = sp.csr_matrix(adj_matrix)
-    return adj_matrix
 
 
 def calculate_js_on_matrix_row(td_matrix, i):
@@ -170,22 +167,23 @@ def calculate_js_on_matrix_row(td_matrix, i):
     :return: an array with similarities
     """
     doc1 = td_matrix.getrow(i).toarray()[0]
-    array = np.zeros(td_matrix.shape[0])
-    for j in range(i):
-        doc2 = td_matrix.getrow(j).toarray()[0]
-        # value is set to be similarity (1 - distance)
-        array[j] = 1 - distance.jensenshannon(doc1, doc2)
+    array = np.apply_along_axis(partial(jenson_shannon_distance, doc1), 1, td_matrix.toarray())
     return array
+
+
+def jenson_shannon_distance(doc1, doc2):
+    return 1 - distance.jensenshannon(doc1, doc2)
 
 
 if __name__ == '__main__':
     # Loading topic-document distribution matrix and initialisation
     # whether csr_matrix or csc_matrix is faster will probably depend on the number of topics per document.
-    matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-    sp.save_npz("Generated Files/adj_matrix.npz", construct_adj_matrix_based_on_topic_document_matrix(matrix))
+    # matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_doc_matrix.npz")
+    construct_adj_matrix_based_on_topic_document_matrix(matrix)
+    sp.save_npz("generated_files/full_adj_matrix.npz", stack_matrices_in_folder("generated_files/adj/"))
 
     # # Save full matrix
-    # sp.save_npz("Generated Files/full_matrix", stack_matrices_in_folder("Generated Files/adj/"))
+    # sp.save_npz("generated_files/full_matrix", stack_matrices_in_folder("generated_files/adj/"))
     #
     # # Load full matrix
-    # adj_matrix = sp.load_npz("Generated Files/full_matrix.npz")
+    # adj_matrix = sp.load_npz("generated_files/full_matrix.npz")

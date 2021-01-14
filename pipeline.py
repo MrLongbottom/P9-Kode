@@ -1,7 +1,4 @@
-import math
-from gensim.corpora import Dictionary
-
-from lda import run_lda
+from models.lda import run_lda
 from preprocessing import preprocess
 
 if __name__ == '__main__':
@@ -18,5 +15,5 @@ if __name__ == '__main__':
             documents=documents,
             corpus=corpus,
             vocab=vocab,
-            save_path="Generated Files/",
+            save_path="generated_files/",
             param_combination=params)
