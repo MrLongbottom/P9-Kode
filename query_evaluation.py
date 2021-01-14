@@ -1,21 +1,22 @@
-from typing import Tuple
+from functools import partial
+from multiprocessing import Pool
+from typing import Tuple, List
 
 import numpy as np
 import scipy.sparse as sp
 from rank_bm25 import BM25Okapi
 from tqdm import tqdm
-from gensim.models import TfidfModel
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
+
 import preprocessing
 import query_handling
 import utility
 
-cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
-dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
-tw_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_word_matrix.npz")
+cv_matrix = sp.load_npz("generated_files/count_vec_matrix.npz")
+dt_matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_doc_matrix.npz")
+tw_matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_word_matrix.npz")
 wordfreq = cv_matrix.sum(axis=0)
-doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
-word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+doc2word = utility.load_vector_file("generated_files/doc2word.csv")
+word2vec = utility.load_vector_file("generated_files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 inverse_w2v = {v: k for k, v in word2vec.items()}
 
@@ -42,8 +43,8 @@ def tfidf_evaluate_queries(queries):
 
 def tfidf_evaluate_query(query):
     tfidf = preprocessing.cal_tf_idf(cv_matrix)
-    #model = TfidfTransformer()
-    #tfidf = model.fit_transform(cv_matrix)
+    # model = TfidfTransformer()
+    # tfidf = model.fit_transform(cv_matrix)
     re_word2vec = {v: k for k, v in word2vec.items()}
     word_vecs = []
     for word in query.split(' '):
@@ -106,20 +107,70 @@ def lm_evaluate_word_doc(document_index, word_index):
     number_of_word_tokens = len(word2vec)
     score = ((N_d / (N_d + dirichlet_smoothing)) * (tf / N_d)) + \
             ((1 - (N_d / (N_d + dirichlet_smoothing))) * (
-                w_freq_in_D / number_of_word_tokens))
+                    w_freq_in_D / number_of_word_tokens))
     return score
 
 
-def lm_lda_combo_evaluate_word_doc(document_index, word_index):
+def evaluate_document_query(queries, dt_matrix, tw_matrix, evaluation_function):
     """
-    Combines the two score functions from LDA and LM
-    :param document_index: document
-    :param word_index: word
-    :return: a score
+
+    :param queries: queries
+    :param dt_matrix: document topic matrix
+    :param tw_matrix: topic word matrix
+    :param evaluation_function: the given evaluation function
+    :return: evaluation results
     """
-    lm_score = lm_evaluate_word_doc(document_index, word_index)
-    lda_score = lda_evaluate_word_doc(document_index, word_index)
-    return lda_score * lm_score
+    result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
+    results = []
+    for query in tqdm(queries):
+        res, p_vec = evaluation_function(query, result_matrix)
+        results.append(res)
+    return results
+
+
+def evaluate_query(function, query_index, query_words, tell=False):
+    """
+    Evaluating a query based on a function given and the query
+    which consists of query index and words
+    :param function: the evaluation function you want to use
+    :param query_index: the query's document index
+    :param query_words: the words in the query
+    :param tell: do you want to print top 3 and the words after it has finished
+    :return: the index of the query in the ranked list and the list it self.
+    """
+    lst = {}
+    with Pool(processes=8) as p:
+        max_ = len(doc2word)
+        with tqdm(total=max_) as pbar:
+            for i, score in enumerate(
+                    p.imap(partial(evaluate_query_doc, function, query_words), range(0, max_))):
+                lst[i] = score
+                pbar.update()
+
+    sorted_list = utility.rankify(lst)
+    if tell:
+        print(f"query: {query_words}")
+        print(f"index of document: {sorted_list.index(query_index)}")
+        print(f"number 1 index: {sorted_list[0]} number 1: words {doc2word[sorted_list[0]]}\n")
+        print(f"number 2 index: {sorted_list[1]} number 2: words {doc2word[sorted_list[1]]}\n")
+        print(f"number 3 index: {sorted_list[2]} number 3: words {doc2word[sorted_list[2]]}\n")
+        print(f"real document: {doc2word[query_index]}")
+    return sorted_list.index(query_index), lst
+
+
+def evaluate_query_doc(function, query: List[str], document_index: int):
+    """
+    Evaluate a query based on a function and document index
+    :param function: the evaluation function
+    :param query: the list of query words
+    :param document_index: the index of the document
+    :return: the product of the evaluate function
+    """
+    p_wd = []
+    for word in query:
+        word_index = inverse_w2v[word]
+        p_wd.append(function(document_index, word_index))
+    return np.prod(p_wd)
 
 
 if __name__ == '__main__':

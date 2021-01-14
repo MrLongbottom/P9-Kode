@@ -108,10 +108,10 @@ def stats_of_list(list, name: str = "List", tell: bool = True):
 
 
 if __name__ == '__main__':
-    td_matrix = sp.load_npz("Generated Files/topic_doc_matrix.npz")
-    tw_matrix = sp.load_npz("Generated Files/topic_word_matrix.npz")
+    td_matrix = sp.load_npz("generated_files/topic_doc_matrix.npz")
+    tw_matrix = sp.load_npz("generated_files/topic_word_matrix.npz")
     n = (tw_matrix.shape[0]*tw_matrix.shape[1])-len(tw_matrix.nonzero()[1])
     stats1 = evaluate_distribution_matrix(td_matrix, column_name="Topic", row_name="Document",
-                                          save_path=f"Generated Files/Evaluation/td_eval", show=False)
+                                          save_path=f"generated_files/Evaluation/td_eval", show=False)
     stats2 = evaluate_distribution_matrix(tw_matrix, column_name="Word", row_name="Topic",
-                                          save_path=f"Generated Files/Evaluation/tw_eval", show=False)
+                                          save_path=f"generated_files/Evaluation/tw_eval", show=False)

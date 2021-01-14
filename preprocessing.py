@@ -21,22 +21,22 @@ from typing import Dict
 from wiktionaryparser import WiktionaryParser
 
 
-def preprocess(filename_or_docs="2017_data.json", word_save_filename="Generated Files/word2vec.csv",
-               doc_save_filename="Generated Files/doc2vec.csv", doc_word_save_filename="Generated Files/doc2word.csv",
-               doc_word_matrix_save_filename="Generated Files/count_vec_matrix.npz", word_minimum_count=20,
+def preprocess(filename_or_docs="2017_data.json", word_save_filename="generated_files/word2vec.csv",
+               doc_save_filename="generated_files/doc2vec.csv", doc_word_save_filename="generated_files/doc2word.csv",
+               doc_word_matrix_save_filename="generated_files/count_vec_matrix.npz", word_minimum_count=20,
                word_maximum_doc_percent=0.25,
                doc_minimum_length=20, save=True, word_check=True):
     """
     preprocesses a json file into a docword count vectorization matrix, removing unhelpful words and documents.
     :param filename_or_docs: path of .json file to load (default: "documents.json") or the documents to preprocess
     :param word_save_filename: path of .csv file to save words in vector format. Only relevant if save=True.
-    (default: "Generated Files/word2vec.csv")
+    (default: "generated_files/word2vec.csv")
     :param doc_save_filename: path of .csv file to save documents in vector format. Only relevant if save=True.
-    (default: "Generated Files/doc2vec.csv")
+    (default: "generated_files/doc2vec.csv")
     :param doc_word_save_filename: path of .csv file to map documents and contained words using ids.
-    (default: "Generated Files/doc2word.csv")
+    (default: "generated_files/doc2word.csv")
     :param doc_word_matrix_save_filename: path of the .npz file which contains the Count Vectorization matrix.
-    (default: "Generated Files/count_vec_matrix.npz")
+    (default: "generated_files/count_vec_matrix.npz")
     :param word_minimum_count: minimum amount a word must be used in the document set to be considered viable
     (default: 20).
     :param word_maximum_doc_percent: maximum percentage of documents that may contain a word for it to be considered
@@ -65,7 +65,7 @@ def preprocess(filename_or_docs="2017_data.json", word_save_filename="Generated 
     # Get stopwords
     nltk.download('stopwords')
     stop_words = stopwords.words('danish')
-    stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
+    stop_words.extend(list(utility.load_vector_file("word_datasets/stopwords.csv").values()))
     # Remove stopwords
     words = vocab.token2id
     bad_ids = []
@@ -107,7 +107,7 @@ def preprocess(filename_or_docs="2017_data.json", word_save_filename="Generated 
         utility.save_vector_file(word_save_filename, words)
         utility.save_vector_file(doc_save_filename, document_ids.keys())
         utility.save_vector_file(doc_word_save_filename, [' '.join(x) for x in documents])
-        vocab.save("Generated Files/vocab")
+        vocab.save("generated_files/vocab")
         sparse.save_npz(doc_word_matrix_save_filename, cv_matrix)
     print('Finished Preprocessing Procedure.')
     return cv_matrix, vocab, documents
@@ -116,7 +116,7 @@ def preprocess(filename_or_docs="2017_data.json", word_save_filename="Generated 
 def cut_off_words(corpus, word_maximum_doc_percent, word_minimum_count, use_tfidf: bool = False):
     nltk.download('stopwords')
     stop_words = stopwords.words('danish')
-    stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
+    stop_words.extend(list(utility.load_vector_file("word_datasets/stopwords.csv").values()))
     if not use_tfidf:
         cv = CountVectorizer(max_df=word_maximum_doc_percent, min_df=word_minimum_count, stop_words=stop_words)
         cv_matrix = cv.fit_transform(corpus)
@@ -141,7 +141,7 @@ def stem_lem(words, documents, stem_or_lem: bool = False):
     :return: new corpus and words list, were all words have been replaced by stemmed/lemmetized versions.
     """
     stop_words = stopwords.words('danish')
-    stop_words.extend(list(utility.load_vector_file("NLP/stopwords.csv").values()))
+    stop_words.extend(list(utility.load_vector_file("word_datasets/stopwords.csv").values()))
     if stem_or_lem:
         # Stemming
         stemmer = DanishStemmer()
@@ -342,8 +342,8 @@ def new_word_db_fetch(words, wik_word_index=0, wik_nonword_index=0):
         except AttributeError:
             print("something went wrong, with fidning a word on WikWord.")
             continue
-    csv_append('NLP/wik_nonwords.csv', new_nonwords, wik_nonword_index)
-    csv_append('NLP/wik_words.csv', new_words, wik_word_index)
+    csv_append('word_datasets/wik_nonwords.csv', new_nonwords, wik_nonword_index)
+    csv_append('word_datasets/wik_words.csv', new_words, wik_word_index)
     return new_words, new_nonwords
 
 
@@ -356,7 +356,7 @@ def load_word_files(filenames):
 
 
 def word_checker(words):
-    files = load_word_files(['NLP/dannet_words.csv', 'NLP/wik_words.csv', 'NLP/wik_nonwords.csv'])
+    files = load_word_files(['word_datasets/dannet_words.csv', 'word_datasets/wik_words.csv', 'word_datasets/wik_nonwords.csv'])
     dannet_words = files[0]
     wik_words = files[1]
     wik_nonwords = files[2]
@@ -380,8 +380,8 @@ def word_checker(words):
 
 if __name__ == '__main__':
     """
-    words = utility.load_vector_file("Generated Files/word2vec.csv")
-    docs = list(utility.load_vector_file("Generated Files/doc2word.csv").values())
+    words = utility.load_vector_file("generated_files/word2vec.csv")
+    docs = list(utility.load_vector_file("generated_files/doc2word.csv").values())
     words2 = {}
     for doc in docs:
         for word in doc:

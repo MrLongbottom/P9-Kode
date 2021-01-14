@@ -1,6 +1,6 @@
 
-Generated Files/*
-!Generated Files/empty
+generated_files/*
+!generated_files/empty
 LDA/model/*
 !LDA/model/empty
 
@@ -33,6 +33,7 @@ LDA/model/*
 .idea/**/dictionaries
 .idea/**/shelf
 .idea/*
+/data
 
 # Generated files
 .idea/**/contentModel.xml
