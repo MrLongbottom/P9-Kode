@@ -195,7 +195,7 @@ if __name__ == '__main__':
     # np.save("bm25_evaluate_matrices", matrices)
 
     # load matrix
-    model1 = list(np.load("pr_matrix.npy"))
+    model1 = list(np.load("data/pr_matrix.npy"))
     model1 = ([np.vstack([np.array(model1), ] * 80), ] * 8)
     model2 = list(np.load("lda_evaluate_matrices.npy"))
     model3 = list(np.load("bm25_evaluate_matrices.npy"))
