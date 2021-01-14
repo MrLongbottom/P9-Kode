@@ -1,55 +1,42 @@
+import os
 from functools import partial
 from multiprocessing import Pool
-from typing import Tuple, List
+from typing import List
 
 import numpy as np
 import scipy.sparse as sp
 from rank_bm25 import BM25Okapi
+from sklearn.preprocessing import normalize
 from tqdm import tqdm
 
 import preprocessing
 import query_handling
 import utility
 
-cv_matrix = sp.load_npz("generated_files/count_vec_matrix.npz")
-dt_matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_doc_matrix.npz")
-tw_matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_word_matrix.npz")
-wordfreq = cv_matrix.sum(axis=0)
-doc2word = utility.load_vector_file("generated_files/doc2word.csv")
-word2vec = utility.load_vector_file("generated_files/word2vec.csv")
+cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
+dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
+tw_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_word_matrix.npz")
+wordfreq = np.array(cv_matrix.sum(axis=0))[0]
+doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
+word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 inverse_w2v = {v: k for k, v in word2vec.items()}
+result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
+bm25 = BM25Okapi(list(doc2word.values()))
 
 
-def bm25_evaluate_query(queries):
-    bm25 = BM25Okapi(list(doc2word.values()))
-    correct_doc_ranks = []
-    all_doc_scores = []
-    for doc_id, words in tqdm(queries.items()):
-        scores = bm25.get_scores(words.split(' '))
-        ranks = utility.rankify(dict(enumerate(scores)))
-        all_doc_scores.append(ranks)
-        correct_doc_ranks.append(ranks.index(doc_id))
-    return correct_doc_ranks, all_doc_scores
+def bm25_evaluate_query(query: List[str]):
+    return bm25.get_scores(query)
 
 
-def tfidf_evaluate_queries(queries):
-    ranks = []
-    for doc_id, query in queries.items():
-        doc_ranks = tfidf_evaluate_query(query)
-        ranks.append(doc_ranks.index(doc_id))
-    return ranks
-
-
-def tfidf_evaluate_query(query):
+def tfidf_evaluate_query(query: List[str]):
     tfidf = preprocessing.cal_tf_idf(cv_matrix)
     # model = TfidfTransformer()
     # tfidf = model.fit_transform(cv_matrix)
-    re_word2vec = {v: k for k, v in word2vec.items()}
     word_vecs = []
-    for word in query.split(' '):
-        if word in re_word2vec:
-            word_vector = tfidf.getcol(re_word2vec[word])
+    for word in query:
+        if word in inverse_w2v:
+            word_vector = tfidf.getcol(inverse_w2v[word])
             word_vecs.append(word_vector.toarray())
         else:
             raise Exception("PHUCK!")
@@ -59,121 +46,161 @@ def tfidf_evaluate_query(query):
     if np.count_nonzero(res) == 0:
         word_vecs = np.stack(word_vecs)
         res = np.sum(word_vecs, axis=0)
-    ranks = utility.rankify(dict(enumerate(res)))
-    return ranks
+    return res
 
 
-def grid_lda_evaluate(query: Tuple[int, str], result_matrix: np.ndarray):
-    """
-    Evaluates a query based on the LDA evaluation measure presented in the paper
-    :param query: query index and a string
-    :param result_matrix: dt matrix * tw matrix
-    :return: returns the ranks and personalization vector
-    """
-    document_index = query[0]
-    word_indexes = [inverse_w2v[x] for x in query[1].split(' ')]
-
+def lda_evaluate(query: List[str]):
+    word_indexes = [inverse_w2v[x] for x in query]
     value = []
     for word_index in word_indexes:
         value.append(result_matrix[:, word_index])
     p_vec = np.multiply.reduce(value)
-    res = utility.rankify(dict(enumerate(p_vec))).index(document_index)
-    return res, p_vec
+    return p_vec
 
 
-def lda_evaluate_word_doc(document_index, word_index):
-    """
-    The LDA evaluates a document against a word and returns the score
-    :param document_index: document
-    :param word_index: word
-    :return: a score
-    """
-    word_topics = tw_matrix.getcol(word_index)
-    doc_topics = dt_matrix[document_index].T
-    score = word_topics.multiply(doc_topics).sum()
-    return score
-
-
-def lm_evaluate_word_doc(document_index, word_index):
+def lm_evaluate_query(query: List[str]):
     """
     The language model evaluates a document against a word and returns the score
-    :param document_index: document
-    :param word_index: word
+    :param query: a list of query words
     :return: a score
     """
-    N_d = len(doc2word[document_index])
-    tf = cv_matrix[document_index, word_index]
-    w_freq_in_D = wordfreq[word_index].data[0]
-    number_of_word_tokens = len(word2vec)
-    score = ((N_d / (N_d + dirichlet_smoothing)) * (tf / N_d)) + \
-            ((1 - (N_d / (N_d + dirichlet_smoothing))) * (
-                    w_freq_in_D / number_of_word_tokens))
-    return score
+    word_indexes = [inverse_w2v[x] for x in query]
+    prob = []
+    for word_index in word_indexes:
+        word_probability = []
+        for document_index in range(dt_matrix.shape[0]):
+            N_d = len(doc2word[document_index])
+            tf = cv_matrix[document_index, word_index]
+            w_freq_in_D = wordfreq[word_index]
+            number_of_word_tokens = len(word2vec)
+            score = ((N_d / (N_d + dirichlet_smoothing)) * (tf / N_d)) + \
+                    ((1 - (N_d / (N_d + dirichlet_smoothing))) * (
+                            w_freq_in_D / number_of_word_tokens))
+            word_probability.append(score)
+        prob.append(np.array(word_probability))
+    return np.multiply.reduce(prob)
 
 
-def evaluate_document_query(queries, dt_matrix, tw_matrix, evaluation_function):
+def hit_point():
     """
-
-    :param queries: queries
-    :param dt_matrix: document topic matrix
-    :param tw_matrix: topic word matrix
-    :param evaluation_function: the given evaluation function
-    :return: evaluation results
+    Calculates the hit accuracy for the first 4 queries
+    :return: the average index of where it hit
     """
-    result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
-    results = []
-    for query in tqdm(queries):
-        res, p_vec = evaluation_function(query, result_matrix)
-        results.append(res)
-    return results
+    hits = []
+    for i in range(4):
+        hit = []
+        ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
+        for query_n, (answer, _) in enumerate(queries[i]):
+            # GTP is answer
+            hit.append(ranks[query_n].index(answer) + 1)
+        hits.append(np.mean(hit))
+        print(np.mean(hit))
+    return hits
 
 
-def evaluate_query(function, query_index, query_words, tell=False):
+def precision_at_x(X, matrices):
     """
-    Evaluating a query based on a function given and the query
-    which consists of query index and words
-    :param function: the evaluation function you want to use
-    :param query_index: the query's document index
-    :param query_words: the words in the query
-    :param tell: do you want to print top 3 and the words after it has finished
-    :return: the index of the query in the ranked list and the list it self.
+    Calculates precision at X
+    :param matrices: 4 ndarrays of document queries + 4 ndarrays of documents
+    :param X: int
+    :return: precision
     """
-    lst = {}
-    with Pool(processes=8) as p:
-        max_ = len(doc2word)
-        with tqdm(total=max_) as pbar:
-            for i, score in enumerate(
-                    p.imap(partial(evaluate_query_doc, function, query_words), range(0, max_))):
-                lst[i] = score
-                pbar.update()
+    precisions = []
+    for i in range(8):
+        precision = []
+        ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
+        if i < 4:
+            for query_n, (answer, _) in enumerate(queries[i]):
+                # GTP is answer
+                if ranks[query_n].index(answer) < X:
+                    precision.append(1 / X)
+        else:
+            with Pool(processes=8) as p:
+                max_ = len(list(enumerate(queries[i])))
+                with tqdm(total=max_) as pbar:
+                    for _, score in enumerate(
+                            p.starmap(partial(precision_function, ranks, X), list(enumerate(queries[i])))):
+                        precision.append(score)
+                        pbar.update()
+        precisions.append(np.mean(precision))
+        print(np.mean(precision))
+    return precisions
 
-    sorted_list = utility.rankify(lst)
-    if tell:
-        print(f"query: {query_words}")
-        print(f"index of document: {sorted_list.index(query_index)}")
-        print(f"number 1 index: {sorted_list[0]} number 1: words {doc2word[sorted_list[0]]}\n")
-        print(f"number 2 index: {sorted_list[1]} number 2: words {doc2word[sorted_list[1]]}\n")
-        print(f"number 3 index: {sorted_list[2]} number 3: words {doc2word[sorted_list[2]]}\n")
-        print(f"real document: {doc2word[query_index]}")
-    return sorted_list.index(query_index), lst
 
-
-def evaluate_query_doc(function, query: List[str], document_index: int):
+def mean_average_precision(matrices):
     """
-    Evaluate a query based on a function and document index
-    :param function: the evaluation function
-    :param query: the list of query words
-    :param document_index: the index of the document
-    :return: the product of the evaluate function
+    Calculates the documents queries for the first 4 iterations and
+    then it calculates the topic queries for the last 4 iterations
+    :param matrices: the 8 query sets
+    :return: mean average precision
     """
-    p_wd = []
-    for word in query:
-        word_index = inverse_w2v[word]
-        p_wd.append(function(document_index, word_index))
-    return np.prod(p_wd)
+    MAP = []
+    for i in range(8):  # 8 because there are 8 sets of queries of different lengths
+        AP = []
+        ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
+        if i < 4:
+            for query_n, (answer, _) in enumerate(queries[i]):
+                # GTP is answer
+                AP.append(1 / (ranks[query_n].index(answer) + 1))
+        else:
+            with Pool(processes=8) as p:
+                max_ = len(list(enumerate(queries[i])))
+                with tqdm(total=max_) as pbar:
+                    for _, score in enumerate(p.starmap(partial(mean_average_precision_inner_function, ranks),
+                                                        list(enumerate(queries[i])))):
+                        AP.append(score)
+                        pbar.update()
+        MAP.append(np.mean(AP))
+        print(np.mean(AP))
+    return MAP
+
+
+def mean_average_precision_inner_function(ranks, query_n, answer):
+    """
+    This function is used within the mean_average_precision function and
+    the gtp within this function is ground truth positives.
+    :param ranks: the ranking of the documents
+    :param query_n: the index of the query we are working with
+    :param answer: what the index of the document we want.
+    :return: mean average precision
+    """
+    topic = dt_matrix.getcol(answer[0]).toarray()
+    threshold = topic.mean()
+    gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
+    gtp_ranks = [ranks[query_n].index(gtp_id) for gtp_id in gtp_ids]
+    gtp_ranks.sort()
+    precision = [(i + 1) / (gtp_ranks[i] + 1) for i in range(len(gtp_ranks))]
+    return np.mean(precision)
+
+
+def precision_function(ranks, X, query_n, answer):
+    topic = dt_matrix.getcol(answer[0]).toarray()
+    threshold = topic.mean()
+    gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
+    gtp_in_N = [x for x in ranks[query_n][:X] if x in gtp_ids]
+    return len(gtp_in_N) / X
 
 
 if __name__ == '__main__':
-    queries = query_handling.generate_document_queries(cv_matrix, word2vec, 100, 4, 4)
-    ranks = evaluate_document_query(queries.items(), dt_matrix, tw_matrix, grid_lda_evaluate)
-    print(ranks)
+    paths = ["queries/" + x for x in os.listdir("queries/")]
+    paths.sort()
+    paths = paths[4:12]
+    doc_queries = [utility.load_vector_file(x) for x in paths[:4]]
+    queries = [[(x, y) for x, y in q.items()] for q in doc_queries]
+    queries.extend([utility.load_vecter_file_nonunique(x) for x in paths[4:]])
+    # matrices = []
+    # for queryset in queries:
+    #    matrices.append(np.array(query_handling.evaluate_queries(queryset, bm25_evaluate_query)))
+    # # save matrix
+    # np.save("bm25_evaluate_matrices", matrices)
+
+    # load matrix
+    model1 = list(np.load("pr_matrix.npy"))
+    model1 = ([np.vstack([np.array(model1), ] * 80), ] * 8)
+    model2 = list(np.load("lda_evaluate_matrices.npy"))
+    model3 = list(np.load("bm25_evaluate_matrices.npy"))
+    matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in
+                zip(model1, model2, model3)]
+
+    pre10 = precision_at_x(10, matrices)
+    utility.save_vector_file("Generated Files/bm25_pre_10", pre10)

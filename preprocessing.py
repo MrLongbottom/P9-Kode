@@ -88,6 +88,10 @@ def preprocess(filename_or_docs="2017_data.json", word_save_filename="generated_
     words = list(vocab.token2id.keys())
     vocab, documents = stem_lem(words, documents, stem_or_lem=False)
 
+    for id, x in enumerate(documents):
+        test = vocab.doc2idx(x)
+        documents[id] = [x[i] for i in range(len(x)) if test[i] != -1]
+
     # transform documents into a matrix containing counts for each word in each document
     step += 1
     print(f"Step {step}: doc-word matrix construction")
