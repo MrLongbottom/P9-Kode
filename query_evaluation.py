@@ -82,13 +82,17 @@ def lm_evaluate_query(query: List[str]):
 
 
 def hit_point():
+    """
+    Calculates the hit accuracy for the first 4 queries
+    :return: the average index of where it hit
+    """
     hits = []
     for i in range(4):
         hit = []
         ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
         for query_n, (answer, _) in enumerate(queries[i]):
             # GTP is answer
-            hit.append(ranks[query_n].index(answer)+1)
+            hit.append(ranks[query_n].index(answer) + 1)
         hits.append(np.mean(hit))
         print(np.mean(hit))
     return hits
@@ -109,12 +113,13 @@ def precision_at_x(X, matrices):
             for query_n, (answer, _) in enumerate(queries[i]):
                 # GTP is answer
                 if ranks[query_n].index(answer) < X:
-                    precision.append(1/X)
+                    precision.append(1 / X)
         else:
             with Pool(processes=8) as p:
                 max_ = len(list(enumerate(queries[i])))
                 with tqdm(total=max_) as pbar:
-                    for _, score in enumerate(p.starmap(partial(precision_function, ranks, X), list(enumerate(queries[i])))):
+                    for _, score in enumerate(
+                            p.starmap(partial(precision_function, ranks, X), list(enumerate(queries[i])))):
                         precision.append(score)
                         pbar.update()
         precisions.append(np.mean(precision))
@@ -141,7 +146,8 @@ def mean_average_precision(matrices):
             with Pool(processes=8) as p:
                 max_ = len(list(enumerate(queries[i])))
                 with tqdm(total=max_) as pbar:
-                    for _, score in enumerate(p.starmap(partial(map_function, ranks), list(enumerate(queries[i])))):
+                    for _, score in enumerate(p.starmap(partial(mean_average_precision_inner_function, ranks),
+                                                        list(enumerate(queries[i])))):
                         AP.append(score)
                         pbar.update()
         MAP.append(np.mean(AP))
@@ -149,7 +155,15 @@ def mean_average_precision(matrices):
     return MAP
 
 
-def map_function(ranks, query_n, answer):
+def mean_average_precision_inner_function(ranks, query_n, answer):
+    """
+    This function is used within the mean_average_precision function and
+    the gtp within this function is ground truth positives.
+    :param ranks: the ranking of the documents
+    :param query_n: the index of the query we are working with
+    :param answer: what the index of the document we want.
+    :return: mean average precision
+    """
     topic = dt_matrix.getcol(answer[0]).toarray()
     threshold = topic.mean()
     gtp_ids = np.nonzero(np.where(topic < threshold, 0, topic))[0]
@@ -185,7 +199,8 @@ if __name__ == '__main__':
     model1 = ([np.vstack([np.array(model1), ] * 80), ] * 8)
     model2 = list(np.load("lda_evaluate_matrices.npy"))
     model3 = list(np.load("bm25_evaluate_matrices.npy"))
-    matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in zip(model1, model2, model3)]
+    matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in
+                zip(model1, model2, model3)]
 
     pre10 = precision_at_x(10, matrices)
     utility.save_vector_file("Generated Files/bm25_pre_10", pre10)
