@@ -11,7 +11,7 @@ if __name__ == '__main__':
     K = 30
     params = (K, 0.1, 0.1)
 
-    run_lda("LDA/model/final_model" + str(params),
+    run_lda("models/final_model",
             documents=documents,
             corpus=corpus,
             vocab=vocab,
