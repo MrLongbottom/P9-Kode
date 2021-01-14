@@ -8,6 +8,7 @@ import pandas as pd
 
 np.seterr(divide='ignore', invalid='ignore')  # There might be an underlying problem for needing this
 
+
 def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tell: bool = True, save_path: str = None,
                                  row_name: str = "column", column_name: str = "row"):
     """
@@ -39,7 +40,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             non_vec = vec.nonzero()[ab]
             non_zeros.append(len(non_vec))
             num_zeros.append(vec.shape[ab] - len(non_vec))
-            per_zeros.append((vec.shape[ab] - len(non_vec))/vec.shape[ab])
+            per_zeros.append((vec.shape[ab] - len(non_vec)) / vec.shape[ab])
             avgs.append(vec.mean())
             maxs.append(vec.max())
             mins.append(vec.min())
@@ -64,9 +65,9 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
         return_stats_combined += (return_stats,)
         # Save stats
         if save_path is not None:
-            with open(save_path+"_"+print_name+'.csv', "w+") as f:
+            with open(save_path + "_" + print_name + '.csv', "w+") as f:
                 for name, stat in zip(stats.keys(), return_stats):
-                    f.write(f"{name}, "+", ".join(str(x) for x in stat)+"\n")
+                    f.write(f"{name}, " + ", ".join(str(x) for x in stat) + "\n")
         # Show stats
         if show or save_path is not None:
             # remove absolute number zero statistics, as they are not in range [0,1]
@@ -76,7 +77,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
             box = df.boxplot()
             box.set_title(print_name)
             if save_path is not None:
-                plt.savefig(save_path+"_"+print_name+".png")
+                plt.savefig(save_path + "_" + print_name + ".png")
             if show:
                 plt.show()
             else:
@@ -88,7 +89,7 @@ def evaluate_distribution_matrix(dis_matrix: sp.spmatrix, show: bool = True, tel
 def stats_of_list(list, name: str = "List", tell: bool = True):
     non_zeros = np.count_nonzero(list)
     num_zeros = len(list) - np.count_nonzero(list)
-    per_zeros = (len(list) - np.count_nonzero(list))/len(list)
+    per_zeros = (len(list) - np.count_nonzero(list)) / len(list)
     mini = min(list)
     maxi = max(list)
     avg = np.mean(list)
@@ -110,7 +111,7 @@ def stats_of_list(list, name: str = "List", tell: bool = True):
 if __name__ == '__main__':
     td_matrix = sp.load_npz("generated_files/topic_doc_matrix.npz")
     tw_matrix = sp.load_npz("generated_files/topic_word_matrix.npz")
-    n = (tw_matrix.shape[0]*tw_matrix.shape[1])-len(tw_matrix.nonzero()[1])
+    n = (tw_matrix.shape[0] * tw_matrix.shape[1]) - len(tw_matrix.nonzero()[1])
     stats1 = evaluate_distribution_matrix(td_matrix, column_name="Topic", row_name="Document",
                                           save_path=f"generated_files/Evaluation/td_eval", show=False)
     stats2 = evaluate_distribution_matrix(tw_matrix, column_name="Word", row_name="Topic",

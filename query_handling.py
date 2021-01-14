@@ -19,9 +19,6 @@ word2vec = utility.load_vector_file("generated_files/word2vec.csv")
 inverse_w2v = {v: k for k, v in word2vec.items()}
 
 
-
-
-
 def generate_document_queries(count_matrix, words: Dict[int, str], count: int, min_length: int = 1,
                               max_length: int = 4):
     """

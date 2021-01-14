@@ -1,24 +1,19 @@
 import json
-import random
 import re
 
 import gensim
+import lemmy
 import nltk
+import numpy as np
 import pandas as pd
 import scipy.sparse as sparse
-import numpy as np
-import utility
-
-import lemmy
-from matplotlib import pyplot
-import seaborn as sb
-from sklearn.preprocessing import normalize
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
-from tqdm import tqdm
 from nltk.corpus import stopwords
 from nltk.stem.snowball import DanishStemmer
-from typing import Dict
+from sklearn.feature_extraction.text import CountVectorizer
+from tqdm import tqdm
 from wiktionaryparser import WiktionaryParser
+
+import utility
 
 
 def preprocess(filename_or_docs="2017_data.json", word_save_filename="generated_files/word2vec.csv",

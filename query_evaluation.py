@@ -175,5 +175,5 @@ def evaluate_query_doc(function, query: List[str], document_index: int):
 
 if __name__ == '__main__':
     queries = query_handling.generate_document_queries(cv_matrix, word2vec, 100, 4, 4)
-    ranks = query_handling.evaluate_document_query(queries.items(), dt_matrix, tw_matrix, grid_lda_evaluate)
+    ranks = evaluate_document_query(queries.items(), dt_matrix, tw_matrix, grid_lda_evaluate)
     print(ranks)
