@@ -1,5 +1,7 @@
 import itertools
 import random
+from functools import partial
+from multiprocessing import Pool
 from typing import Dict, List
 
 import numpy as np
@@ -69,7 +71,7 @@ def lda_runthrough_query(model_path, documents, corpus, vocab, K, alpha, eta):
                             documents,
                             corpus,
                             vocab,
-                            "Generated Files/",
+                            "generated_files/",
                             (K, alpha, eta))
     return lda_model.log_perplexity(corpus)
 

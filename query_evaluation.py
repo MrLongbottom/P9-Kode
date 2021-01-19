@@ -13,12 +13,12 @@ import preprocessing
 import query_handling
 import utility
 
-cv_matrix = sp.load_npz("Generated Files/count_vec_matrix.npz")
-dt_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_doc_matrix.npz")
-tw_matrix = sp.load_npz("Generated Files/(30, 0.1, 0.1)topic_word_matrix.npz")
+cv_matrix = sp.load_npz("generated_files/count_vec_matrix.npz")
+dt_matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_doc_matrix.npz")
+tw_matrix = sp.load_npz("generated_files/(30, 0.1, 0.1)topic_word_matrix.npz")
 wordfreq = np.array(cv_matrix.sum(axis=0))[0]
-doc2word = utility.load_vector_file("Generated Files/doc2word.csv")
-word2vec = utility.load_vector_file("Generated Files/word2vec.csv")
+doc2word = utility.load_vector_file("generated_files/doc2word.csv")
+word2vec = utility.load_vector_file("generated_files/word2vec.csv")
 dirichlet_smoothing = sum([len(i) for i in list(doc2word.values())]) / len(doc2word)
 inverse_w2v = {v: k for k, v in word2vec.items()}
 result_matrix = np.matmul(dt_matrix.A, tw_matrix.A)
@@ -181,26 +181,41 @@ def precision_function(ranks, X, query_n, answer):
     return len(gtp_in_N) / X
 
 
+def custom_query_evaluation(query: List[str]):
+    """
+    Custom query evaluation with the best configuration we have BM25+PR
+    :param query: list of words
+    :return: the ranks of the given articles
+    """
+    model1 = list(np.load("data/pr_matrix.npy"))
+    model2 = bm25_evaluate_query(query)
+    result = np.add(model1, model2)
+    return utility.rankify(dict(enumerate(result)))
+
+
 if __name__ == '__main__':
     paths = ["queries/" + x for x in os.listdir("queries/")]
     paths.sort()
-    paths = paths[4:12]
+    # paths = paths[4:12]
     doc_queries = [utility.load_vector_file(x) for x in paths[:4]]
     queries = [[(x, y) for x, y in q.items()] for q in doc_queries]
     queries.extend([utility.load_vecter_file_nonunique(x) for x in paths[4:]])
+
     # matrices = []
     # for queryset in queries:
-    #    matrices.append(np.array(query_handling.evaluate_queries(queryset, bm25_evaluate_query)))
+    #     matrices.append(np.array(query_handling.evaluate_queries(queryset, tfidf_evaluate_query)))
     # # save matrix
-    # np.save("bm25_evaluate_matrices", matrices)
+    # np.save("evaluate_files/tf_idf_evaluate_matrices", matrices)
 
-    # load matrix
-    model1 = list(np.load("data/pr_matrix.npy"))
-    model1 = ([np.vstack([np.array(model1), ] * 80), ] * 8)
-    model2 = list(np.load("lda_evaluate_matrices.npy"))
-    model3 = list(np.load("bm25_evaluate_matrices.npy"))
-    matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in
-                zip(model1, model2, model3)]
-
-    pre10 = precision_at_x(10, matrices)
-    utility.save_vector_file("Generated Files/bm25_pre_10", pre10)
+    # # load matrix
+    # model1 = list(np.load("data/pr_matrix.npy"))
+    # model1 = ([np.vstack([np.array(model1), ] * 80), ] * 8)
+    # model2 = list(np.load("lda_evaluate_matrices.npy"))
+    # matrices = list(np.load("evaluate_files/bm25_evaluate_matrices.npy"))
+    # matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in
+    #             zip(model1, model2, model3)]
+    #
+    # pre10 = mean_average_precision(matrices)
+    # utility.save_vector_file("Generated Files/bm25_pre_10", pre10)
+    ranks = custom_query_evaluation(["EU", "grøn", "omstilling"])
+    print(ranks[:10])
