@@ -1,4 +1,5 @@
 import os
+import random
 from functools import partial
 from multiprocessing import Pool
 from typing import List
@@ -135,14 +136,14 @@ def mean_average_precision(matrices):
     :return: mean average precision
     """
     MAP = []
-    for i in range(8):  # 8 because there are 8 sets of queries of different lengths
+    for i in [5]:  # 8 because there are 8 sets of queries of different lengths
         AP = []
         ranks = [utility.rankify(dict(enumerate(x))) for x in matrices[i]]
-        if i < 4:
-            for query_n, (answer, _) in enumerate(queries[i]):
-                # GTP is answer
-                AP.append(1 / (ranks[query_n].index(answer) + 1))
-        else:
+        #if i < 4:
+            #for query_n, (answer, _) in enumerate(queries[i]):
+            #    # GTP is answer
+            #    AP.append(1 / (ranks[query_n].index(answer) + 1))
+        if i > 4:
             with Pool(processes=8) as p:
                 max_ = len(list(enumerate(queries[i])))
                 with tqdm(total=max_) as pbar:
@@ -150,8 +151,8 @@ def mean_average_precision(matrices):
                                                         list(enumerate(queries[i])))):
                         AP.append(score)
                         pbar.update()
-        MAP.append(np.mean(AP))
-        print(np.mean(AP))
+            MAP.append(np.mean(AP))
+            print(np.mean(AP))
     return MAP
 
 
@@ -184,23 +185,41 @@ def precision_function(ranks, X, query_n, answer):
 if __name__ == '__main__':
     paths = ["queries/" + x for x in os.listdir("queries/")]
     paths.sort()
-    paths = paths[4:12]
+    paths = paths[:4] + paths[12:]
     doc_queries = [utility.load_vector_file(x) for x in paths[:4]]
     queries = [[(x, y) for x, y in q.items()] for q in doc_queries]
     queries.extend([utility.load_vecter_file_nonunique(x) for x in paths[4:]])
-    # matrices = []
-    # for queryset in queries:
-    #    matrices.append(np.array(query_handling.evaluate_queries(queryset, bm25_evaluate_query)))
-    # # save matrix
-    # np.save("bm25_evaluate_matrices", matrices)
+
+    matrices = []
+    for queryset in queries:
+       matrices.append(np.array(query_handling.evaluate_queries(queryset, bm25_evaluate_query)))
+    # save matrix
+    np.save("bm25_evaluate_matrices", matrices)
 
     # load matrix
-    model1 = list(np.load("data/pr_matrix.npy"))
-    model1 = ([np.vstack([np.array(model1), ] * 80), ] * 8)
-    model2 = list(np.load("lda_evaluate_matrices.npy"))
+    #model1 = list(np.load("data/pr_matrix.npy"))
+    #model1 = ([np.vstack([np.array(model1), ] * 80), ] * 8)
+    #model2 = list(np.load("lda_evaluate_matrices.npy"))
     model3 = list(np.load("bm25_evaluate_matrices.npy"))
-    matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in
-                zip(model1, model2, model3)]
+    #model = list(np.load("ranno.npy"))
 
-    pre10 = precision_at_x(10, matrices)
-    utility.save_vector_file("Generated Files/bm25_pre_10", pre10)
+    #matrices = [np.add(np.add(normalize(a, norm="l1"), normalize(b, norm='l1')), normalize(c, norm='l1')) for c, b, a in
+    #            zip(model1, model2, model3)]
+    #print(model3[0].shape)
+    ran = list(range(32201))
+    random.shuffle(ran)
+    for model in model3:
+        for i in tqdm(range(32201)):
+           for j in range(80):
+                model[j,i] = ran[i]
+    np.save("ranno.npy", model3)
+    ranno = list(np.load("ranno.npy"))
+
+
+    #pre10 = precision_at_x(10, model)
+    #pre100 = precision_at_x(100, model)
+    mapp = mean_average_precision(ranno)
+    #utility.save_vector_file("Generated Files/rando_res_pre_10", pre10)
+    #utility.save_vector_file("Generated Files/rando_res_pre_100", pre100)
+    utility.save_vector_file("Generated Files/rando_res_map", mapp)
+    print("test")
