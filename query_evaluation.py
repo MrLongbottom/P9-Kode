@@ -216,10 +216,10 @@ if __name__ == '__main__':
     ranno = list(np.load("ranno.npy"))
 
 
-    #pre10 = precision_at_x(10, model)
-    #pre100 = precision_at_x(100, model)
-    mapp = mean_average_precision(ranno)
-    #utility.save_vector_file("Generated Files/rando_res_pre_10", pre10)
-    #utility.save_vector_file("Generated Files/rando_res_pre_100", pre100)
-    utility.save_vector_file("Generated Files/rando_res_map", mapp)
+    pre10 = precision_at_x(10, model)
+    pre100 = precision_at_x(100, model)
+    #mapp = mean_average_precision(ranno)
+    utility.save_vector_file("Generated Files/rando_res_pre_10", pre10)
+    utility.save_vector_file("Generated Files/rando_res_pre_100", pre100)
+    #utility.save_vector_file("Generated Files/rando_res_map", mapp)
     print("test")
